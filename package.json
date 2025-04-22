@@ -5,13 +5,22 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "migrate-create": "npx sequelize-cli migration:generate --name ",
+    "migrate-up": "npx sequelize db:migrate",
+    "migrate-down": "npx sequelize db:migrate:undo",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@types/express": "^5.0.1",
+    "express": "^5.1.0",
+    "pg": "^8.14.1",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "sequelize": "^6.37.7",
+    "sequelize-cli": "^6.6.2",
+    "sequelize-typescript": "^2.1.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
