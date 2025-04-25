@@ -1,5 +1,6 @@
 import express from 'express'
 import { Sequelize } from 'sequelize-typescript';
+import bcrypt from 'bcrypt';
 import { User } from '../../models/User';
 const config = require('./config/config.json');
 
@@ -9,4 +10,19 @@ app.use(express.json())
 const sequelize = new Sequelize({
     ...config.development,
     models: [User]
+})
+
+app.post('/create-profile', async (req, res, next) => {
+    const { username, email, password } = req.body
+
+    // Password Hashing
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    try {
+        const user = await User.create({ username, email, hashedPassword })
+        res.status(201).json(user)
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to create profile' })
+    };
+    next();
 })
