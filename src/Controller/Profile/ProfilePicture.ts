@@ -10,7 +10,7 @@ declare global {
         }
     }
 }
-import { User } from '../../models/User';
+import { User } from '../../../models/User';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';

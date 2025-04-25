@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
-import { User } from '../../models/User';
-import { Session } from '../../models/Session';
+import { User } from '../../../models/User';
+import { Session } from '../../../models/Session';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = 'meme-gang-lover';

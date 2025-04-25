@@ -1,8 +1,8 @@
 import express from 'express'
 import { Request, Response, NextFunction } from 'express';
 import { Sequelize } from 'sequelize-typescript';
-import { User } from '../../models/User';
-import { authenticateToken } from '../../middleware/Auth';
+import { User } from '../../../models/User';
+import { authenticateToken } from '../../../middleware/Auth';
 
 const app = express()
 app.use(express.json())

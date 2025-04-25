@@ -2,7 +2,7 @@ import express from 'express'
 import { Sequelize } from 'sequelize-typescript';
 // npm i --save-dev @types/bcrypt
 import bcrypt from 'bcrypt';
-import { User } from '../../models/User';
+import { User } from '../../../models/User';
 const config = require('./config/config.json');
 
 const app = express()
