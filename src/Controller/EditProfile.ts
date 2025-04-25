@@ -13,7 +13,7 @@ const sequelize = new Sequelize({
     models: [User]
 })
 
-app.use('/edit-profile', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
+app.use('/edit-profile', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { id } = req.user; // Assuming `authenticateToken` adds `user` to `req`
         const { username, email } = req.body;
