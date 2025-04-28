@@ -6,15 +6,12 @@ import { User } from '../models/User';
 import { Session } from '../models/Session';
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 import bodyParser from 'body-parser';
 import authMiddleware from '../middleware/Auth';
 
-
-const JWT_SECRET = 'meme-gang-lover'; // Use environment variables for production
 
 const config = require('./config/config.json');
 const sequelize = new Sequelize({
