@@ -1,5 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import Settings from './View/Settings';
+import Login from './View/Login';
+import Register from './View/Register';
 // other imports...
 
 function App() {
@@ -11,6 +13,8 @@ function App() {
 
       <Routes>
         <Route path="/settings" element={<Settings />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         {/* other routes */}
       </Routes>
     </div>
