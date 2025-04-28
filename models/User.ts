@@ -32,6 +32,24 @@ export class User extends Model {
     declare password: string;
 
     @Column({
+        type: DataType.STRING,
+        allowNull: true,
+    })
+    declare profilePicture?: string;
+
+    @Column({
+        type: DataType.STRING,
+        allowNull: false,
+    })
+    declare name: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    declare bio?: string;
+
+    @Column({
         type: DataType.DATE,
         allowNull: false,
         defaultValue: DataType.NOW,
