@@ -13,7 +13,7 @@ const sequelize = new Sequelize({
     models: [User]
 })
 
-app.post('/create-profile', async (req, res, next) => {
+app.post('/register', async (req, res, next) => {
     const { username, email, password } = req.body
 
     // Password Hashing
