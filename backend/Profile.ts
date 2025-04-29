@@ -12,13 +12,6 @@ import path from 'path';
 import bodyParser from 'body-parser';
 import authMiddleware from '../middleware/Auth';
 
-
-const config = require('./config/config.json');
-const sequelize = new Sequelize({
-    ...config.development,
-    models: [User],
-});
-
 declare global {
     namespace Express {
         interface Request {
