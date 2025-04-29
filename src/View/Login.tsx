@@ -6,9 +6,32 @@ const Login: React.FC = () => {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Email:', email);
-        console.log('Password:', password);
-        // Add your login logic here
+        handleLogin(email, password);
+    };
+
+    const handleLogin = async (email: string, password: string) => {
+        try {
+            const response = await fetch('http://localhost:3000/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({email, password }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                alert(`Login failed: ${errorData.message}`);
+                return;
+            }
+
+            const data = await response.json();
+            alert('Login successful!');
+            console.log('Login user:', data);
+        } catch (error) {
+            console.error('Error during Login:', error);
+            alert('An error occurred during Login. Please try again later.');
+        }
     };
 
     return (

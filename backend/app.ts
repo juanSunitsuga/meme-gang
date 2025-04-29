@@ -29,6 +29,10 @@ const sequelize = new Sequelize({
     models: [Comment, Post, User, SavedPost, Session, Tag, UpvoteDownvote],
 });
 
+// app.use(async (req, res, next) => {
+//     if (req.path === "/login" || req.path === "/register")
+// });
+
 app.use('/auth', registerLoginRoutes);
 app.use('/profile', profileRoutes);
 

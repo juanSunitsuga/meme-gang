@@ -2,7 +2,7 @@ import { Table, Column, Model, DataType } from 'sequelize-typescript';
 
 @Table({
   tableName: 'sessions',
-  timestamps: true,
+  timestamps: false,
 })
 export class Session extends Model {
   @Column({
@@ -29,13 +29,6 @@ export class Session extends Model {
     allowNull: false,
     defaultValue: DataType.NOW,
   })
-  declare lastActivity: Date;
-
-  @Column({
-    type: DataType.DATE,
-    allowNull: false,
-    defaultValue: DataType.NOW,
-  })
   declare createdAt: Date;
 
   @Column({
@@ -43,5 +36,5 @@ export class Session extends Model {
     allowNull: false,
     defaultValue: DataType.NOW,
   })
-  declare updatedAt: Date;
+  declare expireAt: Date;
 }
