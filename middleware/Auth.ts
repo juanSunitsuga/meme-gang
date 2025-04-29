@@ -1,78 +1,65 @@
-// npm install jsonwebtoken
-// npm install --save-dev @types/jsonwebtoken
-
-import { Session } from '../models/Session';
-import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-
-// Extend the Request interface to include the user
-declare global {
-    namespace Express {
-        interface Request {
-            user?: any;
-        }
-    }
-}
 import { Op } from 'sequelize';
+import jwt from 'jsonwebtoken';
+import { Session } from '../models/Session';
+import { CustomRequest } from '../types';
 
-const deleteInactiveSessions = async () => {
-    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+// // Middleware to authenticate the user
+// const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
+//     const authHeader = req.headers['authorization'];
+//     const token = authHeader && authHeader.split(' ')[1];
 
-    await Session.destroy({
-        where: {
-            lastActivity: {
-                [Op.lt]: fifteenMinutesAgo,
-            },
-        },
-    });
-};
+//     if (!token) {
+//         return res.status(401).json({ message: 'Access token is missing or invalid' });
+//     }
 
-setInterval(deleteInactiveSessions, 60 * 1000); // Run every 60 seconds
+//     try {
+//         const decoded: any = jwt.verify(token, JWT_SECRET);
+//         req.user = { id: decoded.id };
+//         next();
+//     } catch (error) {
+//         return res.status(403).json({ message: 'Invalid or expired token' });
+//     }
+// };
 
-export const addSession = async (userId: string, token: string) => {
-    await Session.create({ userId, token });
-};
+const authMiddleware = async (req: CustomRequest, res: Response, next: NextFunction) => {
+    const authHeader = req.headers.authorization;
 
+    console.log('Authorization Header:', authHeader);
 
-export const removeSession = async (userId: string) => {
-    await Session.destroy({ where: { userId } });
-};
+    if (!authHeader) {
+        return res.status(401).json({ message: 'Authorization header missing' });
+    }
 
-
-const JWT_SECRET = 'meme-gang-lover';
-
-const activeSessions: { [key: string]: boolean } = {};
-
-export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader.split(' ')[1];
 
     if (!token) {
-        return res.status(401).json({ message: 'Access token is missing or invalid' });
+        return res.status(401).json({ message: 'Token missing' });
     }
 
-    jwt.verify(token, JWT_SECRET, (err, user: any) => {
-        if (err) {
-            return res.status(403).json({ message: 'Invalid or expired token' });
+    try {
+        const decoded = jwt.verify(token, 'meme-gang-lover') as { id: number; username: string };
+
+        // Check if the token exists in the Authorization table and is not expired
+        const authorization = await Session.findOne({
+            where: {
+                token,
+                userId: decoded.id,
+                expiresAt: {
+                    [Op.gt]: new Date(),
+                },
+            },
+        });
+
+        if (!authorization) {
+            return res.status(401).json({ message: 'Invalid or expired token' });
         }
 
-        // Check if the user is in an active session
-        if (!activeSessions[user.id]) {
-            return res.status(403).json({ message: 'User session is invalid or expired' });
-        }
-
-        // Attach user info to the request object
-        req.user = user;
+        req.user = decoded;
         next();
-    });
+    } catch (error) {
+        return res.status(401).json({ message: 'Invalid token' });
+    }
 };
 
-// Example: Add a user to the active session store
-export const addUserToSession = (userId: string) => {
-    activeSessions[userId] = true;
-};
-
-// Example: Remove a user from the active session store
-export const removeUserFromSession = (userId: string) => {
-    delete activeSessions[userId];
-};
+export default authMiddleware;
