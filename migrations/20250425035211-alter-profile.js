@@ -1,27 +1,27 @@
 'use strict';
 
 /** @type {import('sequelize-cli').Migration} */
-export default{
-  async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn('users', 'profilePicture', {
-      type: Sequelize.STRING,
-      allowNull: true, 
-    });
+export default {
+    async up(queryInterface, Sequelize) {
+        await queryInterface.addColumn('Users', 'profilePicture', {
+            type: Sequelize.STRING,
+            allowNull: true,
+        });
 
-    await queryInterface.addColumn('users', 'name', {
-      type: Sequelize.STRING,
-      allowNull: false, 
-    });
+        await queryInterface.addColumn('Users', 'name', {
+            type: Sequelize.STRING,
+            allowNull: true,
+        });
 
-    await queryInterface.addColumn('users', 'bio', {
-      type: Sequelize.TEXT,
-      allowNull: true,
-    });
-  },
+        await queryInterface.addColumn('Users', 'bio', {
+            type: Sequelize.TEXT,
+            allowNull: true,
+        });
+    },
 
-  async down(queryInterface, Sequelize) {
-    await queryInterface.removeColumn('users', 'profilePicture');
-    await queryInterface.removeColumn('users', 'name');
-    await queryInterface.removeColumn('users', 'bio');
-  }
+    async down(queryInterface, Sequelize) {
+        await queryInterface.removeColumn('Users', 'profilePicture');
+        await queryInterface.removeColumn('Users', 'name');
+        await queryInterface.removeColumn('Users', 'bio');
+    },
 };

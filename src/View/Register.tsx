@@ -7,10 +7,32 @@ const Register: React.FC = () => {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Username:', username);
-        console.log('Email:', email);
-        console.log('Password:', password);
-        // Add your registration logic here
+        handleRegister(username, password, email);
+    };
+
+    const handleRegister = async (username: string, password: string, email: string) => {
+        try {
+            const response = await fetch('http://localhost:3000/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password, email }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                alert(`Registration failed: ${errorData.message}`);
+                return;
+            }
+
+            const data = await response.json();
+            alert('Registration successful!');
+            console.log('Registered user:', data);
+        } catch (error) {
+            console.error('Error during registration:', error);
+            alert('An error occurred during registration. Please try again later.');
+        }
     };
 
     return (

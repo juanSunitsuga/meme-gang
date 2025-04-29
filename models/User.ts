@@ -6,60 +6,39 @@ import { Table, Column, Model, DataType } from 'sequelize-typescript';
 })
 export class User extends Model {
     @Column({
-        type: DataType.UUID,
-        defaultValue: DataType.UUIDV4,
-        primaryKey: true,
+        type: DataType.STRING,
+        allowNull: false,
     })
-    declare id: string;
+    username!: string;
 
     @Column({
         type: DataType.STRING,
         allowNull: false,
     })
-    declare username: string;
+    password!: string;
 
     @Column({
         type: DataType.STRING,
         allowNull: false,
         unique: true,
     })
-    declare email: string;
-
-    @Column({
-        type: DataType.STRING,
-        allowNull: false,
-    })
-    declare password: string;
+    email!: string;
 
     @Column({
         type: DataType.STRING,
         allowNull: true,
     })
-    declare profilePicture?: string;
+    profilePicture?: string;
 
     @Column({
         type: DataType.STRING,
-        allowNull: false,
+        allowNull: true,
     })
-    declare name: string;
+    name?: string;
 
     @Column({
         type: DataType.TEXT,
         allowNull: true,
     })
-    declare bio?: string;
-
-    @Column({
-        type: DataType.DATE,
-        allowNull: false,
-        defaultValue: DataType.NOW,
-    })
-    declare createdAt?: Date;
-
-    @Column({
-        type: DataType.DATE,
-        allowNull: false,
-        defaultValue: DataType.NOW,
-    })
-    declare updatedAt?: Date;
+    bio?: string;
 }
