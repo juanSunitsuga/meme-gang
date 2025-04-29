@@ -5,15 +5,50 @@ const PasswordPage = () => {
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (newPassword !== confirmPassword) {
       alert('New password and confirmation do not match!');
       return;
     }
 
-    // Handle password update logic here
-    console.log('Password changed!');
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('You are not logged in. Please log in again.');
+        return;
+      }
+
+      const response = await fetch('http://localhost:3000/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          oldPassword,
+          newPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(`Failed to change password: ${errorData.message}`);
+        return;
+      }
+
+      alert('Password changed successfully!');
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error) {
+      console.error('Error changing password:', error);
+      alert('An error occurred while changing the password. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -61,8 +96,9 @@ const PasswordPage = () => {
         <button
           onClick={handleSaveChanges}
           className="save-button"
+          disabled={loading}
         >
-          Save Changes
+          {loading ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
     </div>

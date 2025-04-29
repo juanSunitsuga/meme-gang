@@ -11,6 +11,7 @@ import fs from 'fs';
 import path from 'path';
 import bodyParser from 'body-parser';
 import authMiddleware from '../middleware/Auth';
+import jwt from 'jsonwebtoken';
 
 declare global {
     namespace Express {
@@ -95,34 +96,35 @@ router.post('/edit-profile', async (req: Request, res: Response, next: NextFunct
 });
 
 // Endpoint to change password
-router.post('/change-password', authMiddleware, async (req: Request, res: Response) => {
-    try {
-        const { id } = req.user!;
-        const { oldPassword, newPassword, confirmPassword } = req.body;
+router.post('/change-password', async (req, res) => {
+  const token = req.headers['authorization']?.split(' ')[1];
 
-        const user = await User.findByPk(id);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
+  if (!token) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
 
-        const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
-        if (!isPasswordValid) {
-            return res.status(400).json({ message: 'Old password is incorrect' });
-        }
+  try {
+    const decoded = jwt.verify(token, 'meme-gang-lover') as { id: string };
 
-        if (newPassword !== confirmPassword) {
-            return res.status(400).json({ message: 'New password and confirm password do not match' });
-        }
-
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        user.password = hashedPassword;
-        await user.save();
-
-        res.status(200).json({ message: 'Password changed successfully' });
-    } catch (error) {
-        console.error('Error changing password:', error);
-        res.status(500).json({ message: 'An error occurred while changing the password' });
+    const user = await User.findOne({ where: { id: decoded.id } });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
+
+    const isPasswordValid = await bcrypt.compare(req.body.oldPassword, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ message: 'Old password is incorrect' });
+    }
+
+    const hashedPassword = await bcrypt.hash(req.body.newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    return res.status(200).json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Error in /change-password route:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
 });
 
 // Endpoint to upload profile picture
@@ -174,6 +176,32 @@ router.delete('/delete-profile-picture', authMiddleware, async (req: Request, re
     } catch (error) {
         console.error('Error deleting profile picture:', error);
         res.status(500).json({ message: 'An error occurred while deleting the profile picture' });
+    }
+});
+
+router.get('/profile', async (req, res) => {
+    const token = req.headers['authorization']?.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ message: 'No token provided' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, 'meme-gang-lover') as { id: string };
+
+        const user = await User.findOne({
+            where: { id: decoded.id },
+            attributes: ['displayName', 'about', 'profilePicture'], // Only return necessary fields
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        return res.status(200).json(user);
+    } catch (error) {
+        console.error('Error fetching profile data:', error);
+        return res.status(401).json({ message: 'Invalid or expired token' });
     }
 });
 

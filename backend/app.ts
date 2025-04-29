@@ -17,9 +17,10 @@ import cors from 'cors';
 
 const app = express();
 
-// Enable CORS
+// Enable CORS with credentials
 app.use(cors({
-    origin: 'http://localhost:5173', // Allow only this origin
+    origin: 'http://localhost:5173', 
+    credentials: true,
 }));
 
 app.use(express.json());
@@ -28,10 +29,6 @@ const sequelize = new Sequelize({
     ...config.development,
     models: [Comment, Post, User, SavedPost, Session, Tag, UpvoteDownvote],
 });
-
-// app.use(async (req, res, next) => {
-//     if (req.path === "/login" || req.path === "/register")
-// });
 
 app.use('/auth', registerLoginRoutes);
 app.use('/profile', profileRoutes);

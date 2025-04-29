@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const navigate = useNavigate();
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -16,7 +18,7 @@ const Login: React.FC = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({email, password }),
+                body: JSON.stringify({ email, password }),
             });
 
             if (!response.ok) {
@@ -26,11 +28,13 @@ const Login: React.FC = () => {
             }
 
             const data = await response.json();
+            console.log('Token received:', data.token);
+            localStorage.setItem('token', data.token); 
             alert('Login successful!');
-            console.log('Login user:', data);
+            navigate('/settings');
         } catch (error) {
-            console.error('Error during Login:', error);
-            alert('An error occurred during Login. Please try again later.');
+            console.error('Error during login:', error);
+            alert('An error occurred during login. Please try again later.');
         }
     };
 

@@ -1,10 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../style/Profile.css';
 
 const ProfileSettings = () => {
-    const [displayName, setDisplayName] = useState('temp');
-    const [about, setAbout] = useState('My Funny Collection');
+    const [displayName, setDisplayName] = useState('');
+    const [about, setAbout] = useState('');
     const [avatar, setAvatar] = useState<File | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchProfileData = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    alert('You are not logged in. Please log in again.');
+                    return;
+                }
+
+                const response = await fetch('http://localhost:3000/auth/profile', {
+                    method: 'GET',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (!response.ok) {
+                    alert('Failed to fetch profile data.');
+                    return;
+                }
+
+                const data = await response.json();
+                setDisplayName(data.displayName || '');
+                setAbout(data.about || '');
+            } catch (error) {
+                console.error('Error fetching profile data:', error);
+            } finally {
+                setLoading(false); // Ensure loading is set to false
+            }
+        };
+
+        fetchProfileData();
+    }, []);
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -12,9 +47,45 @@ const ProfileSettings = () => {
         }
     };
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        alert('Profile updated successfully!');
+
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('You are not logged in. Please log in again.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('displayName', displayName);
+            formData.append('about', about);
+            if (avatar) {
+                formData.append('avatar', avatar);
+            }
+
+            const response = await fetch('http://localhost:3000/auth/profile', {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                alert(`Failed to update profile: ${errorData.message}`);
+                return;
+            }
+
+            alert('Profile updated successfully!');
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            alert('An error occurred while updating the profile. Please try again later.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -27,7 +98,7 @@ const ProfileSettings = () => {
                         {avatar ? (
                             <img src={URL.createObjectURL(avatar)} alt="Avatar" className="avatar-preview" />
                         ) : (
-                            <img src="https://via.placeholder.com/80" alt="Default Avatar" className="avatar-preview" />
+                            <img src="../../uploads/default-avatar.jpg" alt="Default Avatar" className="avatar-preview" />
                         )}
                         <input type="file" onChange={handleAvatarChange} />
                     </div>
@@ -49,13 +120,15 @@ const ProfileSettings = () => {
                     <textarea
                         value={about}
                         onChange={(e) => setAbout(e.target.value)}
-                        rows={8} 
+                        rows={8}
                         placeholder="Tell us about yourself"
                     />
                 </div>
 
                 <div className="form-actions">
-                    <button type="submit" className="save-button">Save Changes</button>
+                    <button type="submit" className="save-button" disabled={loading}>
+                        {loading ? 'Saving...' : 'Save Changes'}
+                    </button>
                 </div>
             </form>
         </main>
