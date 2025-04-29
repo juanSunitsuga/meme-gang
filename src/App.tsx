@@ -10,6 +10,9 @@ function App() {
   return (
     <div className="App">
       <button onClick={() => navigate('/settings')}>Settings</button>
+      <button onClick={() => navigate('/login')}>Login</button>
+      <button onClick={() => navigate('/register')}>Register</button>
+      {/* other buttons */}
 
       <Routes>
         <Route path="/settings" element={<Settings />} />

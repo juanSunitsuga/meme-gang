@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { User } from '../models/User';
 import { Session } from '../models/Session';
+import { v4 } from 'uuid';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import bodyParser from 'body-parser';
@@ -18,14 +19,20 @@ router.post('/register', async (req, res, next) => {
 
     try {
         const existingUser = await User.findOne({ where: { username } });
+        const existingEmail = await User.findOne({ where: { email } });
 
         if (existingUser) {
             return res.status(400).json({ message: 'Username already exists' });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        if (existingEmail) {
+            return res.status(400).json({ message: 'Email already exists' });
+        }
 
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
         const newUser = await User.create({
+            id: v4(),
             username,
             password: hashedPassword,
             email,

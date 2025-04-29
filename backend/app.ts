@@ -10,10 +10,18 @@ import { UpvoteDownvote } from '../models/Upvote_Downvote_Post';
 import profileRoutes from './Profile';
 import authRoutes from './RegisterLogin';
 import userRoutes from './Profile';
+import registerLoginRoutes from './RegisterLogin';
 import authMiddleware from '../middleware/Auth';
-const config = require('./config/config.json');
+import config from '../config/config.json';
+import cors from 'cors';
 
 const app = express();
+
+// Enable CORS
+app.use(cors({
+    origin: 'http://localhost:5173', // Allow only this origin
+}));
+
 app.use(express.json());
 
 const sequelize = new Sequelize({
@@ -21,14 +29,8 @@ const sequelize = new Sequelize({
     models: [Comment, Post, User, SavedPost, Session, Tag, UpvoteDownvote],
 });
 
-app.use('/auth', authRoutes);
-
-// Apply authMiddleware to routes that require authentication
-// app.use(authMiddleware);
-
-app.use('/user', userRoutes);
-// app.use('/comments', require('./comments'));
-// app.use('/posts', require('./posts'));  
+app.use('/auth', registerLoginRoutes);
+app.use('/profile', profileRoutes);
 
 app.listen(3000, async () => {
     await sequelize.sync();
