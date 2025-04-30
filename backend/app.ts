@@ -17,9 +17,10 @@ import cors from 'cors';
 
 const app = express();
 
-// Enable CORS
+// Enable CORS with credentials
 app.use(cors({
-    origin: 'http://localhost:5173', // Allow only this origin
+    origin: 'http://localhost:5173', 
+    credentials: true,
 }));
 
 app.use(express.json());
@@ -29,8 +30,13 @@ const sequelize = new Sequelize({
     models: [Comment, Post, User, SavedPost, Session, Tag, UpvoteDownvote],
 });
 
+
 app.use('/auth', registerLoginRoutes);
 app.use('/profile', profileRoutes);
+
+app.use((req, res) => {
+    res.status(404).json({ message: 'Route not found' });
+});
 
 app.listen(3000, async () => {
     await sequelize.sync();
