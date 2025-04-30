@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 import { Session } from '../models/Session';
 
 const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+    console.log('Authorization Header:', req.headers.authorization);
+    console.log('Decoded Token:', req.user);
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
@@ -18,7 +20,7 @@ const authMiddleware = async (req: Request, res: Response, next: NextFunction) =
     try {
         const decoded = jwt.verify(token, 'meme-gang-lover') as { id: string };
 
-        // Check if the token exists in the Session table
+        // Optionally, check if the token exists in the Session table
         const session = await Session.findOne({
             where: { token, userId: decoded.id },
         });

@@ -26,7 +26,11 @@ router.use(bodyParser.json());
 // Configure multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // Directory to store uploaded files
+        const uploadDir = path.join(__dirname, '../../uploads');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir); // Directory to store uploaded files
     },
     filename: (req, file, cb) => {
         cb(null, `${Date.now()}-${file.originalname}`);
@@ -71,15 +75,19 @@ router.get('/me', async (req: Request, res: Response) => {
 router.put('/edit-profile', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
     console.log('Request user:', req.user);
     try {
-        const { id } = req.user!;
-        const { displayName, bio } = req.body;
+        if (!req.user) {
+            return res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+        }
+
+        const { id } = req.user;
+        const { name, bio } = req.body;
 
         const user = await User.findByPk(id);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        user.username = displayName || user.username;
+        user.name = name || user.username;
         user.bio = bio || user.bio;
 
         await user.save();
@@ -87,7 +95,7 @@ router.put('/edit-profile', authMiddleware, async (req: Request, res: Response, 
         res.status(200).json({ message: 'Profile updated successfully', user });
     } catch (error) {
         console.error('Error updating profile:', error);
-        next(error);
+        res.status(500).json({ message: 'An error occurred while updating the profile' });
     }
 });
 
@@ -132,11 +140,11 @@ router.post('/upload-profile-picture', authMiddleware, upload.single('profilePic
             return res.status(404).json({ message: 'User not found' });
         }
 
-        if (!req.uploadedFile) {
+        if (!req.file) {
             return res.status(400).json({ message: 'No file uploaded' });
         }
 
-        const profilePicturePath = `/uploads/${req.uploadedFile.filename}`;
+        const profilePicturePath = `/uploads/${req.file.filename}`;
         user.profilePicture = profilePicturePath;
         await user.save();
 

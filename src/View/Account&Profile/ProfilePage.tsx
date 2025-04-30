@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import '../style/Profile.css';
 
 const ProfileSettings = () => {
-    const [displayName, setDisplayName] = useState('');
-    const [about, setAbout] = useState('');
+    const [name, setName] = useState('');
+    const [bio, setBio] = useState('');
     const [avatar, setAvatar] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -29,8 +29,9 @@ const ProfileSettings = () => {
                 }
         
                 const data = await response.json();
-                setDisplayName(data.name || '');
-                setAbout(data.bio || '');
+                console.log('Fetched profile data:', data);
+                setName(data.name || '');
+                setBio(data.bio || '');
             } catch (error) {
                 console.error('Error fetching profile data:', error);
             } finally {
@@ -47,26 +48,19 @@ const ProfileSettings = () => {
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
+    const handleUpload = async (file: File) => {
+        const formData = new FormData();
+        formData.append('profilePicture', file);
 
         try {
-            setLoading(true);
             const token = localStorage.getItem('token');
             if (!token) {
                 alert('You are not logged in. Please log in again.');
                 return;
             }
 
-            const formData = new FormData();
-            formData.append('displayName', displayName);
-            formData.append('about', about);
-            if (avatar) {
-                formData.append('avatar', avatar);
-            }
-
-            const response = await fetch('http://localhost:3000/profile/edit-profile', {
-                method: 'PUT',
+            const response = await fetch('http://localhost:3000/profile/upload-profile-picture', {
+                method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -75,11 +69,50 @@ const ProfileSettings = () => {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                alert(`Failed to update profile: ${errorData.message}`);
+                alert(`Failed to upload profile picture: ${errorData.message}`);
                 return;
             }
 
+            const data = await response.json();
+            alert('Profile picture uploaded successfully!');
+            console.log('Uploaded profile picture:', data.profilePicture);
+        } catch (error) {
+            console.error('Error uploading profile picture:', error);
+            alert('An error occurred while uploading the profile picture.');
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+    
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('You are not logged in. Please log in again.');
+                return;
+            }
+    
+            const response = await fetch('http://localhost:3000/profile/edit-profile', {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name, bio }),
+            });
+    
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => {
+                    throw new Error('Unexpected response format');
+                });
+                alert(`Failed to update profile: ${errorData.message}`);
+                return;
+            }
+    
+            const data = await response.json();
             alert('Profile updated successfully!');
+            console.log('Updated profile:', data);
         } catch (error) {
             console.error('Error updating profile:', error);
             alert('An error occurred while updating the profile. Please try again later.');
@@ -109,8 +142,8 @@ const ProfileSettings = () => {
                     <label>Display name</label>
                     <input
                         type="text"
-                        value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
                     />
                     <small>This is the name that will be visible on your profile</small>
                 </div>
@@ -118,8 +151,8 @@ const ProfileSettings = () => {
                 <div className="form-group">
                     <label>About</label>
                     <textarea
-                        value={about}
-                        onChange={(e) => setAbout(e.target.value)}
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value)}
                         rows={8}
                         placeholder="Tell us about yourself"
                     />

@@ -30,8 +30,13 @@ const sequelize = new Sequelize({
     models: [Comment, Post, User, SavedPost, Session, Tag, UpvoteDownvote],
 });
 
+
 app.use('/auth', registerLoginRoutes);
 app.use('/profile', profileRoutes);
+
+app.use((req, res) => {
+    res.status(404).json({ message: 'Route not found' });
+});
 
 app.listen(3000, async () => {
     await sequelize.sync();
