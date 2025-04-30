@@ -16,7 +16,7 @@ const AccountSettings = () => {
                     return;
                 }
 
-                const response = await fetch('http://localhost:3000/auth/user', {
+                const response = await fetch('http://localhost:3000/profile/me', {
                     method: 'GET',
                     headers: {
                         Authorization: `Bearer ${token}`,

@@ -21,7 +21,7 @@ const PasswordPage = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:3000/auth/change-password', {
+      const response = await fetch('http://localhost:3000/profile/change-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

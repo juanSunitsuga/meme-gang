@@ -15,26 +15,26 @@ const ProfileSettings = () => {
                     alert('You are not logged in. Please log in again.');
                     return;
                 }
-
-                const response = await fetch('http://localhost:3000/auth/profile', {
+        
+                const response = await fetch('http://localhost:3000/profile/me', {
                     method: 'GET',
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
                 });
-
+        
                 if (!response.ok) {
                     alert('Failed to fetch profile data.');
                     return;
                 }
-
+        
                 const data = await response.json();
-                setDisplayName(data.displayName || '');
-                setAbout(data.about || '');
+                setDisplayName(data.name || '');
+                setAbout(data.bio || '');
             } catch (error) {
                 console.error('Error fetching profile data:', error);
             } finally {
-                setLoading(false); // Ensure loading is set to false
+                setLoading(false);
             }
         };
 
@@ -65,7 +65,7 @@ const ProfileSettings = () => {
                 formData.append('avatar', avatar);
             }
 
-            const response = await fetch('http://localhost:3000/auth/profile', {
+            const response = await fetch('http://localhost:3000/profile/edit-profile', {
                 method: 'PUT',
                 headers: {
                     Authorization: `Bearer ${token}`,
