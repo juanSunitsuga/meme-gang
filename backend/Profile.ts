@@ -26,54 +26,52 @@ router.use(bodyParser.json());
 // Configure multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const uploadDir = path.join(__dirname, '../../uploads');
+        const uploadDir = 'uploads/ProfilePictures';
+        console.log('Destination directory:', uploadDir);
         if (!fs.existsSync(uploadDir)) {
+            console.log('Directory does not exist. Creating:', uploadDir);
             fs.mkdirSync(uploadDir, { recursive: true });
         }
         cb(null, uploadDir); // Directory to store uploaded files
     },
     filename: (req, file, cb) => {
-        cb(null, `${Date.now()}-${file.originalname}`);
+        const filename = `${Date.now()}-${file.originalname}`;
+        console.log('Generated filename:', filename);
+        cb(null, filename);
     },
 });
 const upload = multer({ storage });
 
 // Endpoint to retrieve a user by ID
 router.get('/me', async (req: Request, res: Response) => {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader) {
-        return res.status(401).json({ message: 'Authorization header missing' });
-    }
-
-    const token = authHeader.split(' ')[1];
-
-    if (!token) {
-        return res.status(401).json({ message: 'Token missing' });
-    }
-
     try {
-        const decoded = jwt.verify(token, 'meme-gang-lover') as { id: string };
-
-        const user = await User.findOne({
-            where: { id: decoded.id },
-            attributes: ['username', 'email', 'profilePicture', 'name', 'bio'],
-        });
+        const { id } = req.user!;
+        const user = await User.findByPk(id);
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        return res.status(200).json(user);
+        // Prepend the base URL to the profilePicture field
+        const baseUrl = 'http://localhost:3000';
+        const profilePictureUrl = user.profilePicture
+            ? `${baseUrl}${user.profilePicture}`
+            : null;
+
+        res.status(200).json({
+            id: user.id,
+            name: user.name,
+            bio: user.bio,
+            profilePicture: profilePictureUrl, // Return the full URL
+        });
     } catch (error) {
         console.error('Error retrieving user profile:', error);
-        return res.status(401).json({ message: 'Invalid or expired token' });
+        res.status(500).json({ message: 'Internal Server Error' });
     }
 });
 
 // Endpoint to update profile
 router.put('/edit-profile', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
-    console.log('Request user:', req.user);
     try {
         if (!req.user) {
             return res.status(401).json({ message: 'Unauthorized: User not authenticated' });

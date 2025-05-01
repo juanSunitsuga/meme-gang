@@ -18,8 +18,6 @@ function App() {
         <div className="App">
             <button onClick={() => navigate('/settings')}>Settings</button>
             <button onClick={() => navigate('/login')}>Login</button>
-            <button onClick={() => navigate('/register')}>Register</button>
-
             <form onSubmit={handleSearchSubmit} style={{ display: 'inline' }}>
                 <input
                     type="text"
@@ -33,7 +31,6 @@ function App() {
             <Routes>
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
                 <Route path="/search" element={<SearchForm />} />
             </Routes>
         </div>

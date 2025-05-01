@@ -31,6 +31,7 @@ const sequelize = new Sequelize({
 
 app.use('/auth', registerLoginRoutes);
 app.use('/profile', profileRoutes);
+app.use('/uploads',)
 app.use('/api', searchRoutes);
 
 app.use((req, res) => {
