@@ -8,10 +8,8 @@ import { Session } from '../models/Session';
 import { Tag } from '../models/Tag';
 import { UpvoteDownvote } from '../models/Upvote_Downvote_Post';
 import profileRoutes from './Profile';
-import authRoutes from './RegisterLogin';
-import userRoutes from './Profile';
 import registerLoginRoutes from './RegisterLogin';
-import authMiddleware from '../middleware/Auth';
+import searchRoutes from './Search';
 import config from '../config/config.json';
 import cors from 'cors';
 
@@ -33,6 +31,7 @@ const sequelize = new Sequelize({
 
 app.use('/auth', registerLoginRoutes);
 app.use('/profile', profileRoutes);
+app.use('/api', searchRoutes);
 
 app.use((req, res) => {
     res.status(404).json({ message: 'Route not found' });

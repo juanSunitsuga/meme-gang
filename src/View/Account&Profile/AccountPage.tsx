@@ -34,7 +34,6 @@ const AccountSettings = () => {
                 // Update state with fetched user data
                 setUsername(data.username);
                 setEmail(data.email);
-                setFollowThread(data.followThread || 'On');
             } catch (error) {
                 console.error('Error fetching user data:', error);
             } finally {
@@ -82,17 +81,6 @@ const AccountSettings = () => {
                         Verification sent to <strong>{email}</strong>, please open the link to verify your email. <br />
                         <span className="resend-link">Resend Verification Email</span>
                     </p>
-                </div>
-                <div className="form-group">
-                    <label htmlFor="follow-thread">Follow thread on reply</label>
-                    <select
-                        id="follow-thread"
-                        value={followThread}
-                        onChange={(e) => setFollowThread(e.target.value)}
-                    >
-                        <option value="On">On</option>
-                        <option value="Off">Off</option>
-                    </select>
                 </div>
                 <div className="form-actions">
                     <button type="submit" className="save-button">Save Changes</button>

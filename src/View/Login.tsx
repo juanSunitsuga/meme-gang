@@ -28,12 +28,10 @@ const Login: React.FC = () => {
             }
 
             const data = await response.json();
-            console.log('Token received:', data.token);
             localStorage.setItem('token', data.token); 
             alert('Login successful!');
             navigate('/settings');
         } catch (error) {
-            console.error('Error during login:', error);
             alert('An error occurred during login. Please try again later.');
         }
     };

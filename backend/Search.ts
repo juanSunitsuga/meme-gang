@@ -1,59 +1,51 @@
 import { Request, Response, NextFunction } from 'express';
-import { Sequelize } from 'sequelize-typescript';
 import { Op } from 'sequelize';
 import { User } from '../models/User';
-import { Router } from 'express';
-import multer from 'multer';
-import fs from 'fs';
-import path from 'path';
+import { Post } from '../models/Post';
+import { Tag } from '../models/Tag';
+import express from 'express';
 import bodyParser from 'body-parser';
 
-
-const router = Router();
+const router = express.Router();
 router.use(bodyParser.json());
 
 // Endpoint to get user profile
 router.get('/search', async (req: Request, res: Response) => {
-    try {
-        const { name } = req.query;
+    const { query } = req.query;
 
-        let whereClause: any = {};
-
-        if (name) {
-            whereClause.username = { [Op.iLike]: `%${name}%` }; // Case-insensitive search for username
-        }
-
-        const users = await User.findAll({ where: whereClause });
-        res.status(200).json(users);
-    } catch (error) {
-        console.error('Error searching for users:', error);
-        res.status(500).json({ message: 'An error occurred while searching for users' });
-    }
-});
-
-// Endpoint to get the logged-in user's profile
-router.get('/profile', async (req, res) => {
-    const token = req.headers['authorization']?.split(' ')[1];
-
-    if (!token) {
-        return res.status(401).json({ message: 'No token provided' });
+    if (!query) {
+        return res.status(400).json({ message: 'Query parameter is required' });
     }
 
     try {
-        const decoded = jwt.verify(token, 'meme-gang-lover') as { id: string };
-
-        const user = await User.findOne({
-            where: { id: decoded.id },
-            attributes: ['profilePicture', 'name', 'bio'],
+        // Search for matching usernames, post titles, or tags
+        const userResults = await User.findAll({
+            where: {
+                username: { [Op.iLike]: `%${query}%` }, // Case-insensitive search for usernames
+            },
         });
 
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
+        const postResults = await Post.findAll({
+            where: {
+                title: { [Op.iLike]: `%${query}%` }, // Case-insensitive search for post titles
+            },
+        });
 
-        return res.status(200).json(user);
+        const tagResults = await Tag.findAll({
+            where: {
+                name: { [Op.iLike]: `%${query}%` }, // Case-insensitive search for tags
+            },
+        });
+
+        res.status(200).json({
+            users: userResults,
+            posts: postResults,
+            tags: tagResults,
+        });
     } catch (error) {
-        console.error('Error fetching profile data:', error);
-        return res.status(401).json({ message: 'Invalid or expired token' });
+        console.error('Error in search API:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
     }
 });
+
+export default router;

@@ -9,6 +9,8 @@ const Settings = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('Profile');
+    const [userData, setUserData] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     // Session checker
     useEffect(() => {
@@ -16,12 +18,9 @@ const Settings = () => {
             try {
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    console.error('No token found. Redirecting to login.');
                     navigate('/login');
                     return;
                 }
-                console.log('Token being sent:', token);
-
                 const response = await fetch('http://localhost:3000/auth/session', {
                     method: 'GET',
                     headers: {
@@ -30,18 +29,56 @@ const Settings = () => {
                 });
 
                 if (!response.ok) {
-                    console.error('Session invalid or expired');
+                    alert('Session invalid or expired');
                     localStorage.removeItem('token'); // Clear invalid token
                     navigate('/login');
                 }
             } catch (error) {
-                console.error('Error checking session:', error);
                 navigate('/login');
             }
         };
 
         checkSession();
     }, [navigate]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('You are not logged in. Please log in.');
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/profile/me', {
+                    method: 'GET',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        alert('You are not logged in. Please log in again.');
+                    } else {
+                        alert('Failed to fetch data. Please try again later.');
+                    }
+                    setLoading(false);
+                    return;
+                }
+
+                const data = await response.json();
+                setUserData(data);
+            } catch (error) {
+                alert('Failed to fetch data. Please check your connection.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -68,6 +105,14 @@ const Settings = () => {
         }
     };
 
+    if (loading) {
+        return <div>Loading...</div>;
+    }
+
+    if (!userData) {
+        return <div>No user data available.</div>;
+    }
+
     return (
         <div className="settings-container">
             <aside className="sidebar">
@@ -86,6 +131,7 @@ const Settings = () => {
                 </nav>
             </aside>
             <main className="settings-content">
+                {/* Add more user details as needed */}
                 {renderContent()}
             </main>
         </div>

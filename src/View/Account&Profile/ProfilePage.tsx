@@ -12,28 +12,34 @@ const ProfileSettings = () => {
             try {
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    alert('You are not logged in. Please log in again.');
+                    alert('You are not logged in. Please log in.');
                     return;
                 }
-        
+
                 const response = await fetch('http://localhost:3000/profile/me', {
                     method: 'GET',
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
                 });
-        
+
                 if (!response.ok) {
-                    alert('Failed to fetch profile data.');
+                    if (response.status === 401) {
+                        // Handle session expiration
+                        alert('Session expired. Please log in again.');
+                        localStorage.removeItem('token'); // Clear the token
+                        window.location.href = '/login'; // Redirect to login page
+                    } else {
+                        alert('Failed to fetch profile data.');
+                    }
                     return;
                 }
-        
+
                 const data = await response.json();
-                console.log('Fetched profile data:', data);
                 setName(data.name || '');
                 setBio(data.bio || '');
             } catch (error) {
-                console.error('Error fetching profile data:', error);
+                alert('An error occurred while fetching profile data. Please try again later.');
             } finally {
                 setLoading(false);
             }
