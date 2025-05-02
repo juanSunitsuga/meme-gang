@@ -30,10 +30,9 @@ const sequelize = new Sequelize({
     models: [Comment, Post, User, SavedPost, Session, Tag, UpvoteDownvote],
 });
 
-
 app.use('/auth', registerLoginRoutes);
 app.use('/profile', profileRoutes);
-app.use('/post/:postId/comments', commentsRoutes);
+app.use('/post/:postId/comments', commentsRoutes); 
 app.use('/comments/:commentsId/replies', commentReplyRoutes); 
 
 app.use((req, res) => {
