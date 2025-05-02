@@ -9,6 +9,8 @@ import { Tag } from '../models/Tag';
 import { UpvoteDownvote } from '../models/Upvote_Downvote_Post';
 import profileRoutes from './Profile';
 import registerLoginRoutes from './RegisterLogin';
+import commentsRoutes from './Comments';
+import commentReplyRoutes from './CommentsReply';
 import searchRoutes from './Search';
 import config from '../config/config.json';
 import cors from 'cors';
@@ -31,7 +33,8 @@ const sequelize = new Sequelize({
 
 app.use('/auth', registerLoginRoutes);
 app.use('/profile', profileRoutes);
-app.use('/api', searchRoutes);
+app.use('/post/:postId/comments', commentsRoutes);
+app.use('/comments/:commentsId/replies', commentReplyRoutes); 
 
 app.use((req, res) => {
     res.status(404).json({ message: 'Route not found' });
