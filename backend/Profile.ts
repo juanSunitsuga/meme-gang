@@ -1,9 +1,7 @@
-import express from 'express';
 import { Request, Response, NextFunction } from 'express';
 import { Sequelize } from 'sequelize-typescript';
 import { Op } from 'sequelize';
 import { User } from '../models/User';
-import { Session } from '../models/Session';
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
 import multer from 'multer';
@@ -11,6 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import bodyParser from 'body-parser';
 import authMiddleware from '../middleware/Auth';
+import jwt from 'jsonwebtoken';
 
 declare global {
     namespace Express {
@@ -27,7 +26,11 @@ router.use(bodyParser.json());
 // Configure multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // Directory to store uploaded files
+        const uploadDir = path.join(__dirname, '../../uploads');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir); // Directory to store uploaded files
     },
     filename: (req, file, cb) => {
         cb(null, `${Date.now()}-${file.originalname}`);
@@ -35,54 +38,56 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+// Endpoint to retrieve a user by ID
+router.get('/me', async (req: Request, res: Response) => {
+    const authHeader = req.headers.authorization;
 
-
-// Endpoint to get user profile
-router.get('/search', async (req: Request, res: Response) => {
-    try {
-        const { username, email } = req.query;
-
-        let whereClause: any = {};
-
-        if (username) {
-            whereClause.username = { [Op.iLike]: `%${username}%` }; // Case-insensitive search for username
-        }
-
-        const users = await User.findAll({ where: whereClause });
-        res.status(200).json(users);
-    } catch (error) {
-        console.error('Error searching for users:', error);
-        res.status(500).json({ message: 'An error occurred while searching for users' });
+    if (!authHeader) {
+        return res.status(401).json({ message: 'Authorization header missing' });
     }
-});
 
-router.get('/:id', async (req: Request, res: Response) => {
+    const token = authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ message: 'Token missing' });
+    }
+
     try {
-        const user = await User.findByPk(req.params.id);
+        const decoded = jwt.verify(token, 'meme-gang-lover') as { id: string };
 
-        if (user) {
-            res.status(200).json(user);
-        } else {
-            res.status(404).json({ message: 'User not found' });
+        const user = await User.findOne({
+            where: { id: decoded.id },
+            attributes: ['username', 'email', 'profilePicture', 'name', 'bio'],
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
         }
+
+        return res.status(200).json(user);
     } catch (error) {
-        console.error('Error retrieving user by ID:', error);
-        res.status(500).json({ message: 'An error occurred while retrieving the user' });
+        console.error('Error retrieving user profile:', error);
+        return res.status(401).json({ message: 'Invalid or expired token' });
     }
 });
 
 // Endpoint to update profile
-router.post('/edit-profile', async (req: Request, res: Response, next: NextFunction) => {
+router.put('/edit-profile', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+    console.log('Request user:', req.user);
     try {
-        const { id } = req.user!;
-        const { displayName, bio } = req.body;
+        if (!req.user) {
+            return res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+        }
+
+        const { id } = req.user;
+        const { name, bio } = req.body;
 
         const user = await User.findByPk(id);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        user.username = displayName || user.username;
+        user.name = name || user.username;
         user.bio = bio || user.bio;
 
         await user.save();
@@ -90,38 +95,39 @@ router.post('/edit-profile', async (req: Request, res: Response, next: NextFunct
         res.status(200).json({ message: 'Profile updated successfully', user });
     } catch (error) {
         console.error('Error updating profile:', error);
-        next(error);
+        res.status(500).json({ message: 'An error occurred while updating the profile' });
     }
 });
 
 // Endpoint to change password
-router.post('/change-password', authMiddleware, async (req: Request, res: Response) => {
-    try {
-        const { id } = req.user!;
-        const { oldPassword, newPassword, confirmPassword } = req.body;
+router.post('/change-password', async (req, res) => {
+    const token = req.headers['authorization']?.split(' ')[1];
 
-        const user = await User.findByPk(id);
+    if (!token) {
+        return res.status(401).json({ message: 'No token provided' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, 'meme-gang-lover') as { id: string };
+
+        const user = await User.findOne({ where: { id: decoded.id } });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+        const isPasswordValid = await bcrypt.compare(req.body.oldPassword, user.password);
         if (!isPasswordValid) {
             return res.status(400).json({ message: 'Old password is incorrect' });
         }
 
-        if (newPassword !== confirmPassword) {
-            return res.status(400).json({ message: 'New password and confirm password do not match' });
-        }
-
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        const hashedPassword = await bcrypt.hash(req.body.newPassword, 10);
         user.password = hashedPassword;
         await user.save();
 
-        res.status(200).json({ message: 'Password changed successfully' });
+        return res.status(200).json({ message: 'Password changed successfully' });
     } catch (error) {
-        console.error('Error changing password:', error);
-        res.status(500).json({ message: 'An error occurred while changing the password' });
+        console.error('Error in /change-password route:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 });
 
@@ -134,11 +140,11 @@ router.post('/upload-profile-picture', authMiddleware, upload.single('profilePic
             return res.status(404).json({ message: 'User not found' });
         }
 
-        if (!req.uploadedFile) {
+        if (!req.file) {
             return res.status(400).json({ message: 'No file uploaded' });
         }
 
-        const profilePicturePath = `/uploads/${req.uploadedFile.filename}`;
+        const profilePicturePath = `/uploads/${req.file.filename}`;
         user.profilePicture = profilePicturePath;
         await user.save();
 

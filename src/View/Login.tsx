@@ -1,14 +1,39 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const navigate = useNavigate();
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Email:', email);
-        console.log('Password:', password);
-        // Add your login logic here
+        handleLogin(email, password);
+    };
+
+    const handleLogin = async (email: string, password: string) => {
+        try {
+            const response = await fetch('http://localhost:3000/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                alert(`Login failed: ${errorData.message}`);
+                return;
+            }
+
+            const data = await response.json();
+            localStorage.setItem('token', data.token); 
+            alert('Login successful!');
+            navigate('/settings');
+        } catch (error) {
+            alert('An error occurred during login. Please try again later.');
+        }
     };
 
     return (

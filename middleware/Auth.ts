@@ -1,31 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import { Op } from 'sequelize';
 import jwt from 'jsonwebtoken';
 import { Session } from '../models/Session';
-import { CustomRequest } from '../types';
 
-// // Middleware to authenticate the user
-// const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
-//     const authHeader = req.headers['authorization'];
-//     const token = authHeader && authHeader.split(' ')[1];
-
-//     if (!token) {
-//         return res.status(401).json({ message: 'Access token is missing or invalid' });
-//     }
-
-//     try {
-//         const decoded: any = jwt.verify(token, JWT_SECRET);
-//         req.user = { id: decoded.id };
-//         next();
-//     } catch (error) {
-//         return res.status(403).json({ message: 'Invalid or expired token' });
-//     }
-// };
-
-const authMiddleware = async (req: CustomRequest, res: Response, next: NextFunction) => {
+const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+    console.log('Authorization Header:', req.headers.authorization);
+    console.log('Decoded Token:', req.user);
     const authHeader = req.headers.authorization;
-
-    console.log('Authorization Header:', authHeader);
 
     if (!authHeader) {
         return res.status(401).json({ message: 'Authorization header missing' });
@@ -38,26 +18,23 @@ const authMiddleware = async (req: CustomRequest, res: Response, next: NextFunct
     }
 
     try {
-        const decoded = jwt.verify(token, 'meme-gang-lover') as { id: number; username: string };
+        const decoded = jwt.verify(token, 'meme-gang-lover') as { id: string };
 
-        // Check if the token exists in the Authorization table and is not expired
-        const authorization = await Session.findOne({
-            where: {
-                token,
-                userId: decoded.id,
-                expiresAt: {
-                    [Op.gt]: new Date(),
-                },
-            },
+        // Optionally, check if the token exists in the Session table
+        const session = await Session.findOne({
+            where: { token, userId: decoded.id },
         });
 
-        if (!authorization) {
-            return res.status(401).json({ message: 'Invalid or expired token' });
+        if (!session) {
+            return res.status(401).json({ message: 'Invalid or expired session' });
         }
 
-        req.user = decoded;
+        req.user = { id: decoded.id }; // Set `req.user` with the decoded token information
         next();
-    } catch (error) {
+    } catch (error: any) {
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ message: 'Token expired', expiredAt: error.expiredAt });
+        }
         return res.status(401).json({ message: 'Invalid token' });
     }
 };

@@ -1,36 +1,43 @@
-<<<<<<< HEAD
-import { useState } from "react";
-import { RouterProvider } from "react-router";
-import { router } from "./config/router";
-
-function App() {
-  return <RouterProvider router={router}></RouterProvider>;
-=======
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import Settings from './View/Settings';
 import Login from './View/Login';
 import Register from './View/Register';
-// other imports...
+import SearchForm from './View/SearchForm';
 
 function App() {
-  const navigate = useNavigate();
+    const navigate = useNavigate();
+    const [searchQuery, setSearchQuery] = useState('');
 
-  return (
-    <div className="App">
-      <button onClick={() => navigate('/settings')}>Settings</button>
-      <button onClick={() => navigate('/login')}>Login</button>
-      <button onClick={() => navigate('/register')}>Register</button>
-      {/* other buttons */}
+    const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        navigate(`/search?query=${encodeURIComponent(searchQuery)}`);
+    };
 
-      <Routes>
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        {/* other routes */}
-      </Routes>
-    </div>
-  );
->>>>>>> 73bafcbdb53abff3e9d1f34d4de0793c8b83ae11
+    return (
+        <div className="App">
+            <button onClick={() => navigate('/settings')}>Settings</button>
+            <button onClick={() => navigate('/login')}>Login</button>
+            <button onClick={() => navigate('/register')}>Register</button>
+
+            <form onSubmit={handleSearchSubmit} style={{ display: 'inline' }}>
+                <input
+                    type="text"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <button type="submit">Search</button>
+            </form>
+
+            <Routes>
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/search" element={<SearchForm />} />
+            </Routes>
+        </div>
+    );
 }
 
 export default App;

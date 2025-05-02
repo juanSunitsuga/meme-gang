@@ -24,7 +24,7 @@ export default {
         allowNull: false,
         defaultValue: Sequelize.NOW,
       },
-      expiretAt: {
+      expireAt: {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.NOW,
