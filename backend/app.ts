@@ -14,6 +14,7 @@ import commentReplyRoutes from './CommentsReply';
 import searchRoutes from './Search';
 import config from '../config/config.json';
 import cors from 'cors';
+import error from '../middleware/errorHandler';
 
 const app = express();
 
@@ -31,6 +32,7 @@ const sequelize = new Sequelize({
 });
 
 app.use('/auth', registerLoginRoutes);
+app.use(error)
 app.use('/profile', profileRoutes);
 app.use('/post/:postId/comments', commentsRoutes); 
 app.use('/comments/:commentsId/replies', commentReplyRoutes); 
