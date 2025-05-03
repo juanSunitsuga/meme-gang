@@ -1,36 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import '../style/Profile.css';
+import { fetchEndpoint } from '../FetchEndpoint';
+import { Alert, AlertTitle } from '@mui/material';
 
 const ProfileSettings = () => {
     const [name, setName] = useState('');
     const [bio, setBio] = useState('');
     const [avatar, setAvatar] = useState<File | null>(null);
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
+    const [alertSeverity, setAlertSeverity] = useState<'success' | 'error' | null>(null);
 
     useEffect(() => {
         const fetchProfileData = async () => {
             try {
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    alert('You are not logged in. Please log in.');
+                    setAlertMessage('You are not logged in. Please log in.');
+                    setAlertSeverity('error');
                     return;
                 }
 
-                const response = await fetch('http://localhost:3000/profile/me', {
-                    method: 'GET',
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
+                const response = await fetchEndpoint('profile/me', 'GET', token);
 
                 if (!response.ok) {
                     if (response.status === 401) {
-                        // Handle session expiration
-                        alert('Session expired. Please log in again.');
-                        localStorage.removeItem('token'); // Clear the token
-                        window.location.href = '/login'; // Redirect to login page
+                        setAlertMessage('Session expired. Please log in again.');
+                        setAlertSeverity('error');
+                        localStorage.removeItem('token');
+                        window.location.href = '/login';
                     } else {
-                        alert('Failed to fetch profile data.');
+                        setAlertMessage('Failed to fetch profile data.');
+                        setAlertSeverity('error');
                     }
                     return;
                 }
@@ -38,8 +40,10 @@ const ProfileSettings = () => {
                 const data = await response.json();
                 setName(data.name || '');
                 setBio(data.bio || '');
+                setAvatarUrl('../../..' + data.profilePicture || null);
             } catch (error) {
-                alert('An error occurred while fetching profile data. Please try again later.');
+                setAlertMessage('An error occurred while fetching profile data. Please try again later.');
+                setAlertSeverity('error');
             } finally {
                 setLoading(false);
             }
@@ -54,74 +58,73 @@ const ProfileSettings = () => {
         }
     };
 
-    const handleUpload = async (file: File) => {
+    const handleUpload = async () => {
+        if (!avatar) {
+            setAlertMessage('Please select a file to upload.');
+            setAlertSeverity('error');
+            return;
+        }
+
         const formData = new FormData();
-        formData.append('profilePicture', file);
+        formData.append('profilePicture', avatar);
 
         try {
             const token = localStorage.getItem('token');
             if (!token) {
-                alert('You are not logged in. Please log in again.');
+                setAlertMessage('You are not logged in. Please log in again.');
+                setAlertSeverity('error');
                 return;
             }
 
-            const response = await fetch('http://localhost:3000/profile/upload-profile-picture', {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-                body: formData,
-            });
+            const response = await fetchEndpoint('profile/upload-profile-picture', 'POST', token, formData);
 
             if (!response.ok) {
                 const errorData = await response.json();
-                alert(`Failed to upload profile picture: ${errorData.message}`);
+                setAlertMessage(`Failed to upload profile picture: ${errorData.message}`);
+                setAlertSeverity('error');
                 return;
             }
 
             const data = await response.json();
-            alert('Profile picture uploaded successfully!');
-            console.log('Uploaded profile picture:', data.profilePicture);
+            setAlertMessage('Profile picture uploaded successfully!');
+            setAlertSeverity('success');
+            setAvatarUrl(`http://localhost:3000${data.profilePicture}`);
         } catch (error) {
-            console.error('Error uploading profile picture:', error);
-            alert('An error occurred while uploading the profile picture.');
+            setAlertMessage('An error occurred while uploading the profile picture.');
+            setAlertSeverity('error');
         }
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-    
+
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
             if (!token) {
-                alert('You are not logged in. Please log in again.');
+                setAlertMessage('You are not logged in. Please log in again.');
+                setAlertSeverity('error');
                 return;
             }
-    
-            const response = await fetch('http://localhost:3000/profile/edit-profile', {
-                method: 'PUT',
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ name, bio }),
-            });
-    
+
+            const response = await fetchEndpoint('profile/edit-profile', 'PUT', token, { name, bio });
+
             if (!response.ok) {
                 const errorData = await response.json().catch(() => {
                     throw new Error('Unexpected response format');
                 });
-                alert(`Failed to update profile: ${errorData.message}`);
+                setAlertMessage(`Failed to update profile: ${errorData.message}`);
+                setAlertSeverity('error');
                 return;
             }
-    
+
             const data = await response.json();
-            alert('Profile updated successfully!');
-            console.log('Updated profile:', data);
+            setAlertMessage('Profile updated successfully!');
+            setAlertSeverity('success');
         } catch (error) {
             console.error('Error updating profile:', error);
-            alert('An error occurred while updating the profile. Please try again later.');
+            setAlertMessage('An error occurred while updating the profile. Please try again later.');
+            setAlertSeverity('error');
         } finally {
             setLoading(false);
         }
@@ -130,16 +133,32 @@ const ProfileSettings = () => {
     return (
         <main className="profile-edit-container max-w-3xl mx-auto p-6">
             <h2>Profile</h2>
+            {alertMessage && alertSeverity && (
+                <Alert severity={alertSeverity} sx={{ mb: 2 }}>
+                    <AlertTitle>{alertSeverity === 'success' ? 'Success' : 'Error'}</AlertTitle>
+                    {alertMessage}
+                </Alert>
+            )}
             <form onSubmit={handleSubmit}>
                 <div className="form-group">
                     <label>Avatar</label>
                     <div className="avatar-section">
                         {avatar ? (
                             <img src={URL.createObjectURL(avatar)} alt="Avatar" className="avatar-preview" />
+                        ) : avatarUrl ? (
+                            <img src={avatarUrl} alt="Avatar" className="avatar-preview" />
                         ) : (
                             <img src="../../uploads/default-avatar.jpg" alt="Default Avatar" className="avatar-preview" />
                         )}
                         <input type="file" onChange={handleAvatarChange} />
+                        <button
+                            type="button"
+                            className="upload-button"
+                            onClick={handleUpload}
+                            disabled={loading}
+                        >
+                            {loading ? 'Uploading...' : 'Upload Picture'}
+                        </button>
                     </div>
                     <small>JPG, GIF or PNG, Max size: 10MB</small>
                 </div>

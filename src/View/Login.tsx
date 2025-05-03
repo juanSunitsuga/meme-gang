@@ -62,6 +62,19 @@ const Login: React.FC = () => {
                         required
                     />
                 </div>
+                <div style={{ textAlign: 'center', marginBottom: '15px' }}>
+                    <span>Don't have an account? </span>
+                    <a 
+                        href="/register" 
+                        style={{ color: '#007BFF', textDecoration: 'none' }}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            navigate('/register');
+                        }}
+                    >
+                        Register
+                    </a>
+                </div>
                 <button type="submit" style={{ width: '100%', padding: '10px', backgroundColor: '#007BFF', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
                     Login
                 </button>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { fetchEndpoint } from './FetchEndpoint';
 
 const SearchForm = () => {
     const [searchParams] = useSearchParams();
@@ -21,7 +22,7 @@ const SearchForm = () => {
 
     const fetchResults = async (query: string) => {
         try {
-            const response = await fetch(`http://localhost:3000/api/search?query=${encodeURIComponent(query)}`);
+            const response = await fetchEndpoint(`search?query=${encodeURIComponent(query)}`, 'GET', null);
             if (!response.ok) {
                 throw new Error('Failed to fetch search results');
             }
