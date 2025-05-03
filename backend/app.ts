@@ -9,9 +9,12 @@ import { Tag } from '../models/Tag';
 import { UpvoteDownvote } from '../models/Upvote_Downvote_Post';
 import profileRoutes from './Profile';
 import registerLoginRoutes from './RegisterLogin';
+import commentsRoutes from './Comments';
+import commentReplyRoutes from './CommentsReply';
 import searchRoutes from './Search';
 import config from '../config/config.json';
 import cors from 'cors';
+import error from '../middleware/errorHandler';
 
 const app = express();
 
@@ -28,11 +31,16 @@ const sequelize = new Sequelize({
     models: [Comment, Post, User, SavedPost, Session, Tag, UpvoteDownvote],
 });
 
-
 app.use('/auth', registerLoginRoutes);
+app.use(error)
 app.use('/profile', profileRoutes);
+<<<<<<< HEAD
 app.use('/uploads',)
 app.use('/api', searchRoutes);
+=======
+app.use('/post/:postId/comments', commentsRoutes); 
+app.use('/comments/:commentsId/replies', commentReplyRoutes); 
+>>>>>>> 596818f9673390bb8e659a5cff746e52e34e5edf
 
 app.use((req, res) => {
     res.status(404).json({ message: 'Route not found' });

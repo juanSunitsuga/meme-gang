@@ -1,8 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
+import { Router, Request, Response } from 'express';
 import { Sequelize } from 'sequelize-typescript';
 import { Op } from 'sequelize';
 import { User } from '../models/User';
-import { Router } from 'express';
 import bcrypt from 'bcrypt';
 import multer from 'multer';
 import fs from 'fs';
@@ -44,13 +43,32 @@ const upload = multer({ storage });
 
 // Endpoint to retrieve a user by ID
 router.get('/me', async (req: Request, res: Response) => {
+<<<<<<< HEAD
+=======
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+        res.status(401).json({ message: 'Authorization header missing' });
+        return 
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    if (!token) {
+        res.status(401).json({ message: 'Token missing' });
+        return 
+    }
+
+>>>>>>> 596818f9673390bb8e659a5cff746e52e34e5edf
     try {
         const { id } = req.user!;
         const user = await User.findByPk(id);
 
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            res.status(404).json({ message: 'User not found' });
+            return 
         }
+<<<<<<< HEAD
 
         // Prepend the base URL to the profilePicture field
         const baseUrl = 'http://localhost:3000';
@@ -67,14 +85,28 @@ router.get('/me', async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Error retrieving user profile:', error);
         res.status(500).json({ message: 'Internal Server Error' });
+=======
+        res.status(200).json(user);
+        return 
+    } catch (error) {
+        console.error('Error retrieving user profile:', error);
+        res.status(401).json({ message: 'Invalid or expired token' });
+        return 
+>>>>>>> 596818f9673390bb8e659a5cff746e52e34e5edf
     }
 });
 
 // Endpoint to update profile
+<<<<<<< HEAD
 router.put('/edit-profile', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+=======
+router.put('/edit-profile', authMiddleware, async (req: Request, res: Response) => {
+    console.log('Request user:', req.user);
+>>>>>>> 596818f9673390bb8e659a5cff746e52e34e5edf
     try {
         if (!req.user) {
-            return res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            return 
         }
 
         const { id } = req.user;
@@ -82,15 +114,16 @@ router.put('/edit-profile', authMiddleware, async (req: Request, res: Response, 
 
         const user = await User.findByPk(id);
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            res.status(404).json({ message: 'User not found' });
+            return 
         }
 
         user.name = name || user.username;
         user.bio = bio || user.bio;
 
         await user.save();
-
         res.status(200).json({ message: 'Profile updated successfully', user });
+
     } catch (error) {
         console.error('Error updating profile:', error);
         res.status(500).json({ message: 'An error occurred while updating the profile' });
@@ -98,11 +131,12 @@ router.put('/edit-profile', authMiddleware, async (req: Request, res: Response, 
 });
 
 // Endpoint to change password
-router.post('/change-password', async (req, res) => {
+router.post('/change-password', async (req: Request, res: Response) => {
     const token = req.headers['authorization']?.split(' ')[1];
 
     if (!token) {
-        return res.status(401).json({ message: 'No token provided' });
+        res.status(401).json({ message: 'No token provided' });
+        return 
     }
 
     try {
@@ -110,22 +144,26 @@ router.post('/change-password', async (req, res) => {
 
         const user = await User.findOne({ where: { id: decoded.id } });
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            res.status(404).json({ message: 'User not found' });
+            return 
         }
 
         const isPasswordValid = await bcrypt.compare(req.body.oldPassword, user.password);
         if (!isPasswordValid) {
-            return res.status(400).json({ message: 'Old password is incorrect' });
+            res.status(400).json({ message: 'Old password is incorrect' });
+            return 
         }
 
         const hashedPassword = await bcrypt.hash(req.body.newPassword, 10);
         user.password = hashedPassword;
         await user.save();
 
-        return res.status(200).json({ message: 'Password changed successfully' });
+        res.status(200).json({ message: 'Password changed successfully' });
+        return 
     } catch (error) {
         console.error('Error in /change-password route:', error);
-        return res.status(500).json({ message: 'Internal Server Error' });
+        res.status(500).json({ message: 'Internal Server Error' });
+        return 
     }
 });
 
@@ -135,11 +173,13 @@ router.post('/upload-profile-picture', authMiddleware, upload.single('profilePic
         const { id } = req.user!;
         const user = await User.findByPk(id);
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            res.status(404).json({ message: 'User not found' });
+            return 
         }
 
         if (!req.file) {
-            return res.status(400).json({ message: 'No file uploaded' });
+            res.status(400).json({ message: 'No file uploaded' });
+            return 
         }
 
         const profilePicturePath = `/uploads/${req.file.filename}`;
@@ -159,11 +199,13 @@ router.delete('/delete-profile-picture', authMiddleware, async (req: Request, re
         const { id } = req.user!;
         const user = await User.findByPk(id);
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            res.status(404).json({ message: 'User not found' });
+            return 
         }
 
         if (!user.profilePicture) {
-            return res.status(400).json({ message: 'No profile picture to delete' });
+            res.status(400).json({ message: 'No profile picture to delete' });
+            return 
         }
 
         const filePath = path.join(__dirname, '../../public', user.profilePicture);
