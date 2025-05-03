@@ -13,6 +13,7 @@ import searchRoutes from './Search';
 import config from '../config/config.json';
 import cors from 'cors';
 import error from '../middleware/errorHandler';
+import postRoutes from './post';
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use('/auth', registerLoginRoutes);
 app.use(error)
 app.use('/profile', profileRoutes);
 app.use('/api', searchRoutes);
+app.use('/post', postRoutes);
 
 app.use((req, res) => {
     res.status(404).json({ message: 'Route not found' });
