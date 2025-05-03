@@ -1,30 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import '../style/Profile.css';
+import { fetchEndpoint } from '../FetchEndpoint';
+import { Alert, AlertTitle } from '@mui/material';
 
 const AccountSettings = () => {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [followThread, setFollowThread] = useState('On');
     const [loading, setLoading] = useState(true);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
+    const [alertSeverity, setAlertSeverity] = useState<'success' | 'error' | null>(null);
 
     useEffect(() => {
         const fetchUserData = async () => {
             try {
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    console.error('No token found. Redirecting to login.');
+                    setAlertMessage('No token found. Redirecting to login.');
+                    setAlertSeverity('error');
+                    window.location.href = '/login';
                     return;
                 }
 
-                const response = await fetch('http://localhost:3000/profile/me', {
-                    method: 'GET',
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
+                const response = await fetchEndpoint('profile/me', 'GET', token);
 
                 if (!response.ok) {
-                    console.error('Failed to fetch user data');
+                    setAlertMessage('Failed to fetch user data.');
+                    setAlertSeverity('error');
                     return;
                 }
 
@@ -36,6 +38,8 @@ const AccountSettings = () => {
                 setEmail(data.email);
             } catch (error) {
                 console.error('Error fetching user data:', error);
+                setAlertMessage('An error occurred while fetching user data.');
+                setAlertSeverity('error');
             } finally {
                 setLoading(false);
             }
@@ -47,7 +51,8 @@ const AccountSettings = () => {
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         console.log({ username, email, followThread });
-        alert('Changes saved successfully!');
+        setAlertMessage('Changes saved successfully!');
+        setAlertSeverity('success');
     };
 
     if (loading) {
@@ -57,6 +62,15 @@ const AccountSettings = () => {
     return (
         <div className="profile-edit-container max-w-3xl mx-auto p-6">
             <h2>Account</h2>
+
+            {/* Alert Section */}
+            {alertMessage && alertSeverity && (
+                <Alert severity={alertSeverity} sx={{ mb: 2 }}>
+                    <AlertTitle>{alertSeverity === 'success' ? 'Success' : 'Error'}</AlertTitle>
+                    {alertMessage}
+                </Alert>
+            )}
+
             <form onSubmit={handleSubmit}>
                 <div className="form-group">
                     <label htmlFor="username">Username</label>

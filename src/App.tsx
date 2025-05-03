@@ -19,12 +19,8 @@ function App() {
         <div className="App">
             <button onClick={() => navigate('/settings')}>Settings</button>
             <button onClick={() => navigate('/login')}>Login</button>
-<<<<<<< HEAD
-=======
             <button onClick={() => navigate('/register')}>Register</button>
             <button onClick={() => navigate('/comments')}>View Comments</button>
-
->>>>>>> 596818f9673390bb8e659a5cff746e52e34e5edf
             <form onSubmit={handleSearchSubmit} style={{ display: 'inline' }}>
                 <input
                     type="text"

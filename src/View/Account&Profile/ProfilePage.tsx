@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../style/Profile.css';
+import { fetchEndpoint } from '../FetchEndpoint';
+import { Alert, AlertTitle } from '@mui/material';
 
 const ProfileSettings = () => {
     const [name, setName] = useState('');
@@ -7,30 +9,30 @@ const ProfileSettings = () => {
     const [avatar, setAvatar] = useState<File | null>(null);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [alertMessage, setAlertMessage] = useState<string | null>(null);
+    const [alertSeverity, setAlertSeverity] = useState<'success' | 'error' | null>(null);
 
     useEffect(() => {
         const fetchProfileData = async () => {
             try {
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    alert('You are not logged in. Please log in.');
+                    setAlertMessage('You are not logged in. Please log in.');
+                    setAlertSeverity('error');
                     return;
                 }
 
-                const response = await fetch('http://localhost:3000/profile/me', {
-                    method: 'GET',
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
+                const response = await fetchEndpoint('profile/me', 'GET', token);
 
                 if (!response.ok) {
                     if (response.status === 401) {
-                        alert('Session expired. Please log in again.');
+                        setAlertMessage('Session expired. Please log in again.');
+                        setAlertSeverity('error');
                         localStorage.removeItem('token');
                         window.location.href = '/login';
                     } else {
-                        alert('Failed to fetch profile data.');
+                        setAlertMessage('Failed to fetch profile data.');
+                        setAlertSeverity('error');
                     }
                     return;
                 }
@@ -40,7 +42,8 @@ const ProfileSettings = () => {
                 setBio(data.bio || '');
                 setAvatarUrl('../../..' + data.profilePicture || null);
             } catch (error) {
-                alert('An error occurred while fetching profile data. Please try again later.');
+                setAlertMessage('An error occurred while fetching profile data. Please try again later.');
+                setAlertSeverity('error');
             } finally {
                 setLoading(false);
             }
@@ -57,7 +60,8 @@ const ProfileSettings = () => {
 
     const handleUpload = async () => {
         if (!avatar) {
-            alert('Please select a file to upload.');
+            setAlertMessage('Please select a file to upload.');
+            setAlertSeverity('error');
             return;
         }
 
@@ -67,29 +71,27 @@ const ProfileSettings = () => {
         try {
             const token = localStorage.getItem('token');
             if (!token) {
-                alert('You are not logged in. Please log in again.');
+                setAlertMessage('You are not logged in. Please log in again.');
+                setAlertSeverity('error');
                 return;
             }
 
-            const response = await fetch('http://localhost:3000/profile/upload-profile-picture', {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-                body: formData,
-            });
+            const response = await fetchEndpoint('profile/upload-profile-picture', 'POST', token, formData);
 
             if (!response.ok) {
                 const errorData = await response.json();
-                alert(`Failed to upload profile picture: ${errorData.message}`);
+                setAlertMessage(`Failed to upload profile picture: ${errorData.message}`);
+                setAlertSeverity('error');
                 return;
             }
 
             const data = await response.json();
-            alert('Profile picture uploaded successfully!');
-            setAvatarUrl(`http://localhost:3000${data.profilePicture}`); // Update the avatar URL after successful upload
+            setAlertMessage('Profile picture uploaded successfully!');
+            setAlertSeverity('success');
+            setAvatarUrl(`http://localhost:3000${data.profilePicture}`);
         } catch (error) {
-            alert('An error occurred while uploading the profile picture.');
+            setAlertMessage('An error occurred while uploading the profile picture.');
+            setAlertSeverity('error');
         }
     };
 
@@ -100,32 +102,29 @@ const ProfileSettings = () => {
             setLoading(true);
             const token = localStorage.getItem('token');
             if (!token) {
-                alert('You are not logged in. Please log in again.');
+                setAlertMessage('You are not logged in. Please log in again.');
+                setAlertSeverity('error');
                 return;
             }
 
-            const response = await fetch('http://localhost:3000/profile/edit-profile', {
-                method: 'PUT',
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ name, bio }),
-            });
+            const response = await fetchEndpoint('profile/edit-profile', 'PUT', token, { name, bio });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => {
                     throw new Error('Unexpected response format');
                 });
-                alert(`Failed to update profile: ${errorData.message}`);
+                setAlertMessage(`Failed to update profile: ${errorData.message}`);
+                setAlertSeverity('error');
                 return;
             }
 
             const data = await response.json();
-            alert('Profile updated successfully!');
+            setAlertMessage('Profile updated successfully!');
+            setAlertSeverity('success');
         } catch (error) {
             console.error('Error updating profile:', error);
-            alert('An error occurred while updating the profile. Please try again later.');
+            setAlertMessage('An error occurred while updating the profile. Please try again later.');
+            setAlertSeverity('error');
         } finally {
             setLoading(false);
         }
@@ -134,11 +133,16 @@ const ProfileSettings = () => {
     return (
         <main className="profile-edit-container max-w-3xl mx-auto p-6">
             <h2>Profile</h2>
+            {alertMessage && alertSeverity && (
+                <Alert severity={alertSeverity} sx={{ mb: 2 }}>
+                    <AlertTitle>{alertSeverity === 'success' ? 'Success' : 'Error'}</AlertTitle>
+                    {alertMessage}
+                </Alert>
+            )}
             <form onSubmit={handleSubmit}>
                 <div className="form-group">
                     <label>Avatar</label>
                     <div className="avatar-section">
-                        
                         {avatar ? (
                             <img src={URL.createObjectURL(avatar)} alt="Avatar" className="avatar-preview" />
                         ) : avatarUrl ? (

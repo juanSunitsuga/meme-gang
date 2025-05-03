@@ -43,8 +43,6 @@ const upload = multer({ storage });
 
 // Endpoint to retrieve a user by ID
 router.get('/me', async (req: Request, res: Response) => {
-<<<<<<< HEAD
-=======
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
@@ -58,8 +56,6 @@ router.get('/me', async (req: Request, res: Response) => {
         res.status(401).json({ message: 'Token missing' });
         return 
     }
-
->>>>>>> 596818f9673390bb8e659a5cff746e52e34e5edf
     try {
         const { id } = req.user!;
         const user = await User.findByPk(id);
@@ -68,7 +64,6 @@ router.get('/me', async (req: Request, res: Response) => {
             res.status(404).json({ message: 'User not found' });
             return 
         }
-<<<<<<< HEAD
 
         // Prepend the base URL to the profilePicture field
         const baseUrl = 'http://localhost:3000';
@@ -85,24 +80,12 @@ router.get('/me', async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Error retrieving user profile:', error);
         res.status(500).json({ message: 'Internal Server Error' });
-=======
-        res.status(200).json(user);
-        return 
-    } catch (error) {
-        console.error('Error retrieving user profile:', error);
-        res.status(401).json({ message: 'Invalid or expired token' });
-        return 
->>>>>>> 596818f9673390bb8e659a5cff746e52e34e5edf
     }
 });
 
 // Endpoint to update profile
-<<<<<<< HEAD
-router.put('/edit-profile', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
-=======
 router.put('/edit-profile', authMiddleware, async (req: Request, res: Response) => {
     console.log('Request user:', req.user);
->>>>>>> 596818f9673390bb8e659a5cff746e52e34e5edf
     try {
         if (!req.user) {
             res.status(401).json({ message: 'Unauthorized: User not authenticated' });

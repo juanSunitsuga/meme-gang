@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import '../style/Profile.css'; // Reuse the existing CSS
+import { fetchEndpoint } from '../FetchEndpoint';
 
 const PasswordPage = () => {
   const [oldPassword, setOldPassword] = useState('');
@@ -21,17 +22,8 @@ const PasswordPage = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:3000/profile/change-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          oldPassword,
-          newPassword,
-        }),
-      });
+      const response = await fetchEndpoint('profile/change-password', 'POST', token, { oldPassword, newPassword })
+
 
       if (!response.ok) {
         const errorData = await response.json();

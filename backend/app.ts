@@ -34,13 +34,10 @@ const sequelize = new Sequelize({
 app.use('/auth', registerLoginRoutes);
 app.use(error)
 app.use('/profile', profileRoutes);
-<<<<<<< HEAD
-app.use('/uploads',)
+// app.use('/uploads')
 app.use('/api', searchRoutes);
-=======
 app.use('/post/:postId/comments', commentsRoutes); 
 app.use('/comments/:commentsId/replies', commentReplyRoutes); 
->>>>>>> 596818f9673390bb8e659a5cff746e52e34e5edf
 
 app.use((req, res) => {
     res.status(404).json({ message: 'Route not found' });
