@@ -4,6 +4,7 @@ import Settings from './View/Settings';
 import Login from './View/Login';
 import Register from './View/Register';
 import SearchForm from './View/SearchForm';
+import ViewComments from './View/Comments/ViewComments';
 
 function App() {
     const navigate = useNavigate();
@@ -19,6 +20,7 @@ function App() {
             <button onClick={() => navigate('/settings')}>Settings</button>
             <button onClick={() => navigate('/login')}>Login</button>
             <button onClick={() => navigate('/register')}>Register</button>
+            <button onClick={() => navigate('/comments')}>View Comments</button>
 
             <form onSubmit={handleSearchSubmit} style={{ display: 'inline' }}>
                 <input
@@ -35,6 +37,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/search" element={<SearchForm />} />
+                <Route path="/comments/:commentsId" element={<ViewComments />} />
             </Routes>
         </div>
     );

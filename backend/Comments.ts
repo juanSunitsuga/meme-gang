@@ -3,6 +3,7 @@ import { Comment } from '../models/Comment';
 import { Post } from '../models/Post';
 import { User } from '../models/User';
 import authMiddleware from '../middleware/Auth';
+import { v4 } from 'uuid';
 
 const router = express.Router({ mergeParams: true }); // Supaya bisa akses :id dari parent route (/post/:id/comments)
 
@@ -27,18 +28,27 @@ router.get('/', async (req: Request, res: Response) => {
 // Buat komentar baru di suatu post
 router.post('/', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const { id: post_id } = req.params;
-    const { content } = req.body;
-    const user_id = req.user!.id;
+    const post_id  = req.params.id;
+    const content  = req.body;
+    const user_id = req.user?.id;
 
     const post = await Post.findByPk(post_id);
     if (!post) {
-      return res.status(404).json({ message: 'Post not found' });
+      res.status(404).json({ message: 'Post not found' });
+      return;
+    }
+    if (post.user_id !== user_id) {
+      res.status(403).json({ message: 'Unauthorized' });
+      return;
     }
 
-    const comment = await Comment.create({ content, post_id, user_id });
+    const comments = await Comment.create({
+        id : v4(), // Generate a unique ID for the comment 
+        user_id, 
+        content, 
+        post_id,  });
 
-    res.status(201).json({ message: 'Comment created', comment });
+    res.status(201).json({ message: 'Comment created', comments });
   } catch (error) {
     console.error('Error creating comment:', error);
     res.status(500).json({ message: 'Failed to create comment' });
@@ -48,17 +58,19 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
 // Edit komentar
 router.put('/:commentId', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const { commentId } = req.params;
-    const { content } = req.body;
+    const commentId  = req.params.id;
+    const content  = req.body;
     const user_id = req.user!.id;
 
     const comment = await Comment.findByPk(commentId);
     if (!comment) {
-      return res.status(404).json({ message: 'Comment not found' });
+      res.status(404).json({ message: 'Comment not found' });
+      return;
     }
 
     if (comment.user_id !== user_id) {
-      return res.status(403).json({ message: 'Not authorized to edit this comment' });
+      res.status(403).json({ message: 'Not authorized to edit this comment' });
+      return;
     }
 
     comment.content = content;
@@ -79,11 +91,13 @@ router.delete('/:commentId', authMiddleware, async (req: Request, res: Response)
 
     const comment = await Comment.findByPk(commentId);
     if (!comment) {
-      return res.status(404).json({ message: 'Comment not found' });
+      res.status(404).json({ message: 'Comment not found' });
+      return;
     }
 
     if (comment.user_id !== user_id) {
-      return res.status(403).json({ message: 'Not authorized to delete this comment' });
+      res.status(403).json({ message: 'Not authorized to delete this comment' });
+      return;
     }
 
     await comment.destroy();

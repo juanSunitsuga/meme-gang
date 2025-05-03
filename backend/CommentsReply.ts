@@ -13,7 +13,7 @@ router.get('/', async (req: Request, res: Response) => {
     const replies = await Comment.findAll({
       where: { reply_to },
       include: [{ model: User, attributes: ['username'] }],
-      order: [['createdAt', 'ASC']],
+      order: [['createdAt', 'DESC']],
     });
 
     res.status(200).json(replies);
@@ -32,7 +32,8 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
 
     const parentComment = await Comment.findByPk(reply_to);
     if (!parentComment) {
-      return res.status(404).json({ message: 'Parent comment not found' });
+      res.status(404).json({ message: 'Parent comment not found' });
+      return;
     }
 
     const reply = await Comment.create({
@@ -49,16 +50,17 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-// ✏️ Edit reply
+// Edit reply
 router.put('/:replyId', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const { replyId } = req.params;
+    const replyId = req.params.id;
     const { content } = req.body;
     const user_id = req.user!.id;
 
     const reply = await Comment.findByPk(replyId);
     if (!reply || reply.user_id !== user_id) {
-      return res.status(403).json({ message: 'Not authorized to edit this reply' });
+      res.status(403).json({ message: 'Not authorized to edit this reply' });
+      return;
     }
 
     reply.content = content;
@@ -71,15 +73,16 @@ router.put('/:replyId', authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-// ❌ Hapus reply
+// Hapus reply
 router.delete('/:replyId', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const { replyId } = req.params;
+    const replyId = req.params.id;
     const user_id = req.user!.id;
 
     const reply = await Comment.findByPk(replyId);
     if (!reply || reply.user_id !== user_id) {
-      return res.status(403).json({ message: 'Not authorized to delete this reply' });
+      res.status(403).json({ message: 'Not authorized to delete this reply' });
+      return;
     }
 
     await reply.destroy();
