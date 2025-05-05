@@ -1,21 +1,16 @@
 import express from 'express';
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { Sequelize } from 'sequelize-typescript';
-import { Op } from 'sequelize';
 import { User } from '../models/User';
 import { Post } from '../models/Post';
 import { UpvoteDownvote } from '../models/Upvote_Downvote_Post';
-import { Session } from '../models/Session';
-import { Router } from 'express';
-import bcrypt from 'bcrypt';
 import multer from 'multer';
-import fs from 'fs';
-import path from 'path';
-import bodyParser from 'body-parser';
 import authMiddleware from '../middleware/Auth';
-import router from './Profile';
+// import router from './Profile';
+import { v4 } from 'uuid';
 
-const config = require('./config/config.json');
+// const config = require('../config/config.json');
+import config from '../config/config.json';
 const sequelize = new Sequelize({
     ...config.development,
     models: [User, Post],
@@ -30,10 +25,11 @@ const storage = multer.diskStorage({
     },
 });
 const upload = multer({ storage });
+const postRouter = express.Router();
 
-router.post('/submit', authMiddleware, upload.single('image'), async (req: Request, res: Response) => {
+postRouter.post('/submit', authMiddleware, upload.single('image'), async (req: Request, res: Response) => {
     try {
-        const { title, content } = req.body;
+        const { title, image_url } = req.body;
         const userId = req.user?.id;
 
         if (!userId) {
@@ -41,10 +37,10 @@ router.post('/submit', authMiddleware, upload.single('image'), async (req: Reque
         }
 
         const post = await Post.create({
-            title,
-            content,
-            image: req.file ? req.file.filename : null,
-            userId,
+            id: v4(),
+            user_id: userId,
+            title: title,
+            image_url: image_url,
         });
 
         return res.status(201).json(post);
@@ -54,7 +50,7 @@ router.post('/submit', authMiddleware, upload.single('image'), async (req: Reque
     }
 });
 
-router.get('/:id', async (req: Request, res: Response) => {
+postRouter.get('/:id', async (req: Request, res: Response) => {
     try {
         const postId = req.params.id;
         const post = await Post.findByPk(postId);
@@ -75,7 +71,7 @@ router.get('/:id', async (req: Request, res: Response) => {
     }
 });
 
-router.get('/posts', async (req: Request, res: Response) => {
+postRouter.get('/posts', async (req: Request, res: Response) => {
     try {
         const type = req.body.type;
 
@@ -125,3 +121,4 @@ router.get('/posts', async (req: Request, res: Response) => {
     }
 });
 
+export default postRouter;
