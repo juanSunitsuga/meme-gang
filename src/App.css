@@ -40,3 +40,8 @@
 .read-the-docs {
   color: #888;
 }
+
+.content-container {
+  margin-top: 60px; /* Same as navbar height */
+  padding: 20px;
+}

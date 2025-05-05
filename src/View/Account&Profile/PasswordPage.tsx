@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../style/Profile.css'; // Reuse the existing CSS
+import '../Profile.css'; // Reuse the existing CSS
 import { fetchEndpoint } from '../FetchEndpoint';
 
 const PasswordPage = () => {

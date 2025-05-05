@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import '../style/Profile.css';
+import '../Profile.css';
 import { fetchEndpoint } from '../FetchEndpoint';
 import { Alert, AlertTitle } from '@mui/material';
 
