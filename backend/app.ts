@@ -17,6 +17,7 @@ import config from '../config/config.json';
 import cors from 'cors';
 import error from '../middleware/errorHandler';
 import path from 'path';
+import postRouter from './post';
 
 const app = express();
 
@@ -28,8 +29,11 @@ app.use(cors({
 
 app.use(express.json());
 
+import { Dialect } from 'sequelize'; // Add this import if not already present
+
 const sequelize = new Sequelize({
     ...config.development,
+    dialect: config.development.dialect as Dialect, // Cast dialect to Dialect type
     models: [Comment, Post, User, SavedPost, Session, Tag, UpvoteDownvote],
 });
 
@@ -42,8 +46,10 @@ app.use('/auth', registerLoginRoutes);
 app.use('/profile', profileRoutes);
 
 app.use('/api', searchRoutes);
+app.use('/post', postRouter);
 app.use('/post/:postId/comments', commentsRoutes); 
 app.use('/comments/:commentsId/replies', commentReplyRoutes); 
+app.use(error)
 
 app.use((req, res) => {
     res.status(404).json({ message: 'Route not found' });
