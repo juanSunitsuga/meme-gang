@@ -1,50 +1,30 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Session } from '../models/Session';
-import { appConfig } from '../config/app';
-import { middlewareWrapper } from '../utils/middlewareWrapper';
 
-const authMiddleware = middlewareWrapper(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+    const authHeader = req.headers.authorization;
 
-    if (!token) {
-      res.locals.errorCode = 401;
-      throw new Error('No token provided');
+    if (!authHeader) {
+        return res.status(401).json({ message: 'Unauthorized: No token provided' });
     }
+
+    const token = authHeader.split(' ')[1];
 
     try {
-      const decoded = jwt.verify(token, appConfig.jwtSecret) as { id: string };
-      if (!decoded?.id) {
-        res.locals.errorCode = 401;
-        throw new Error('Invalid token structure');
-      }
+        const decoded = jwt.verify(token, 'meme-gang-lover') as { id: string };
+        const session = await Session.findOne({ where: { token, userId: decoded.id } });
 
-      // Check for session validity
-      const session = await Session.findOne({
-        where: { token, userId: decoded.id },
-      });
+        if (!session) {
+            return res.status(401).json({ message: 'Unauthorized: Invalid or expired session' });
+        }
 
-      if (!session) {
-        res.locals.errorCode = 401;
-        throw new Error('Invalid or expired session');
-      }
-
-      req.user = { id: decoded.id };
-      next();
-      
-    } catch (error: any) {
-      res.locals.errorCode = 401;
-
-      // Specific expired token check
-      if (error.name === 'TokenExpiredError') {
-        throw new Error(`Token expired at ${error.expiredAt}`);
-      }
-
-      throw new Error('Token verification failed');
+        req.user = { id: decoded.id }; // Attach the user ID to req.user
+        next();
+    } catch (error) {
+        console.error('Error verifying token:', error);
+        return res.status(401).json({ message: 'Unauthorized: Invalid token' });
     }
-  }
-);
+};
 
 export default authMiddleware;

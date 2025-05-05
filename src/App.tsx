@@ -34,6 +34,7 @@ function App() {
             <Routes>
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
                 <Route path="/search" element={<SearchForm />} />
                 <Route path="/comments/:commentsId" element={<ViewComments />} />
             </Routes>

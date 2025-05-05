@@ -42,31 +42,19 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Endpoint to retrieve a user by ID
-router.get('/me', async (req: Request, res: Response) => {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader) {
-        res.status(401).json({ message: 'Authorization header missing' });
-        return 
-    }
-
-    const token = authHeader.split(' ')[1];
-
-    if (!token) {
-        res.status(401).json({ message: 'Token missing' });
-        return 
-    }
+router.get('/me', authMiddleware, async (req: Request, res: Response) => {
     try {
-        const { id } = req.user!;
+        const { id } = req.user ?? {};
+        if (!id) {
+            return res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+        }
         const user = await User.findByPk(id);
 
         if (!user) {
-            res.status(404).json({ message: 'User not found' });
-            return 
+            return res.status(404).json({ message: 'User not found' });
         }
 
-        // Prepend the base URL to the profilePicture field
-        const baseUrl = 'http://localhost:3000';
+        const baseUrl = '.';
         const profilePictureUrl = user.profilePicture
             ? `${baseUrl}${user.profilePicture}`
             : null;
@@ -75,7 +63,7 @@ router.get('/me', async (req: Request, res: Response) => {
             id: user.id,
             name: user.name,
             bio: user.bio,
-            profilePicture: profilePictureUrl, // Return the full URL
+            profilePicture: profilePictureUrl,
         });
     } catch (error) {
         console.error('Error retrieving user profile:', error);
@@ -147,32 +135,6 @@ router.post('/change-password', async (req: Request, res: Response) => {
         console.error('Error in /change-password route:', error);
         res.status(500).json({ message: 'Internal Server Error' });
         return 
-    }
-});
-
-// Endpoint to upload profile picture
-router.post('/upload-profile-picture', authMiddleware, upload.single('profilePicture'), async (req: Request, res: Response) => {
-    try {
-        const { id } = req.user!;
-        const user = await User.findByPk(id);
-        if (!user) {
-            res.status(404).json({ message: 'User not found' });
-            return 
-        }
-
-        if (!req.file) {
-            res.status(400).json({ message: 'No file uploaded' });
-            return 
-        }
-
-        const profilePicturePath = `/uploads/${req.file.filename}`;
-        user.profilePicture = profilePicturePath;
-        await user.save();
-
-        res.status(200).json({ message: 'Profile picture uploaded successfully', profilePicture: profilePicturePath });
-    } catch (error) {
-        console.error('Error uploading profile picture:', error);
-        res.status(500).json({ message: 'An error occurred while uploading the profile picture' });
     }
 });
 

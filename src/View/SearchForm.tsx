@@ -22,7 +22,7 @@ const SearchForm = () => {
 
     const fetchResults = async (query: string) => {
         try {
-            const response = await fetchEndpoint(`search?query=${encodeURIComponent(query)}`, 'GET', null);
+            const response = await fetchEndpoint(`/search?query=${encodeURIComponent(query)}`, 'GET', null);
             if (!response.ok) {
                 throw new Error('Failed to fetch search results');
             }
