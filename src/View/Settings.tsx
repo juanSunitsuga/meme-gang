@@ -4,6 +4,8 @@ import AccountPage from './Account&Profile/AccountPage';
 import PasswordPage from './Account&Profile/PasswordPage';
 import ProfilePage from './Account&Profile/ProfilePage';
 import './style/Profile.css';
+import { fetchEndpoint } from './FetchEndpoint';
+import { Alert, AlertTitle } from '@mui/material';
 
 const Settings = () => {
     const location = useLocation();
@@ -11,6 +13,7 @@ const Settings = () => {
     const [activeTab, setActiveTab] = useState('Profile');
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     // Session checker
     useEffect(() => {
@@ -18,22 +21,19 @@ const Settings = () => {
             try {
                 const token = localStorage.getItem('token');
                 if (!token) {
+                    setErrorMessage('You are not logged in. Redirecting to login...');
                     navigate('/login');
                     return;
                 }
-                const response = await fetch('http://localhost:3000/auth/session', {
-                    method: 'GET',
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
+                const response = await fetchEndpoint('auth/session', 'GET', token);
 
                 if (!response.ok) {
-                    alert('Session invalid or expired');
+                    setErrorMessage('Session invalid or expired. Redirecting to login...');
                     localStorage.removeItem('token'); // Clear invalid token
                     navigate('/login');
                 }
             } catch (error) {
+                setErrorMessage('An error occurred while checking the session. Redirecting to login...');
                 navigate('/login');
             }
         };
@@ -45,25 +45,16 @@ const Settings = () => {
         const fetchData = async () => {
             const token = localStorage.getItem('token');
             if (!token) {
-                alert('You are not logged in. Please log in.');
+                setErrorMessage('You are not logged in. Please log in.');
                 setLoading(false);
                 return;
             }
 
             try {
-                const response = await fetch('http://localhost:3000/profile/me', {
-                    method: 'GET',
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
+                const response = await fetchEndpoint('profile/me', 'GET', token);
 
                 if (!response.ok) {
-                    if (response.status === 401) {
-                        alert('You are not logged in. Please log in again.');
-                    } else {
-                        alert('Failed to fetch data. Please try again later.');
-                    }
+                    setErrorMessage('You are not logged in. Please log in again.');
                     setLoading(false);
                     return;
                 }
@@ -71,7 +62,7 @@ const Settings = () => {
                 const data = await response.json();
                 setUserData(data);
             } catch (error) {
-                alert('Failed to fetch data. Please check your connection.');
+                setErrorMessage('Failed to fetch data. Please check your connection.');
             } finally {
                 setLoading(false);
             }
@@ -109,8 +100,22 @@ const Settings = () => {
         return <div>Loading...</div>;
     }
 
+    if (errorMessage) {
+        return (
+            <Alert severity="error" sx={{ mb: 2 }}>
+                <AlertTitle>Error</AlertTitle>
+                {errorMessage}
+            </Alert>
+        );
+    }
+
     if (!userData) {
-        return <div>No user data available.</div>;
+        return (
+            <Alert severity="info" sx={{ mb: 2 }}>
+                <AlertTitle>Info</AlertTitle>
+                No user data available.
+            </Alert>
+        );
     }
 
     return (
@@ -131,7 +136,6 @@ const Settings = () => {
                 </nav>
             </aside>
             <main className="settings-content">
-                {/* Add more user details as needed */}
                 {renderContent()}
             </main>
         </div>

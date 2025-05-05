@@ -20,6 +20,7 @@ const storage = multer.diskStorage({
     },
 });
 const upload = multer({ storage });
+const postRouter = express.Router();
 
 const router = Router();
 

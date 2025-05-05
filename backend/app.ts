@@ -9,11 +9,13 @@ import { Tag } from '../models/Tag';
 import { UpvoteDownvote } from '../models/Upvote_Downvote_Post';
 import profileRoutes from './Profile';
 import registerLoginRoutes from './RegisterLogin';
+import commentsRoutes from './Comments';
+import commentReplyRoutes from './CommentsReply';
 import searchRoutes from './Search';
 import config from '../config/config.json';
 import cors from 'cors';
 import error from '../middleware/errorHandler';
-import postRoutes from './post';
+import postRouter from './post';
 
 const app = express();
 
@@ -25,21 +27,27 @@ app.use(cors({
 
 app.use(express.json());
 
+import { Dialect } from 'sequelize'; // Add this import if not already present
+
 const sequelize = new Sequelize({
     ...config.development,
+    dialect: config.development.dialect as Dialect, // Cast dialect to Dialect type
     models: [Comment, Post, User, SavedPost, Session, Tag, UpvoteDownvote],
 });
 
 
 app.use('/auth', registerLoginRoutes);
-// app.use('/profile', profileRoutes);
-// app.use('/api', searchRoutes);
-app.use('/post', postRoutes);
+app.use('/profile', profileRoutes);
+// app.use('/uploads')
+app.use('/api', searchRoutes);
+app.use('/post', postRouter);
+app.use('/post/:postId/comments', commentsRoutes); 
+app.use('/comments/:commentsId/replies', commentReplyRoutes); 
 app.use(error)
 
-// app.use((req, res) => {
-//     res.status(404).json({ message: 'Route not found' });
-// });
+app.use((req, res) => {
+    res.status(404).json({ message: 'Route not found' });
+});
 
 app.listen(3000, async () => {
     await sequelize.sync();
