@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import '../style/Profile.css';
 import { fetchEndpoint } from '../FetchEndpoint';
 import { Alert, AlertTitle } from '@mui/material';
+import { c } from 'vite/dist/node/moduleRunnerTransport.d-CXw_Ws6P';
 
 const ProfileSettings = () => {
     const [name, setName] = useState('');
@@ -22,27 +23,23 @@ const ProfileSettings = () => {
                     return;
                 }
 
-                const response = await fetchEndpoint('profile/me', 'GET', token);
+                const response = await fetchEndpoint('/profile/me', 'GET', token);
+                console.log('Response:', response);
 
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        setAlertMessage('Session expired. Please log in again.');
-                        setAlertSeverity('error');
-                        localStorage.removeItem('token');
-                        window.location.href = '/login';
-                    } else {
-                        setAlertMessage('Failed to fetch profile data.');
-                        setAlertSeverity('error');
-                    }
-                    return;
+                // Use the response directly
+                setName(response.name || '');
+                setBio(response.bio || '');
+
+                let avatarUrl = response.profilePicture || null;
+                if (avatarUrl && avatarUrl.includes('/uploads/')) {
+                    const urlParts = avatarUrl.split('/');
+                    const filename = urlParts[urlParts.length - 1];
+                    avatarUrl = `./uploads/avatars/${filename}`;
                 }
-
-                const data = await response.json();
-                setName(data.name || '');
-                setBio(data.bio || '');
-                setAvatarUrl('../../..' + data.profilePicture || null);
+                setAvatarUrl(avatarUrl);
             } catch (error) {
-                setAlertMessage('An error occurred while fetching profile data. Please try again later.');
+                console.error('Error fetching profile data:', error);
+                setAlertMessage('Failed to fetch profile data. Please try again later.');
                 setAlertSeverity('error');
             } finally {
                 setLoading(false);
@@ -65,10 +62,8 @@ const ProfileSettings = () => {
             return;
         }
 
-        const formData = new FormData();
-        formData.append('profilePicture', avatar);
-
         try {
+            setLoading(true);
             const token = localStorage.getItem('token');
             if (!token) {
                 setAlertMessage('You are not logged in. Please log in again.');
@@ -76,22 +71,27 @@ const ProfileSettings = () => {
                 return;
             }
 
-            const response = await fetchEndpoint('profile/upload-profile-picture', 'POST', token, formData);
+            const formData = new FormData();
+            formData.append('profilePicture', avatar);
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                setAlertMessage(`Failed to upload profile picture: ${errorData.message}`);
-                setAlertSeverity('error');
-                return;
-            }
+            console.log('Uploading file:', avatar.name, avatar.type, avatar.size);
 
-            const data = await response.json();
+            const response = await fetchEndpoint('/uploads/avatar', 'POST', token, formData);
+            console.log('Upload response:', response);
+
             setAlertMessage('Profile picture uploaded successfully!');
             setAlertSeverity('success');
-            setAvatarUrl(`http://localhost:3000${data.profilePicture}`);
-        } catch (error) {
-            setAlertMessage('An error occurred while uploading the profile picture.');
+
+            // Update avatar URL with the response
+            if (response.profilePicture) {
+                setAvatarUrl(response.profilePicture);
+            }
+        } catch (error: any) {
+            console.error('Upload error:', error);
+            setAlertMessage(error.message || 'An error occurred while uploading the profile picture.');
             setAlertSeverity('error');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -107,7 +107,7 @@ const ProfileSettings = () => {
                 return;
             }
 
-            const response = await fetchEndpoint('profile/edit-profile', 'PUT', token, { name, bio });
+            const response = await fetchEndpoint('/profile/edit-profile', 'PUT', token, { name, bio });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => {
@@ -146,9 +146,13 @@ const ProfileSettings = () => {
                         {avatar ? (
                             <img src={URL.createObjectURL(avatar)} alt="Avatar" className="avatar-preview" />
                         ) : avatarUrl ? (
-                            <img src={avatarUrl} alt="Avatar" className="avatar-preview" />
+                            <img
+                                src={avatarUrl}
+                                alt="Avatar"
+                                className="avatar-preview"
+                            />
                         ) : (
-                            <img src="../../uploads/default-avatar.jpg" alt="Default Avatar" className="avatar-preview" />
+                            <img src="src\View\Account&Profile\default-avatar.jpg" alt="Default Avatar" className="avatar-preview" />
                         )}
                         <input type="file" onChange={handleAvatarChange} />
                         <button

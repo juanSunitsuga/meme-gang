@@ -25,15 +25,13 @@ const Settings = () => {
                     navigate('/login');
                     return;
                 }
-                const response = await fetchEndpoint('auth/session', 'GET', token);
 
-                if (!response.ok) {
-                    setErrorMessage('Session invalid or expired. Redirecting to login...');
-                    localStorage.removeItem('token'); // Clear invalid token
-                    navigate('/login');
-                }
-            } catch (error) {
-                setErrorMessage('An error occurred while checking the session. Redirecting to login...');
+                const response = await fetchEndpoint('/auth/session', 'GET', token);
+
+            } catch (error: any) {
+                console.error('Session check error:', error);
+                setErrorMessage('Session invalid or expired. Redirecting to login...');
+                localStorage.removeItem('token'); // Clear invalid token
                 navigate('/login');
             }
         };
@@ -51,17 +49,12 @@ const Settings = () => {
             }
 
             try {
-                const response = await fetchEndpoint('profile/me', 'GET', token);
+                const response = await fetchEndpoint('/profile/me', 'GET', token);
 
-                if (!response.ok) {
-                    setErrorMessage('You are not logged in. Please log in again.');
-                    setLoading(false);
-                    return;
-                }
-
-                const data = await response.json();
-                setUserData(data);
+                // Use the response directly
+                setUserData(response);
             } catch (error) {
+                console.error('Error fetching profile data:', error);
                 setErrorMessage('Failed to fetch data. Please check your connection.');
             } finally {
                 setLoading(false);

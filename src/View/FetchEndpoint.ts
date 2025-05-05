@@ -5,9 +5,12 @@ export const fetchEndpoint = async (
     body?: any
 ): Promise<any> => {
     try {
-        const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
-        };
+        const headers: Record<string, string> = {};
+        
+        // Don't set Content-Type for FormData - browser will set it with boundary
+        if (!(body instanceof FormData)) {
+            headers['Content-Type'] = 'application/json';
+        }
 
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
@@ -19,17 +22,30 @@ export const fetchEndpoint = async (
         };
 
         if (body) {
-            options.body = JSON.stringify(body);
+            // Don't stringify FormData objects
+            options.body = body instanceof FormData ? body : JSON.stringify(body);
         }
 
-        const response = await fetch('http://localhost:3000/' + url, options);
+        // Ensure proper URL formatting
+        const fullUrl = `http://localhost:3000${url.startsWith('/') ? '' : '/'}${url}`;
+        
+        console.log(`Sending ${method} request to ${fullUrl}`);
+        const response = await fetch(fullUrl, options);
+        
+        // Handle non-JSON responses (like file uploads)
+        const contentType = response.headers.get('content-type');
+        const data = contentType && contentType.includes('application/json') 
+            ? await response.json() 
+            : await response.text();
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to fetch data');
+            const errorMessage = typeof data === 'object' && data.message 
+                ? data.message 
+                : 'Failed to fetch data';
+            throw new Error(errorMessage);
         }
 
-        return await response.json();
+        return data;
     } catch (error) {
         console.error(`Error during ${method} request to ${url}:`, error);
         throw error;

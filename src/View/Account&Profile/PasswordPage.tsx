@@ -22,15 +22,8 @@ const PasswordPage = () => {
         return;
       }
 
-      const response = await fetchEndpoint('profile/change-password', 'POST', token, { oldPassword, newPassword })
-
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        alert(`Failed to change password: ${errorData.message}`);
-        return;
-      }
-
+      const response = await fetchEndpoint('/profile/change-password', 'POST', token, { oldPassword, newPassword })
+      
       alert('Password changed successfully!');
       setOldPassword('');
       setNewPassword('');

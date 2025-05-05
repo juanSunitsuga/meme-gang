@@ -16,7 +16,7 @@ const Register: React.FC = () => {
 
     const handleRegister = async (username: string, password: string, email: string) => {
         try {
-            const response = await fetchEndpoint('auth/register', 'POST', null, { username, password, email });
+            const response = await fetchEndpoint('/auth/register', 'POST', null, { username, password, email });
 
             if (!response.ok) {
                 const errorData = await response.json();

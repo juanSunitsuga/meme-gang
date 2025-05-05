@@ -9,12 +9,14 @@ import { Tag } from '../models/Tag';
 import { UpvoteDownvote } from '../models/Upvote_Downvote_Post';
 import profileRoutes from './Profile';
 import registerLoginRoutes from './RegisterLogin';
+import uploadRoutes from './Uploads';
 import commentsRoutes from './Comments';
 import commentReplyRoutes from './CommentsReply';
 import searchRoutes from './Search';
 import config from '../config/config.json';
 import cors from 'cors';
 import error from '../middleware/errorHandler';
+import path from 'path';
 
 const app = express();
 
@@ -31,10 +33,14 @@ const sequelize = new Sequelize({
     models: [Comment, Post, User, SavedPost, Session, Tag, UpvoteDownvote],
 });
 
-app.use('/auth', registerLoginRoutes);
+
+// Later using the same path for API routes
+app.use('/uploads', uploadRoutes);
+
 app.use(error)
+app.use('/auth', registerLoginRoutes);
 app.use('/profile', profileRoutes);
-// app.use('/uploads')
+
 app.use('/api', searchRoutes);
 app.use('/post/:postId/comments', commentsRoutes); 
 app.use('/comments/:commentsId/replies', commentReplyRoutes); 

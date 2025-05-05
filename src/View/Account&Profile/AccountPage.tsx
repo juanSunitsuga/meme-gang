@@ -22,14 +22,7 @@ const AccountSettings = () => {
                     return;
                 }
 
-                const response = await fetchEndpoint('profile/me', 'GET', token);
-
-                if (!response.ok) {
-                    setAlertMessage('Failed to fetch user data.');
-                    setAlertSeverity('error');
-                    return;
-                }
-
+                const response = await fetchEndpoint('/profile/me', 'GET', token);
                 const data = await response.json();
                 console.log('Fetched user data:', data);
 

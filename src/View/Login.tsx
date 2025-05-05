@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { fetchEndpoint } from './FetchEndpoint';
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
@@ -13,26 +14,14 @@ const Login: React.FC = () => {
 
     const handleLogin = async (email: string, password: string) => {
         try {
-            const response = await fetch('http://localhost:3000/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, password }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                alert(`Login failed: ${errorData.message}`);
-                return;
-            }
-
-            const data = await response.json();
-            localStorage.setItem('token', data.token); 
+            const data = await fetchEndpoint('/auth/login', 'POST', null, { email, password });
+            // Store the token and navigate to settings
+            localStorage.setItem('token', data.token);
             alert('Login successful!');
             navigate('/settings');
-        } catch (error) {
-            alert('An error occurred during login. Please try again later.');
+        } catch (error: any) {
+            console.error('Login error:', error);
+            alert(error.message || 'An error occurred during login. Please try again later.');
         }
     };
 
