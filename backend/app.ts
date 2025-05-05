@@ -32,14 +32,14 @@ const sequelize = new Sequelize({
 
 
 app.use('/auth', registerLoginRoutes);
-app.use(error)
-app.use('/profile', profileRoutes);
-app.use('/api', searchRoutes);
+// app.use('/profile', profileRoutes);
+// app.use('/api', searchRoutes);
 app.use('/post', postRoutes);
+app.use(error)
 
-app.use((req, res) => {
-    res.status(404).json({ message: 'Route not found' });
-});
+// app.use((req, res) => {
+//     res.status(404).json({ message: 'Route not found' });
+// });
 
 app.listen(3000, async () => {
     await sequelize.sync();
