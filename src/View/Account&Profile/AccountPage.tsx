@@ -24,7 +24,6 @@ const AccountSettings = () => {
 
                 const response = await fetchEndpoint('/profile/me', 'GET', token);
                 const data = await response.json();
-                console.log('Fetched user data:', data);
 
                 // Update state with fetched user data
                 setUsername(data.username);
@@ -43,7 +42,6 @@ const AccountSettings = () => {
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        console.log({ username, email, followThread });
         setAlertMessage('Changes saved successfully!');
         setAlertSeverity('success');
     };

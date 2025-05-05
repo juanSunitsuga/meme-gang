@@ -24,7 +24,6 @@ const ProfileSettings = () => {
                 }
 
                 const response = await fetchEndpoint('/profile/me', 'GET', token);
-                console.log('Response:', response);
 
                 // Use the response directly
                 setName(response.name || '');
@@ -74,10 +73,7 @@ const ProfileSettings = () => {
             const formData = new FormData();
             formData.append('profilePicture', avatar);
 
-            console.log('Uploading file:', avatar.name, avatar.type, avatar.size);
-
             const response = await fetchEndpoint('/uploads/avatar', 'POST', token, formData);
-            console.log('Upload response:', response);
 
             setAlertMessage('Profile picture uploaded successfully!');
             setAlertSeverity('success');

@@ -1,6 +1,9 @@
 # Sequelize Config
 config/config.json
 
+# Local uploads
+uploads
+
 # Logs
 logs
 *.log
