@@ -6,7 +6,11 @@ const errorHandler = (
     res: Response,
     next: NextFunction
 ) => {
+    console.log('errorHandler',error);
+    if (error){
+        console.log('error 123',error);
     res.status(res.locals.errorCode || 500).json({message: error.message});
+    }
 }
 
 export default errorHandler;
