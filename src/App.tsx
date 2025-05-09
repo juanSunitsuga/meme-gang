@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import Navbar from './components/Navbar';
 import Settings from './View/Settings';
 import Login from './View/Login';
@@ -8,6 +9,18 @@ import SearchForm from './View/SearchForm';
 import ViewComments from './View/Comments/ViewComments';
 import Home from './View/Home'; // Import Home component
 import './App.css';
+
+const theme = createTheme({
+    typography: {
+        fontFamily: '"Poppins", "Roboto", "Helvetica", "Arial", sans-serif',
+        h6: {
+            fontWeight: 600,
+        },
+        button: {
+            fontWeight: 500,
+        }
+    },
+});
 
 function AppContent() {
     const navigate = useNavigate();
@@ -40,7 +53,9 @@ function App() {
     // Wrap everything in Router
     return (
         <Router>
-            <AppContent />
+            <ThemeProvider theme={theme}>
+                <AppContent />
+            </ThemeProvider>
         </Router>
     );
 }
