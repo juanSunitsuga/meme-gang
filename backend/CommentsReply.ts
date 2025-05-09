@@ -10,6 +10,8 @@ router.get('/', async (req: Request, res: Response) => {
   try {
     const { id: reply_to } = req.params;
 
+    console.log('\n\n\n\nreply_to:', reply_to);
+
     const replies = await Comment.findAll({
       where: { reply_to },
       include: [{ model: User, attributes: ['username'] }],
@@ -53,7 +55,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
 // Edit reply
 router.put('/:replyId', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const replyId = req.params.id;
+    const replyId = req.params.replyId;  // Gunakan replyId dari params
     const { content } = req.body;
     const user_id = req.user!.id;
 
@@ -76,7 +78,7 @@ router.put('/:replyId', authMiddleware, async (req: Request, res: Response) => {
 // Hapus reply
 router.delete('/:replyId', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const replyId = req.params.id;
+    const replyId = req.params.replyId;  // Gunakan replyId dari params
     const user_id = req.user!.id;
 
     const reply = await Comment.findByPk(replyId);
