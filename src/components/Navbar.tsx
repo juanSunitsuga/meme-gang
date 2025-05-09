@@ -31,7 +31,6 @@ const Navbar: React.FC = () => {
       <div className="navbar-container">
         {/* Logo */}
         <div className="navbar-logo" onClick={() => navigate('/')}>
-          <img src="/meme-gang-logo.png" alt="Meme Gang" />
           <span>MEME GANG</span>
         </div>
         
@@ -84,7 +83,6 @@ const Navbar: React.FC = () => {
                   <i className="fas fa-user-circle"></i>
                 </button>
                 <div className="dropdown-content">
-                  <Link to="/profile">Profile</Link>
                   <Link to="/settings">Settings</Link>
                   <button onClick={handleLogout}>Logout</button>
                 </div>

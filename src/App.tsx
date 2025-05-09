@@ -7,7 +7,7 @@ import Register from './View/Register';
 import SearchForm from './View/SearchForm';
 import ViewComments from './View/Comments/ViewComments';
 import Home from './View/Home'; // Import Home component
-import './.css';
+import './App.css';
 
 function AppContent() {
     const navigate = useNavigate();

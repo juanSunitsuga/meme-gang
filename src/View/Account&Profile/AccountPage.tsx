@@ -22,12 +22,24 @@ const AccountSettings = () => {
                     return;
                 }
 
-                const response = await fetchEndpoint('/profile/me', 'GET', token);
-                const data = await response.json();
-
-                // Update state with fetched user data
-                setUsername(data.username);
-                setEmail(data.email);
+                console.log('Fetching user profile data...');
+                const data = await fetchEndpoint('/profile/me', 'GET', token);
+                console.log('Profile data received:', data);
+                
+                // Check if data has the expected properties
+                if (data && data.name) {
+                    setUsername(data.username); // Use correct property name (might be 'name' not 'username')
+                }
+                
+                if (data && data.email) {
+                    setEmail(data.email);
+                }
+                
+                if (!data || (!data.name && !data.username && !data.email)) {
+                    console.error('Invalid data format received:', data);
+                    setAlertMessage('Received invalid user data format from server');
+                    setAlertSeverity('error');
+                }
             } catch (error) {
                 console.error('Error fetching user data:', error);
                 setAlertMessage('An error occurred while fetching user data.');
@@ -40,10 +52,39 @@ const AccountSettings = () => {
         fetchUserData();
     }, []);
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        setAlertMessage('Changes saved successfully!');
-        setAlertSeverity('success');
+        
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                setAlertMessage('No token found. Please log in again.');
+                setAlertSeverity('error');
+                return;
+            }
+            
+            setLoading(true);
+            
+            // Send updated profile data to backend
+            const updatedData = {
+                username: username,
+                email: email
+            };
+            
+            console.log('Sending updated profile data:', updatedData);
+            
+            const response = await fetchEndpoint('/profile/edit-account', 'PUT', token, updatedData);
+            console.log('Update response:', response);
+            
+            setAlertMessage('Changes saved successfully!');
+            setAlertSeverity('success');
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            setAlertMessage('Failed to update profile. Please try again.');
+            setAlertSeverity('error');
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (loading) {

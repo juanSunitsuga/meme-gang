@@ -14,7 +14,7 @@ const authMiddleware = middlewareWrapper(
       throw new Error("No token provided");
     }
 
-    const token = authHeader.split(' ')[1];
+    // const token = authHeader.split(' ')[1];
 
     try {
       const decoded = jwt.verify(token, appConfig.jwtSecret) as { id: string };
@@ -44,6 +44,6 @@ const authMiddleware = middlewareWrapper(
 
       throw new Error("Token verification failed");
     }
-};
+});
 
 export default authMiddleware;

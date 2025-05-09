@@ -1,3 +1,4 @@
+import express from 'express';
 import { Request, Response } from 'express';
 import { Sequelize } from 'sequelize-typescript';
 import { User } from '../models/User';
@@ -56,7 +57,7 @@ router.post(
             return {
                 status: "ok",
             }
-            return post;
+            // return post;
         // } catch (error) {
         //     console.error('Error creating post:', error);
         //     console.log(6);

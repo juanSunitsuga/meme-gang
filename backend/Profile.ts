@@ -42,19 +42,21 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Endpoint to retrieve a user by ID
-router.get('/me', authMiddleware, async (req: Request, res: Response) => {
+router.get('/me', authMiddleware, async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.user ?? {};
         if (!id) {
-            return res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            return;
         }
         const user = await User.findByPk(id);
 
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            res.status(404).json({ message: 'User not found' });
+            return;
         }
 
-        const baseUrl = '.';
+        const baseUrl = '../../';
         const profilePictureUrl = user.profilePicture
             ? `${baseUrl}${user.profilePicture}`
             : null;
@@ -64,6 +66,8 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
             name: user.name,
             bio: user.bio,
             profilePicture: profilePictureUrl,
+            username: user.username,
+            email: user.email,
         });
     } catch (error) {
         console.error('Error retrieving user profile:', error);
@@ -98,6 +102,48 @@ router.put('/edit-profile', authMiddleware, async (req: Request, res: Response) 
     } catch (error) {
         console.error('Error updating profile:', error);
         res.status(500).json({ message: 'An error occurred while updating the profile' });
+    }
+});
+
+router.put('/edit-account', authMiddleware, async (req: Request, res: Response) => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            return;
+        }
+
+        const { id } = req.user;
+        const { email, username } = req.body;
+
+        const user = await User.findByPk(id);
+        if (!user) {
+            res.status(404).json({ message: 'User not found' });
+            return;
+        }
+
+        if (email) {
+            const emailExists = await User.findOne({ where: { email, id: { [Op.ne]: id } } });
+            if (emailExists) {
+                res.status(400).json({ message: 'Email is already in use by another account' });
+                return;
+            }
+            user.email = email;
+        }
+
+        if (username) {
+            const usernameExists = await User.findOne({ where: { username, id: { [Op.ne]: id } } });
+            if (usernameExists) {
+                res.status(400).json({ message: 'Username is already in use by another account' });
+                return;
+            }
+            user.username = username;
+        }
+
+        await user.save();
+        res.status(200).json({ message: 'Account updated successfully', user });
+    } catch (error) {
+        console.error('Error updating account:', error);
+        res.status(500).json({ message: 'An error occurred while updating the account' });
     }
 });
 

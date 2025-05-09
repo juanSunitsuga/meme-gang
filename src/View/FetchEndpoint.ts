@@ -10,13 +10,10 @@ export const fetchEndpoint = async (
     const url = `${baseUrl}${endpoint}`;
     
     try {
-        const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
-        };
+        const headers: Record<string, string> = {};
         
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
-        } else {
         }
         
         const options: RequestInit = {
@@ -25,11 +22,25 @@ export const fetchEndpoint = async (
             credentials: 'include',
         };
         
-        if (body && method !== 'GET') {
-            options.body = JSON.stringify(body);
-            console.log(`Request body included for ${method} request`);
+        if (body) {
+            if (body instanceof FormData) {
+                // For FormData, don't set Content-Type - browser will set it with boundary
+                options.body = body;
+                
+                // Log the FormData contents for debugging
+                console.log('Sending FormData with entries:');
+                for (const pair of body.entries()) {
+                    console.log(`${pair[0]}: ${pair[1]}`);
+                }
+            } else if (method !== 'GET') {
+                // For regular JSON data
+                headers['Content-Type'] = 'application/json';
+                options.body = JSON.stringify(body);
+                console.log(`Request body included for ${method} request`);
+            }
         }
         
+        console.log(`Making ${method} request to ${url}`);
         const response = await fetch(url, options);
         
         if (!response.ok) {

@@ -32,8 +32,9 @@ const ProfileSettings = () => {
                 if (avatarUrl && avatarUrl.includes('/uploads/')) {
                     const urlParts = avatarUrl.split('/');
                     const filename = urlParts[urlParts.length - 1];
-                    avatarUrl = `./uploads/avatars/${filename}`;
+                    avatarUrl = `../../../uploads/avatars/${filename}`;
                 }
+                console.log('Avatar URL:', avatarUrl);
                 setAvatarUrl(avatarUrl);
             } catch (error) {
                 console.error('Error fetching profile data:', error);
@@ -69,16 +70,20 @@ const ProfileSettings = () => {
                 return;
             }
 
+            // Create FormData and log it for debugging
             const formData = new FormData();
             formData.append('profilePicture', avatar);
-
+            
+            console.log('Uploading file:', avatar.name, 'size:', avatar.size, 'type:', avatar.type);
+            
             const response = await fetchEndpoint('/uploads/avatar', 'POST', token, formData);
+            console.log('Upload response:', response);
 
             setAlertMessage('Profile picture uploaded successfully!');
             setAlertSeverity('success');
 
             // Update avatar URL with the response
-            if (response.profilePicture) {
+            if (response && response.profilePicture) {
                 setAvatarUrl(response.profilePicture);
             }
         } catch (error: any) {
@@ -113,7 +118,6 @@ const ProfileSettings = () => {
                 return;
             }
 
-            const data = await response.json();
             setAlertMessage('Profile updated successfully!');
             setAlertSeverity('success');
         } catch (error) {
