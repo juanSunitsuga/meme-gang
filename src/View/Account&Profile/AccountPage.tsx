@@ -1,12 +1,109 @@
 import React, { useState, useEffect } from 'react';
-import '../Profile.css';
+import { 
+  Box, 
+  Typography, 
+  TextField, 
+  Button,
+  Paper, 
+  Alert, 
+  AlertTitle, 
+  Link,
+  Divider,
+  CircularProgress,
+  styled,
+  alpha
+} from '@mui/material';
 import { fetchEndpoint } from '../FetchEndpoint';
-import { Alert, AlertTitle } from '@mui/material';
+import FAIcon from '../../components/FAIcon';
+
+// Styled components to match Navbar theme
+const StyledPaper = styled(Paper)(({ theme }) => ({
+  backgroundColor: '#1a1a1a',
+  color: 'white',
+  padding: theme.spacing(4),
+  borderRadius: theme.spacing(1),
+  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+  marginBottom: theme.spacing(3),
+}));
+
+const FormContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: theme.spacing(3),
+}));
+
+const StyledTextField = styled(TextField)(({ theme }) => ({
+  '& .MuiOutlinedInput-root': {
+    '& fieldset': {
+      borderColor: 'rgba(255, 255, 255, 0.23)',
+    },
+    '&:hover fieldset': {
+      borderColor: 'rgba(255, 255, 255, 0.5)',
+    },
+    '&.Mui-focused fieldset': {
+      borderColor: '#1976d2',
+    },
+    '& input': {
+      color: 'white',
+      fontFamily: '"Poppins", sans-serif',
+    },
+  },
+  '& .MuiInputLabel-root': {
+    color: '#aaa',
+    fontFamily: '"Poppins", sans-serif',
+    '&.Mui-focused': {
+      color: '#1976d2',
+    },
+  },
+  '& .MuiFormHelperText-root': {
+    color: '#888',
+    fontFamily: '"Poppins", sans-serif',
+  },
+}));
+
+const SaveButton = styled(Button)(({ theme }) => ({
+  backgroundColor: '#1976d2',
+  color: 'white',
+  textTransform: 'none',
+  fontFamily: '"Poppins", sans-serif',
+  fontWeight: 600,
+  padding: theme.spacing(1, 3),
+  '&:hover': {
+    backgroundColor: '#1565c0',
+  },
+}));
+
+const DeleteButton = styled(Button)(({ theme }) => ({
+  backgroundColor: alpha('#f44336', 0.1),
+  color: '#f44336',
+  textTransform: 'none',
+  fontFamily: '"Poppins", sans-serif',
+  fontWeight: 600,
+  padding: theme.spacing(1, 3),
+  '&:hover': {
+    backgroundColor: alpha('#f44336', 0.2),
+  },
+}));
+
+const LinkPreview = styled(Typography)(({ theme }) => ({
+  color: '#888',
+  fontSize: '0.875rem',
+  marginTop: theme.spacing(0.5),
+  fontFamily: '"Poppins", sans-serif',
+}));
+
+const ResendLink = styled(Link)(({ theme }) => ({
+  color: '#1976d2',
+  cursor: 'pointer',
+  fontWeight: 500,
+  '&:hover': {
+    textDecoration: 'underline',
+  },
+}));
 
 const AccountSettings = () => {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
-    const [followThread, setFollowThread] = useState('On');
     const [loading, setLoading] = useState(true);
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [alertSeverity, setAlertSeverity] = useState<'success' | 'error' | null>(null);
@@ -26,9 +123,8 @@ const AccountSettings = () => {
                 const data = await fetchEndpoint('/profile/me', 'GET', token);
                 console.log('Profile data received:', data);
                 
-                // Check if data has the expected properties
                 if (data && data.name) {
-                    setUsername(data.username); // Use correct property name (might be 'name' not 'username')
+                    setUsername(data.name);
                 }
                 
                 if (data && data.email) {
@@ -65,15 +161,14 @@ const AccountSettings = () => {
             
             setLoading(true);
             
-            // Send updated profile data to backend
             const updatedData = {
-                username: username,
+                name: username, // Changed from username to name to match backend
                 email: email
             };
             
             console.log('Sending updated profile data:', updatedData);
             
-            const response = await fetchEndpoint('/profile/edit-account', 'PUT', token, updatedData);
+            const response = await fetchEndpoint('/profile', 'PUT', token, updatedData);
             console.log('Update response:', response);
             
             setAlertMessage('Changes saved successfully!');
@@ -87,53 +182,135 @@ const AccountSettings = () => {
         }
     };
 
+    const handleResendVerification = () => {
+        // Add functionality to resend verification email
+        console.log('Resending verification email to:', email);
+    };
+
     if (loading) {
-        return <div>Loading...</div>;
+        return (
+            <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                height: '300px' 
+            }}>
+                <CircularProgress color="primary" />
+            </Box>
+        );
     }
 
     return (
-        <div className="profile-edit-container max-w-3xl mx-auto p-6">
-            <h2>Account</h2>
+        <Box sx={{ maxWidth: '800px', mx: 'auto', py: 4, px: 2 }}>
+            <Typography 
+                variant="h4" 
+                component="h1" 
+                sx={{ 
+                    mb: 3, 
+                    fontFamily: '"Poppins", sans-serif',
+                    fontWeight: 600 
+                }}
+            >
+                Account Settings
+            </Typography>
 
             {/* Alert Section */}
             {alertMessage && alertSeverity && (
-                <Alert severity={alertSeverity} sx={{ mb: 2 }}>
-                    <AlertTitle>{alertSeverity === 'success' ? 'Success' : 'Error'}</AlertTitle>
+                <Alert 
+                    severity={alertSeverity} 
+                    sx={{ 
+                        mb: 3,
+                        '& .MuiAlert-message': {
+                            fontFamily: '"Poppins", sans-serif',
+                        }
+                    }}
+                >
+                    <AlertTitle sx={{ fontFamily: '"Poppins", sans-serif', fontWeight: 600 }}>
+                        {alertSeverity === 'success' ? 'Success' : 'Error'}
+                    </AlertTitle>
                     {alertMessage}
                 </Alert>
             )}
 
-            <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                    <label htmlFor="username">Username</label>
-                    <input
-                        type="text"
-                        id="username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                    />
-                    <p className="link-preview">https://memegang.com/u/{username}</p>
-                </div>
-                <div className="form-group">
-                    <label htmlFor="email">Email</label>
-                    <input
-                        type="email"
-                        id="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                    />
-                    <small>Email will not be displayed publicly</small>
-                    <p className="verification-text">
-                        Verification sent to <strong>{email}</strong>, please open the link to verify your email. <br />
-                        <span className="resend-link">Resend Verification Email</span>
-                    </p>
-                </div>
-                <div className="form-actions">
-                    <button type="submit" className="save-button">Save Changes</button>
-                    <button type="button" className="delete-button">Delete account</button>
-                </div>
-            </form>
-        </div>
+            <StyledPaper>
+                <form onSubmit={handleSubmit}>
+                    <FormContainer>
+                        <StyledTextField
+                            label="Username"
+                            fullWidth
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            variant="outlined"
+                        />
+                        <LinkPreview>
+                            https://memegang.com/u/{username}
+                        </LinkPreview>
+
+                        <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)', my: 1 }} />
+
+                        <StyledTextField
+                            label="Email"
+                            type="email"
+                            fullWidth
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            variant="outlined"
+                            helperText="Email will not be displayed publicly"
+                        />
+                        
+                        <Box sx={{ 
+                            backgroundColor: alpha('#1976d2', 0.1), 
+                            p: 2, 
+                            borderRadius: 1,
+                            border: '1px solid rgba(25, 118, 210, 0.3)'
+                        }}>
+                            <Typography 
+                                sx={{ 
+                                    color: '#ddd', 
+                                    fontFamily: '"Poppins", sans-serif', 
+                                    display: 'flex', 
+                                    alignItems: 'center',
+                                    mb: 1
+                                }}
+                            >
+                                <FAIcon icon="fas fa-envelope" style={{ marginRight: '8px', color: '#1976d2' }}/>
+                                Verification sent to <Box component="span" sx={{ fontWeight: 600, mx: 0.5 }}>{email}</Box>
+                            </Typography>
+                            <Typography sx={{ color: '#ddd', fontSize: '0.9rem', fontFamily: '"Poppins", sans-serif' }}>
+                                Please open the link to verify your email.
+                            </Typography>
+                            <ResendLink onClick={handleResendVerification}>
+                                Resend Verification Email
+                            </ResendLink>
+                        </Box>
+
+                        <Box sx={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            mt: 2, 
+                            gap: 2,
+                            flexDirection: { xs: 'column', sm: 'row' }
+                        }}>
+                            <SaveButton 
+                                type="submit" 
+                                variant="contained" 
+                                startIcon={<FAIcon icon="fas fa-save" />}
+                                disabled={loading}
+                                fullWidth={false}
+                            >
+                                Save Changes
+                            </SaveButton>
+                            <DeleteButton 
+                                variant="outlined" 
+                                startIcon={<FAIcon icon="fas fa-trash" />}
+                            >
+                                Delete Account
+                            </DeleteButton>
+                        </Box>
+                    </FormContainer>
+                </form>
+            </StyledPaper>
+        </Box>
     );
 };
 

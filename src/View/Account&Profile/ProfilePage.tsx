@@ -1,199 +1,409 @@
-import React, { useState, useEffect } from 'react';
-import '../Profile.css';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Box, 
+  Typography, 
+  TextField, 
+  Button,
+  Paper, 
+  Alert, 
+  AlertTitle, 
+  CircularProgress,
+  styled,
+  alpha,
+  Avatar,
+  IconButton,
+  Divider
+} from '@mui/material';
 import { fetchEndpoint } from '../FetchEndpoint';
-import { Alert, AlertTitle } from '@mui/material';
+import FAIcon from '../../components/FAIcon';
+
+// Styled components to match Navbar and Account page theme
+const StyledPaper = styled(Paper)(({ theme }) => ({
+  backgroundColor: '#1a1a1a',
+  color: 'white',
+  padding: theme.spacing(4),
+  borderRadius: theme.spacing(1),
+  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+  marginBottom: theme.spacing(3),
+}));
+
+const FormContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: theme.spacing(3),
+}));
+
+const StyledTextField = styled(TextField)(({ theme }) => ({
+  '& .MuiOutlinedInput-root': {
+    '& fieldset': {
+      borderColor: 'rgba(255, 255, 255, 0.23)',
+    },
+    '&:hover fieldset': {
+      borderColor: 'rgba(255, 255, 255, 0.5)',
+    },
+    '&.Mui-focused fieldset': {
+      borderColor: '#1976d2',
+    },
+    '& input, & textarea': {
+      color: 'white',
+      fontFamily: '"Poppins", sans-serif',
+    },
+  },
+  '& .MuiInputLabel-root': {
+    color: '#aaa',
+    fontFamily: '"Poppins", sans-serif',
+    '&.Mui-focused': {
+      color: '#1976d2',
+    },
+  },
+  '& .MuiFormHelperText-root': {
+    color: '#888',
+    fontFamily: '"Poppins", sans-serif',
+  },
+}));
+
+const SaveButton = styled(Button)(({ theme }) => ({
+  backgroundColor: '#1976d2',
+  color: 'white',
+  textTransform: 'none',
+  fontFamily: '"Poppins", sans-serif',
+  fontWeight: 600,
+  padding: theme.spacing(1, 3),
+  '&:hover': {
+    backgroundColor: '#1565c0',
+  },
+}));
+
+const UploadButton = styled(Button)(({ theme }) => ({
+  backgroundColor: alpha('#1976d2', 0.1),
+  color: '#1976d2',
+  textTransform: 'none',
+  fontFamily: '"Poppins", sans-serif',
+  fontWeight: 600,
+  padding: theme.spacing(1, 2),
+  marginLeft: theme.spacing(2),
+  '&:hover': {
+    backgroundColor: alpha('#1976d2', 0.2),
+  },
+}));
+
+const HiddenInput = styled('input')({
+  display: 'none',
+});
+
+const AvatarContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  marginBottom: theme.spacing(2),
+}));
+
+const StyledAvatar = styled(Avatar)(({ theme }) => ({
+  width: 100,
+  height: 100,
+  marginRight: theme.spacing(3),
+  border: '3px solid rgba(255,255,255,0.2)',
+}));
+
+const HelperText = styled(Typography)(({ theme }) => ({
+  color: '#888',
+  fontSize: '0.75rem',
+  marginTop: theme.spacing(0.5),
+  fontFamily: '"Poppins", sans-serif',
+}));
 
 const ProfileSettings = () => {
-    const [name, setName] = useState('');
-    const [bio, setBio] = useState('');
-    const [avatar, setAvatar] = useState<File | null>(null);
-    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [alertMessage, setAlertMessage] = useState<string | null>(null);
-    const [alertSeverity, setAlertSeverity] = useState<'success' | 'error' | null>(null);
+  const [name, setName] = useState('');
+  const [bio, setBio] = useState('');
+  const [avatar, setAvatar] = useState<File | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [alertSeverity, setAlertSeverity] = useState<'success' | 'error' | null>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        const fetchProfileData = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    setAlertMessage('You are not logged in. Please log in.');
-                    setAlertSeverity('error');
-                    return;
-                }
-
-                const response = await fetchEndpoint('/profile/me', 'GET', token);
-
-                // Use the response directly
-                setName(response.name || '');
-                setBio(response.bio || '');
-
-                let avatarUrl = response.profilePicture || null;
-                if (avatarUrl && avatarUrl.includes('/uploads/')) {
-                    const urlParts = avatarUrl.split('/');
-                    const filename = urlParts[urlParts.length - 1];
-                    avatarUrl = `../../../uploads/avatars/${filename}`;
-                }
-                console.log('Avatar URL:', avatarUrl);
-                setAvatarUrl(avatarUrl);
-            } catch (error) {
-                console.error('Error fetching profile data:', error);
-                setAlertMessage('Failed to fetch profile data. Please try again later.');
-                setAlertSeverity('error');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchProfileData();
-    }, []);
-
-    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setAvatar(e.target.files[0]);
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setAlertMessage('You are not logged in. Please log in.');
+          setAlertSeverity('error');
+          setLoading(false);
+          return;
         }
+
+        const response = await fetchEndpoint('/profile/me', 'GET', token);
+
+        // Use the response directly
+        setName(response.name || '');
+        setBio(response.bio || '');
+
+        if (response.profilePicture) {
+          setAvatarUrl(response.profilePicture);
+        }
+      } catch (error) {
+        console.error('Error fetching profile data:', error);
+        setAlertMessage('Failed to fetch profile data. Please try again later.');
+        setAlertSeverity('error');
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const handleUpload = async () => {
-        if (!avatar) {
-            setAlertMessage('Please select a file to upload.');
-            setAlertSeverity('error');
-            return;
-        }
+    fetchProfileData();
+  }, []);
 
-        try {
-            setLoading(true);
-            const token = localStorage.getItem('token');
-            if (!token) {
-                setAlertMessage('You are not logged in. Please log in again.');
-                setAlertSeverity('error');
-                return;
-            }
+  const handleAvatarClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
 
-            // Create FormData and log it for debugging
-            const formData = new FormData();
-            formData.append('profilePicture', avatar);
-            
-            console.log('Uploading file:', avatar.name, 'size:', avatar.size, 'type:', avatar.type);
-            
-            const response = await fetchEndpoint('/uploads/avatar', 'POST', token, formData);
-            console.log('Upload response:', response);
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setAvatar(e.target.files[0]);
+    }
+  };
 
-            setAlertMessage('Profile picture uploaded successfully!');
-            setAlertSeverity('success');
+  const handleUpload = async () => {
+    if (!avatar) {
+      setAlertMessage('Please select a file to upload.');
+      setAlertSeverity('error');
+      return;
+    }
 
-            // Update avatar URL with the response
-            if (response && response.profilePicture) {
-                setAvatarUrl(response.profilePicture);
-            }
-        } catch (error: any) {
-            console.error('Upload error:', error);
-            setAlertMessage(error.message || 'An error occurred while uploading the profile picture.');
-            setAlertSeverity('error');
-        } finally {
-            setLoading(false);
-        }
-    };
+    try {
+      setUploadLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setAlertMessage('You are not logged in. Please log in again.');
+        setAlertSeverity('error');
+        return;
+      }
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
+      // Create FormData
+      const formData = new FormData();
+      formData.append('profilePicture', avatar);
+      
+      console.log('Uploading file:', avatar.name, 'size:', avatar.size, 'type:', avatar.type);
+      
+      const response = await fetchEndpoint('/uploads/avatar', 'POST', token, formData);
+      console.log('Upload response:', response);
 
-        try {
-            setLoading(true);
-            const token = localStorage.getItem('token');
-            if (!token) {
-                setAlertMessage('You are not logged in. Please log in again.');
-                setAlertSeverity('error');
-                return;
-            }
+      setAlertMessage('Profile picture uploaded successfully!');
+      setAlertSeverity('success');
 
-            const response = await fetchEndpoint('/profile/edit-profile', 'PUT', token, { name, bio });
+      // Update avatar URL with the response
+      if (response && response.profilePicture) {
+        setAvatarUrl(response.profilePicture);
+      }
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      setAlertMessage(error.message || 'An error occurred while uploading the profile picture.');
+      setAlertSeverity('error');
+    } finally {
+      setUploadLoading(false);
+    }
+  };
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => {
-                    throw new Error('Unexpected response format');
-                });
-                setAlertMessage(`Failed to update profile: ${errorData.message}`);
-                setAlertSeverity('error');
-                return;
-            }
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
 
-            setAlertMessage('Profile updated successfully!');
-            setAlertSeverity('success');
-        } catch (error) {
-            console.error('Error updating profile:', error);
-            setAlertMessage('An error occurred while updating the profile. Please try again later.');
-            setAlertSeverity('error');
-        } finally {
-            setLoading(false);
-        }
-    };
+    try {
+      setSaveLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setAlertMessage('You are not logged in. Please log in again.');
+        setAlertSeverity('error');
+        return;
+      }
 
+      const response = await fetchEndpoint('/profile/edit-profile', 'PUT', token, { name, bio });
+
+      setAlertMessage('Profile updated successfully!');
+      setAlertSeverity('success');
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      setAlertMessage(error.message || 'An error occurred while updating the profile.');
+      setAlertSeverity('error');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  if (loading) {
     return (
-        <main className="profile-edit-container max-w-3xl mx-auto p-6">
-            <h2>Profile</h2>
-            {alertMessage && alertSeverity && (
-                <Alert severity={alertSeverity} sx={{ mb: 2 }}>
-                    <AlertTitle>{alertSeverity === 'success' ? 'Success' : 'Error'}</AlertTitle>
-                    {alertMessage}
-                </Alert>
-            )}
-            <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                    <label>Avatar</label>
-                    <div className="avatar-section">
-                        {avatar ? (
-                            <img src={URL.createObjectURL(avatar)} alt="Avatar" className="avatar-preview" />
-                        ) : avatarUrl ? (
-                            <img
-                                src={avatarUrl}
-                                alt="Avatar"
-                                className="avatar-preview"
-                            />
-                        ) : (
-                            <img src="src\View\Account&Profile\default-avatar.jpg" alt="Default Avatar" className="avatar-preview" />
-                        )}
-                        <input type="file" onChange={handleAvatarChange} />
-                        <button
-                            type="button"
-                            className="upload-button"
-                            onClick={handleUpload}
-                            disabled={loading}
-                        >
-                            {loading ? 'Uploading...' : 'Upload Picture'}
-                        </button>
-                    </div>
-                    <small>JPG, GIF or PNG, Max size: 10MB</small>
-                </div>
-
-                <div className="form-group">
-                    <label>Display name</label>
-                    <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                    />
-                    <small>This is the name that will be visible on your profile</small>
-                </div>
-
-                <div className="form-group">
-                    <label>About</label>
-                    <textarea
-                        value={bio}
-                        onChange={(e) => setBio(e.target.value)}
-                        rows={8}
-                        placeholder="Tell us about yourself"
-                    />
-                </div>
-
-                <div className="form-actions">
-                    <button type="submit" className="save-button" disabled={loading}>
-                        {loading ? 'Saving...' : 'Save Changes'}
-                    </button>
-                </div>
-            </form>
-        </main>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
+        <CircularProgress color="primary" />
+      </Box>
     );
+  }
+
+  return (
+    <Box sx={{ maxWidth: '800px', mx: 'auto', py: 4, px: 2 }}>
+      <Typography 
+        variant="h4" 
+        component="h1" 
+        sx={{ 
+          mb: 3, 
+          fontFamily: '"Poppins", sans-serif',
+          fontWeight: 600 
+        }}
+      >
+        Profile Settings
+      </Typography>
+
+      {/* Alert Section */}
+      {alertMessage && alertSeverity && (
+        <Alert 
+          severity={alertSeverity} 
+          sx={{ 
+            mb: 3,
+            '& .MuiAlert-message': {
+              fontFamily: '"Poppins", sans-serif',
+            }
+          }}
+          onClose={() => setAlertMessage(null)}
+        >
+          <AlertTitle sx={{ fontFamily: '"Poppins", sans-serif', fontWeight: 600 }}>
+            {alertSeverity === 'success' ? 'Success' : 'Error'}
+          </AlertTitle>
+          {alertMessage}
+        </Alert>
+      )}
+
+      <StyledPaper>
+        <form onSubmit={handleSubmit}>
+          <FormContainer>
+            <Box>
+              <Typography 
+                variant="subtitle1" 
+                component="h3"
+                sx={{ 
+                  mb: 1, 
+                  fontFamily: '"Poppins", sans-serif',
+                  fontWeight: 600,
+                  color: '#fff'
+                }}
+              >
+                Profile Picture
+              </Typography>
+              
+              <AvatarContainer>
+                <StyledAvatar 
+                  src={avatar ? URL.createObjectURL(avatar) : avatarUrl || undefined}
+                  alt={name || "Profile"} 
+                  onClick={handleAvatarClick}
+                  sx={{
+                    cursor: 'pointer',
+                    '&:hover': {
+                      opacity: 0.8,
+                    },
+                  }}
+                >
+                  {!avatar && !avatarUrl && (name ? name[0].toUpperCase() : <FAIcon icon="fas fa-user" />)}
+                </StyledAvatar>
+                
+                <Box>
+                  <HiddenInput
+                    type="file"
+                    accept="image/*"
+                    ref={fileInputRef}
+                    onChange={handleAvatarChange}
+                  />
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Button
+                      variant="outlined"
+                      onClick={handleAvatarClick}
+                      startIcon={<FAIcon icon="fas fa-camera" />}
+                      sx={{
+                        color: '#aaa',
+                        borderColor: 'rgba(255,255,255,0.23)',
+                        textTransform: 'none',
+                        fontFamily: '"Poppins", sans-serif',
+                        '&:hover': {
+                          borderColor: 'rgba(255,255,255,0.5)',
+                          backgroundColor: 'rgba(255,255,255,0.05)'
+                        }
+                      }}
+                    >
+                      Change Photo
+                    </Button>
+                    
+                    {avatar && (
+                      <UploadButton
+                        variant="outlined"
+                        onClick={handleUpload}
+                        disabled={uploadLoading}
+                        startIcon={uploadLoading ? 
+                          <CircularProgress size={16} color="inherit" /> : 
+                          <FAIcon icon="fas fa-cloud-arrow-up" />
+                        }
+                      >
+                        {uploadLoading ? 'Uploading...' : 'Upload'}
+                      </UploadButton>
+                    )}
+                  </Box>
+                  
+                  <HelperText>
+                    JPG, GIF or PNG, Max size: 10MB
+                  </HelperText>
+                </Box>
+              </AvatarContainer>
+            </Box>
+            
+            <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
+
+            <Box>
+              <StyledTextField
+                label="Display Name"
+                fullWidth
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                variant="outlined"
+                helperText="This is the name that will be visible on your profile"
+              />
+            </Box>
+
+            <Box>
+              <StyledTextField
+                label="About"
+                fullWidth
+                multiline
+                rows={6}
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                variant="outlined"
+                placeholder="Tell us about yourself"
+              />
+            </Box>
+
+            <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 2 }}>
+              <SaveButton 
+                type="submit" 
+                variant="contained" 
+                startIcon={saveLoading ? undefined : <FAIcon icon="fas fa-save" />}
+                disabled={saveLoading}
+              >
+                {saveLoading ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                    Saving...
+                  </Box>
+                ) : (
+                  'Save Changes'
+                )}
+              </SaveButton>
+            </Box>
+          </FormContainer>
+        </form>
+      </StyledPaper>
+    </Box>
+  );
 };
 
 export default ProfileSettings;
