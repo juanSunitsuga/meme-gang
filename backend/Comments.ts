@@ -29,12 +29,16 @@ router.get('/', async (req: Request, res: Response) => {
 router.post('/', authMiddleware, async (req: Request, res: Response) => {
   try {
     const post_id  = req.params.id;
-    const content  = req.body;
+    const { content } = req.body;
     const user_id = req.user?.id;
+
+    console.log("\n\n\n\n", post_id)
+    console.log("\n\n\n\n", content)
+    console.log("\n\n\n\n", user_id)
 
     const post = await Post.findByPk(post_id);
     if (!post) {
-      res.status(404).json({ message: 'Post not found' });
+      res.status(404).json({ message: 'Post not found', post_id });
       return;
     }
     if (post.user_id !== user_id) {

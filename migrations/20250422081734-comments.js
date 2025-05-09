@@ -46,6 +46,11 @@ export default  {
         allowNull: false,
         defaultValue: Sequelize.NOW,
       },
+      updatedAt: {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.NOW,
+      },
     });
   },
 

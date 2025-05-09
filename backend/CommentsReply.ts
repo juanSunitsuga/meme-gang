@@ -8,7 +8,7 @@ const router = express.Router({ mergeParams: true }); // mergeParams penting bia
 // Lihat semua reply dari suatu komentar
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { commentsId: reply_to } = req.params;
+    const { id: reply_to } = req.params;
 
     const replies = await Comment.findAll({
       where: { reply_to },
@@ -26,7 +26,7 @@ router.get('/', async (req: Request, res: Response) => {
 // Buat reply ke suatu komentar
 router.post('/', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const { commentsId: reply_to } = req.params;
+    const { id: reply_to } = req.params;
     const { content } = req.body;
     const user_id = req.user!.id;
 

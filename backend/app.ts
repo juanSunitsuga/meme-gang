@@ -47,8 +47,8 @@ app.use('/profile', profileRoutes);
 
 app.use('/api', searchRoutes);
 app.use('/post', postRouter);
-app.use('/post/:postId/comments', commentsRoutes); 
-app.use('/comments/:commentsId/replies', commentReplyRoutes); 
+app.use('/post/:id/comments', commentsRoutes); 
+app.use('/comments/:id/replies', commentReplyRoutes); 
 app.use(error)
 
 app.use((req, res) => {
