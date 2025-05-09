@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import AccountPage from './Account&Profile/AccountPage';
 import PasswordPage from './Account&Profile/PasswordPage';
 import ProfilePage from './Account&Profile/ProfilePage';
-import './style/Profile.css';
+import './Profile.css';
 import { fetchEndpoint } from './FetchEndpoint';
 import { Alert, AlertTitle } from '@mui/material';
 
@@ -17,9 +17,13 @@ const Settings = () => {
 
     // Session checker
     useEffect(() => {
+        
         const checkSession = async () => {
+            console.log('checkSession function called');
             try {
                 const token = localStorage.getItem('token');
+                console.log('Token from localStorage:', token ? `${token.substring(0, 10)}...` : 'No token found');
+                
                 if (!token) {
                     setErrorMessage('You are not logged in. Redirecting to login...');
                     navigate('/login');
@@ -27,12 +31,14 @@ const Settings = () => {
                 }
 
                 const response = await fetchEndpoint('/auth/session', 'GET', token);
+                console.log('Session check response:', response);
 
             } catch (error: any) {
-                console.error('Session check error:', error);
                 setErrorMessage('Session invalid or expired. Redirecting to login...');
                 localStorage.removeItem('token'); // Clear invalid token
                 navigate('/login');
+            } finally {
+                console.log('checkSession function completed');
             }
         };
 
@@ -50,7 +56,7 @@ const Settings = () => {
 
             try {
                 const response = await fetchEndpoint('/profile/me', 'GET', token);
-
+                
                 // Use the response directly
                 setUserData(response);
             } catch (error) {

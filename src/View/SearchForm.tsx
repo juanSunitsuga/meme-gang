@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { fetchEndpoint } from './FetchEndpoint';
 
-const SearchForm = () => {
+interface SearchFormProps {
+    onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+}
+
+const SearchForm = ({ onSubmit }: SearchFormProps) => {
     const [searchParams] = useSearchParams();
     const [query, setQuery] = useState('');
     const [activeTab, setActiveTab] = useState<'users' | 'posts' | 'tags'>('users');
@@ -39,7 +43,17 @@ const SearchForm = () => {
     };
 
     return (
-        <div>
+        <div className="search-page">
+            <h1>Search</h1>
+            <form onSubmit={onSubmit}>
+                <input
+                    type="text"
+                    placeholder="Search..."
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                />
+                <button type="submit">Search</button>
+            </form>
             <div style={{ display: 'flex', marginTop: '20px' }}>
                 <button
                     style={{

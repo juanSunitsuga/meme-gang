@@ -1,12 +1,28 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import Navbar from './components/Navbar';
 import Settings from './View/Settings';
 import Login from './View/Login';
 import Register from './View/Register';
 import SearchForm from './View/SearchForm';
 import ViewComments from './View/Comments/ViewComments';
+import Home from './View/Home'; // Import Home component
+import './App.css';
 
-function App() {
+const theme = createTheme({
+    typography: {
+        fontFamily: '"Poppins", "Roboto", "Helvetica", "Arial", sans-serif',
+        h6: {
+            fontWeight: 600,
+        },
+        button: {
+            fontWeight: 500,
+        }
+    },
+});
+
+function AppContent() {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -17,28 +33,30 @@ function App() {
 
     return (
         <div className="App">
-            <button onClick={() => navigate('/settings')}>Settings</button>
-            <button onClick={() => navigate('/login')}>Login</button>
-            <button onClick={() => navigate('/register')}>Register</button>
-            <button onClick={() => navigate('/comments')}>View Comments</button>
-            <form onSubmit={handleSearchSubmit} style={{ display: 'inline' }}>
-                <input
-                    type="text"
-                    placeholder="Search..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <button type="submit">Search</button>
-            </form>
-
-            <Routes>
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/search" element={<SearchForm />} />
-                <Route path="/comments/:commentsId" element={<ViewComments />} />
-            </Routes>
+            <Navbar />
+            <div className="content-container">
+                <Routes>
+                    <Route path="/" element={<Home />} /> {/* Add a Home route */}
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/search" element={<SearchForm onSubmit={handleSearchSubmit} />} />
+                    <Route path="/comments/:id" element={<ViewComments />} />
+                    {/* Add other routes here */}
+                </Routes>
+            </div>
         </div>
+    );
+}
+
+function App() {
+    // Wrap everything in Router
+    return (
+        <Router>
+            <ThemeProvider theme={theme}>
+                <AppContent />
+            </ThemeProvider>
+        </Router>
     );
 }
 

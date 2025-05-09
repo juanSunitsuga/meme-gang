@@ -1,6 +1,10 @@
 # Sequelize Config
 config/config.json
 
+# Local uploads
+uploads
+avatars
+
 # Logs
 logs
 *.log
@@ -25,3 +29,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+/config/config.json

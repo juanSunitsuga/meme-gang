@@ -1,53 +1,70 @@
 export const fetchEndpoint = async (
-    url: string,
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    token: string | null,
+    endpoint: string,
+    method: string,
+    token?: string | null,
     body?: any
-): Promise<any> => {
+) => {
+    console.log(`fetchEndpoint called for ${method} ${endpoint}`);
+    
+    const baseUrl = 'http://localhost:3000';
+    const url = `${baseUrl}${endpoint}`;
+    
     try {
         const headers: Record<string, string> = {};
         
-        // Don't set Content-Type for FormData - browser will set it with boundary
-        if (!(body instanceof FormData)) {
-            headers['Content-Type'] = 'application/json';
-        }
-
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
         }
-
+        
         const options: RequestInit = {
             method,
             headers,
+            credentials: 'include',
         };
-
+        
         if (body) {
-            // Don't stringify FormData objects
-            options.body = body instanceof FormData ? body : JSON.stringify(body);
+            if (body instanceof FormData) {
+                // For FormData, don't set Content-Type - browser will set it with boundary
+                options.body = body;
+                
+                // Log the FormData contents for debugging
+                console.log('Sending FormData with entries:');
+                for (const pair of body.entries()) {
+                    console.log(`${pair[0]}: ${pair[1]}`);
+                }
+            } else if (method !== 'GET') {
+                // For regular JSON data
+                headers['Content-Type'] = 'application/json';
+                options.body = JSON.stringify(body);
+                console.log(`Request body included for ${method} request`);
+            }
         }
-
-        // Ensure proper URL formatting
-        const fullUrl = `http://localhost:3000${url.startsWith('/') ? '' : '/'}${url}`;
         
-        console.log(`Sending ${method} request to ${fullUrl}`);
-        const response = await fetch(fullUrl, options);
+        console.log(`Making ${method} request to ${url}`);
+        const response = await fetch(url, options);
         
-        // Handle non-JSON responses (like file uploads)
-        const contentType = response.headers.get('content-type');
-        const data = contentType && contentType.includes('application/json') 
-            ? await response.json() 
-            : await response.text();
-
         if (!response.ok) {
-            const errorMessage = typeof data === 'object' && data.message 
-                ? data.message 
-                : 'Failed to fetch data';
-            throw new Error(errorMessage);
+            const errorData = await response.json().catch(() => {
+                return { message: 'Unknown error' };
+            });
+            console.error('Error data from response:', errorData);
+            throw new Error(errorData.message || `Request failed with status ${response.status}`);
         }
-
-        return data;
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+            const jsonData = await response.json();
+            console.log('Parsed JSON response successfully');
+            return jsonData;
+        } else {
+            const textData = await response.text();
+            console.log('Received text response');
+            return textData;
+        }
     } catch (error) {
-        console.error(`Error during ${method} request to ${url}:`, error);
+        console.error(`Error in fetchEndpoint for ${method} ${endpoint}:`, error);
         throw error;
     }
 };
