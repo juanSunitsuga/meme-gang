@@ -8,22 +8,59 @@ const router = express.Router({ mergeParams: true }); // mergeParams penting bia
 // Lihat semua reply dari suatu komentar
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { id: reply_to } = req.params;
+    const { id } = req.params;
 
-    console.log('\n\n\n\nreply_to:', reply_to);
+    // Get the main comment
+    const mainComment = await Comment.findByPk(id, {
+      include: [
+        {
+          model: User,
+          attributes: ['username', 'profilePicture'],
+        },
+      ],
+    });
 
+    if (!mainComment) {
+      res.status(404).json({ message: 'Comment not found' });
+      return 
+    }
+
+    // Get replies of the main comment
     const replies = await Comment.findAll({
-      where: { reply_to },
-      include: [{ model: User, attributes: ['username'] }],
+      where: { reply_to: id },
+      include: [
+        {
+          model: User,
+          attributes: ['username', 'profilePicture'],
+        },
+      ],
       order: [['createdAt', 'DESC']],
     });
 
-    res.status(200).json(replies);
+    res.status(200).json({
+      id: mainComment.id,
+      user: {
+        name: mainComment.user.username,
+        avatar: mainComment.user.profilePicture, // 👈 match frontend expectations
+      },
+      text: mainComment.content,
+      createdAt: mainComment.createdAt,
+      replies: replies.map(reply => ({
+        id: reply.id,
+        user: {
+          name: reply.user.username,
+          avatar: reply.user.profilePicture,
+        },
+        text: reply.content,
+        createdAt: reply.createdAt,
+      })),
+    });
   } catch (error) {
-    console.error('Error getting replies:', error);
-    res.status(500).json({ message: 'Failed to get replies' });
+    console.error('Error getting comment and replies:', error);
+    res.status(500).json({ message: 'Failed to get comment and replies' });
   }
 });
+
 
 // Buat reply ke suatu komentar
 router.post('/', authMiddleware, async (req: Request, res: Response) => {
