@@ -196,6 +196,8 @@ const ProfileSettings = () => {
       setAlertMessage('Profile picture uploaded successfully!');
       setAlertSeverity('success');
 
+      setAvatar(null);
+      
       // Update avatar URL with the response
       if (response && response.profilePicture) {
         setAvatarUrl(response.profilePicture);

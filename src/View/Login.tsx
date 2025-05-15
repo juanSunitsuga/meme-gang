@@ -98,8 +98,9 @@ const Login: React.FC = () => {
       
       console.log('Successfully logged in and stored token');
       
-      // Redirect
       navigate('/');
+      setTimeout(() => window.location.reload(), 100);
+    
     } catch (error) {
       console.error('Login error:', error);
       if (error instanceof Error) {
