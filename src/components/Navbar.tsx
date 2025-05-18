@@ -262,6 +262,7 @@ const MuiNavbar: React.FC = () => {
               sx={{ mb: 1 }}
               onClick={() => { navigate('/create-post'); setDrawerOpen(false); }}
               startIcon={<FAIcon icon="fas fa-plus" />}
+
             >
               Post
             </Button>
@@ -383,7 +384,7 @@ const MuiNavbar: React.FC = () => {
                 <>
                   <NavButton
                     startIcon={<FAIcon icon="fas fa-plus" />}
-                    onClick={() => navigate('/create-post')}
+                    onClick={() => { navigate('/create-post'); setDrawerOpen(false); }}
                   >
                     Post
                   </NavButton>
