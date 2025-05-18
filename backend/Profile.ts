@@ -13,7 +13,11 @@ import jwt from 'jsonwebtoken';
 declare global {
     namespace Express {
         interface Request {
-            user?: { id: string };
+            user?: { 
+                id: string, 
+                username: string,
+                email: string,
+            };
             uploadedFile?: { filename: string };
         }
     }

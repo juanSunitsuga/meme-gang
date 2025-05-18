@@ -123,15 +123,15 @@ const AccountSettings = () => {
                 const data = await fetchEndpoint('/profile/me', 'GET', token);
                 console.log('Profile data received:', data);
                 
-                if (data && data.name) {
-                    setUsername(data.name);
+                if (data && data.username) {
+                    setUsername(data.username);
                 }
                 
                 if (data && data.email) {
                     setEmail(data.email);
                 }
                 
-                if (!data || (!data.name && !data.username && !data.email)) {
+                if (!data || (!data.username && !data.email)) {
                     console.error('Invalid data format received:', data);
                     setAlertMessage('Received invalid user data format from server');
                     setAlertSeverity('error');
@@ -162,13 +162,13 @@ const AccountSettings = () => {
             setLoading(true);
             
             const updatedData = {
-                name: username, // Changed from username to name to match backend
+                username: username, // Changed from username to name to match backend
                 email: email
             };
             
             console.log('Sending updated profile data:', updatedData);
             
-            const response = await fetchEndpoint('/profile', 'PUT', token, updatedData);
+            const response = await fetchEndpoint('/profile/edit-account', 'PUT', token, updatedData);
             console.log('Update response:', response);
             
             setAlertMessage('Changes saved successfully!');
