@@ -9,7 +9,7 @@ import {
   Backdrop,
   Stack,
 } from '@mui/material';
-import { fetchEndpoint } from '../FetchEndpoint';
+import { fetchEndpoint } from './FetchEndpoint';
 
 const CreatePost: React.FC = () => {
 const [title, setTitle] = useState('');
