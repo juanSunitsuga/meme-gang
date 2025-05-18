@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { Session } from "../models/Session";
 import { appConfig } from "../config/app";
 import { middlewareWrapper } from "../utils/middlewareWrapper";
 
@@ -14,36 +13,38 @@ const authMiddleware = middlewareWrapper(
       throw new Error("No token provided");
     }
 
-    // const token = authHeader.split(' ')[1];
-
     try {
-      const decoded = jwt.verify(token, appConfig.jwtSecret) as { id: string };
+      const decoded = jwt.verify(token, appConfig.jwtSecret) as {
+        id: string;
+        email?: string;
+        name?: string;
+      };
+
       if (!decoded?.id) {
         res.locals.errorCode = 401;
         throw new Error("Invalid token structure");
       }
 
-      // Check for session validity
-      const session = await Session.findOne({
-        where: { token, userId: decoded.id },
-      });
-
-      if (!session) {
-        res.locals.errorCode = 401;
-        throw new Error("Invalid or expired session");
-      }
-
-      req.user = { id: decoded.id };
+      req.user = {
+        id: decoded.id,
+        username: decoded.name || "",
+        email: decoded.email || "",
+      };
     } catch (error: any) {
       res.locals.errorCode = 401;
 
-      // Specific expired token check
+      // Specific error handling for different JWT verification failures
       if (error.name === "TokenExpiredError") {
         throw new Error(`Token expired at ${error.expiredAt}`);
+      } else if (error.name === "JsonWebTokenError") {
+        throw new Error("Invalid token signature");
+      } else if (error.name === "NotBeforeError") {
+        throw new Error("Token not active yet");
       }
 
       throw new Error("Token verification failed");
     }
-});
+  }
+);
 
 export default authMiddleware;

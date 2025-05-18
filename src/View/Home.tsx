@@ -1,8 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchEndpoint } from './FetchEndpoint';
-import './Home.css';
+import { 
+  Box, 
+  Typography, 
+  Card, 
+  CardHeader, 
+  CardContent, 
+  CardMedia, 
+  CardActions, 
+  Avatar, 
+  Button, 
+  IconButton, 
+  CircularProgress,
+  Alert,
+  styled,
+  alpha
+} from '@mui/material';
+import FAIcon from '../components/FAIcon';
 
+// Interfaces
 interface Post {
   id: string;
   title: string;
@@ -19,6 +36,112 @@ interface Post {
   commentsCount: number;
   isLiked?: boolean;
 }
+
+// Styled components
+const HomeContainer = styled(Box)(({ theme }) => ({
+  maxWidth: '800px',
+  margin: '0 auto',
+  padding: theme.spacing(2.5),
+}));
+
+const HomeHeader = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: theme.spacing(2.5),
+}));
+
+const SortButton = styled(Button)(({ theme }) => ({
+  textTransform: 'none',
+  padding: theme.spacing(1, 2),
+  marginLeft: theme.spacing(1.25),
+  fontWeight: 500,
+  color: '#555',
+  borderRadius: '20px',
+  fontFamily: '"Poppins", sans-serif',
+  '&.active': {
+    backgroundColor: '#f3f3f3',
+    color: '#000',
+    fontWeight: 600,
+  },
+  '&:hover': {
+    backgroundColor: alpha('#f3f3f3', 0.7),
+  }
+}));
+
+const LoadingContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  margin: theme.spacing(5, 0),
+}));
+
+const PostsContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: theme.spacing(2.5),
+}));
+
+const PostCard = styled(Card)(({ theme }) => ({
+  backgroundColor: 'white',
+  borderRadius: theme.spacing(1),
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+  overflow: 'hidden',
+}));
+
+const PostTitle = styled(Typography)(({ theme }) => ({
+  padding: theme.spacing(1.5, 2),
+  fontWeight: 600,
+  fontSize: '18px',
+}));
+
+const PostContent = styled(Typography)(({ theme }) => ({
+  padding: theme.spacing(0, 2, 2),
+  color: '#333',
+}));
+
+const PostImage = styled(CardMedia)(({ theme }) => ({
+  width: '100%',
+  maxHeight: '500px',
+  objectFit: 'contain',
+  cursor: 'pointer',
+  transition: 'transform 0.2s',
+  '&:hover': {
+    transform: 'scale(1.01)',
+  },
+}));
+
+const PostActions = styled(CardActions)(({ theme }) => ({
+  display: 'flex',
+  padding: theme.spacing(1.5, 2),
+  borderTop: '1px solid #f0f0f0',
+}));
+
+const ActionButton = styled(Button)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  marginRight: theme.spacing(2.5),
+  color: '#555',
+  fontSize: '14px',
+  padding: theme.spacing(0.75, 1),
+  borderRadius: theme.spacing(0.5),
+  textTransform: 'none',
+  '&:hover': {
+    backgroundColor: '#f3f3f3',
+  },
+  '& .MuiSvgIcon-root': {
+    marginRight: theme.spacing(0.75),
+  },
+  '&.liked': {
+    color: '#1e88e5',
+  },
+}));
+
+const NoPostsContainer = styled(Box)(({ theme }) => ({
+  textAlign: 'center',
+  padding: theme.spacing(5, 0),
+  color: '#666',
+}));
 
 const Home: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -86,96 +209,140 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="home-container">
-      <div className="home-header">
-        <h1>Meme Gang</h1>
-        <div className="sort-options">
-          <button 
-            className={sortBy === 'recent' ? 'active' : ''} 
+    <HomeContainer>
+      <HomeHeader>
+        <Typography variant="h4" component="h1" fontFamily="'Poppins', sans-serif" fontWeight={600}>
+          Meme Gang
+        </Typography>
+        <Box>
+          <SortButton 
+            className={sortBy === 'recent' ? 'active' : ''}
             onClick={() => setSortBy('recent')}
+            startIcon={<FAIcon icon="fas fa-clock" />}
           >
             Recent
-          </button>
-          <button 
-            className={sortBy === 'popular' ? 'active' : ''} 
+          </SortButton>
+          <SortButton 
+            className={sortBy === 'popular' ? 'active' : ''}
             onClick={() => setSortBy('popular')}
+            startIcon={<FAIcon icon="fas fa-fire" />}
           >
             Popular
-          </button>
-        </div>
-      </div>
+          </SortButton>
+        </Box>
+      </HomeHeader>
 
       {loading && (
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Loading memes...</p>
-        </div>
+        <LoadingContainer>
+          <CircularProgress size={40} sx={{ mb: 2 }} />
+          <Typography variant="body1" fontFamily="'Poppins', sans-serif">
+            Loading memes...
+          </Typography>
+        </LoadingContainer>
       )}
 
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <Alert 
+          severity="error" 
+          sx={{ 
+            my: 2.5, 
+            borderLeft: '4px solid #c62828',
+            '& .MuiAlert-message': {
+              fontFamily: '"Poppins", sans-serif',
+            }
+          }}
+        >
+          {error}
+        </Alert>
+      )}
 
-      <div className="posts-container">
+      <PostsContainer>
         {posts.length === 0 && !loading ? (
-          <div className="no-posts">
-            <h2>No memes found</h2>
-            <p>Be the first to share a meme!</p>
-          </div>
+          <NoPostsContainer>
+            <Typography variant="h5" fontWeight={600} fontFamily="'Poppins', sans-serif">
+              No memes found
+            </Typography>
+            <Typography variant="body1" fontFamily="'Poppins', sans-serif" sx={{ mt: 1 }}>
+              Be the first to share a meme!
+            </Typography>
+          </NoPostsContainer>
         ) : (
           posts.map(post => (
-            <div key={post.id} className="post-card">
-              <div className="post-header">
-                <div className="user-info">
-                  <img 
+            <PostCard key={post.id}>
+              <CardHeader
+                avatar={
+                  <Avatar 
                     src={post.user.profilePicture || '/default-avatar.png'} 
-                    alt={post.user.name} 
-                    className="avatar"
+                    alt={post.user.name}
+                    sx={{ width: 40, height: 40 }}
                   />
-                  <div>
-                    <h3>{post.user.name}</h3>
-                    <p className="post-date">{formatDate(post.createdAt)}</p>
-                  </div>
-                </div>
-              </div>
+                }
+                title={
+                  <Typography variant="subtitle1" fontWeight={500} fontFamily="'Poppins', sans-serif">
+                    {post.user.name}
+                  </Typography>
+                }
+                subheader={
+                  <Typography variant="caption" color="#777" fontFamily="'Poppins', sans-serif">
+                    {formatDate(post.createdAt)}
+                  </Typography>
+                }
+                sx={{ 
+                  pb: 1, 
+                  borderBottom: '1px solid #f0f0f0',
+                  '& .MuiCardHeader-content': { overflow: 'hidden' }
+                }}
+              />
               
-              <h2 className="post-title">{post.title}</h2>
+              <PostTitle variant="h6" fontFamily="'Poppins', sans-serif">
+                {post.title}
+              </PostTitle>
               
-              {post.content && <p className="post-content">{post.content}</p>}
+              {post.content && (
+                <PostContent variant="body1" fontFamily="'Poppins', sans-serif">
+                  {post.content}
+                </PostContent>
+              )}
               
-              <div className="post-image-container">
-                <img 
-                  src={post.imageUrl} 
-                  alt={post.title} 
-                  className="post-image"
-                  onClick={() => navigate(`/post/${post.id}`)}
-                />
-              </div>
+              <PostImage
+                component="img"
+                image={post.imageUrl}
+                alt={post.title}
+                onClick={() => navigate(`/post/${post.id}`)}
+              />
               
-              <div className="post-actions">
-                <button 
-                  className={`like-button ${post.isLiked ? 'liked' : ''}`}
+              <PostActions>
+                <ActionButton 
+                  className={post.isLiked ? 'liked' : ''}
                   onClick={() => handleLike(post.id)}
+                  startIcon={
+                    <FAIcon 
+                      icon="fas fa-thumbs-up" 
+                      style={{ color: post.isLiked ? '#1e88e5' : undefined }}
+                    />
+                  }
                 >
-                  <i className={`fas fa-thumbs-up ${post.isLiked ? 'liked' : ''}`}></i>
-                  <span>{post.likesCount}</span>
-                </button>
+                  {post.likesCount}
+                </ActionButton>
                 
-                <button 
-                  className="comment-button"
+                <ActionButton 
                   onClick={() => handleCommentClick(post.id)}
+                  startIcon={<FAIcon icon="fas fa-comment" />}
                 >
-                  <i className="fas fa-comment"></i>
-                  <span>{post.commentsCount}</span>
-                </button>
+                  {post.commentsCount}
+                </ActionButton>
                 
-                <button className="share-button">
-                  <i className="fas fa-share"></i>
-                </button>
-              </div>
-            </div>
+                <ActionButton
+                  startIcon={<FAIcon icon="fas fa-share" />}
+                >
+                  Share
+                </ActionButton>
+              </PostActions>
+            </PostCard>
           ))
         )}
-      </div>
-    </div>
+      </PostsContainer>
+    </HomeContainer>
   );
 };
 
