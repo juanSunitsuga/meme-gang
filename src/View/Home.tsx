@@ -5,7 +5,7 @@ import PostCard from './Components/PostCard';
 
 interface Post {
   title: string;
-  imageUrl: string;
+  image_url: string;
   user: {
     name: string;
     profilePicture?: string;
@@ -62,7 +62,7 @@ const Home: React.FC = () => {
         ) : (
           posts.map(post => (
             <PostCard
-              imageUrl={post.imageUrl}
+              imageUrl={post.image_url}
               title={post.title}
               username='Juan'
               timeAgo='Just now'
