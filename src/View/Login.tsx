@@ -88,6 +88,10 @@ const Login: React.FC = () => {
     try {
       const data = await fetchEndpoint('/auth/login', 'POST', null, { email, password });
       
+      if (!data || !data.token) {
+        throw new Error('Your credentials are incorrect');
+      }
+
       localStorage.removeItem('token');
       
       localStorage.setItem('token', data.token);
