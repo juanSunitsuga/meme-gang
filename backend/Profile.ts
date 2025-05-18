@@ -188,34 +188,4 @@ router.post('/change-password', async (req: Request, res: Response) => {
     }
 });
 
-// Endpoint to delete profile picture
-router.delete('/delete-profile-picture', authMiddleware, async (req: Request, res: Response) => {
-    try {
-        const { id } = req.user!;
-        const user = await User.findByPk(id);
-        if (!user) {
-            res.status(404).json({ message: 'User not found' });
-            return 
-        }
-
-        if (!user.profilePicture) {
-            res.status(400).json({ message: 'No profile picture to delete' });
-            return 
-        }
-
-        const filePath = path.join(__dirname, '../../public', user.profilePicture);
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-        }
-
-        user.profilePicture = undefined;
-        await user.save();
-
-        res.status(200).json({ message: 'Profile picture deleted successfully' });
-    } catch (error) {
-        console.error('Error deleting profile picture:', error);
-        res.status(500).json({ message: 'An error occurred while deleting the profile picture' });
-    }
-});
-
 export default router;

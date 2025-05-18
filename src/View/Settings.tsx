@@ -24,6 +24,7 @@ const SettingsContainer = styled(Box)(({ theme }) => ({
   backgroundColor: '#181818',
   color: 'white',
   fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+  overflow: 'hidden', // Prevent scrolling at container level
 }));
 
 const Sidebar = styled(Paper)(({ theme }) => ({
@@ -32,6 +33,10 @@ const Sidebar = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(4, 2),
   boxShadow: 'none',
   borderRight: '1px solid rgba(255, 255, 255, 0.05)',
+  height: '100vh', // Fixed height
+  position: 'sticky',
+  top: 0,
+  overflowY: 'auto', // Allow scrolling if sidebar content is too tall
 }));
 
 const StyledList = styled(List)(({ theme }) => ({
@@ -58,6 +63,21 @@ const StyledListItem = styled(ListItem)(({ theme }) => ({
 const SettingsContent = styled(Box)(({ theme }) => ({
   flex: 1,
   padding: theme.spacing(6),
+  overflowY: 'auto', // Enable vertical scrolling
+  height: '100vh', // Set a fixed height
+  '&::-webkit-scrollbar': {
+    width: '8px',
+  },
+  '&::-webkit-scrollbar-track': {
+    background: '#1a1a1a',
+  },
+  '&::-webkit-scrollbar-thumb': {
+    background: '#444',
+    borderRadius: '4px',
+  },
+  '&::-webkit-scrollbar-thumb:hover': {
+    background: '#555',
+  },
 }));
 
 const LoadingContainer = styled(Box)(({ theme }) => ({

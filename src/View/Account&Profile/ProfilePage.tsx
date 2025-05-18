@@ -87,6 +87,19 @@ const UploadButton = styled(Button)(({ theme }) => ({
   },
 }));
 
+const DeleteButton = styled(Button)(({ theme }) => ({
+  backgroundColor: alpha('#d32f2f', 0.1),
+  color: '#d32f2f',
+  textTransform: 'none',
+  fontFamily: '"Poppins", sans-serif',
+  fontWeight: 600,
+  padding: theme.spacing(1, 2),
+  marginLeft: theme.spacing(2),
+  '&:hover': {
+    backgroundColor: alpha('#d32f2f', 0.2),
+  },
+}));
+
 const HiddenInput = styled('input')({
   display: 'none',
 });
@@ -143,6 +156,8 @@ const ProfileSettings = () => {
 
         if (response.profilePicture) {
           setAvatarUrl(response.profilePicture);
+        }else{
+          setAvatarUrl('default-avatar.png');
         }
       } catch (error) {
         console.error('Error fetching profile data:', error);
@@ -210,6 +225,34 @@ const ProfileSettings = () => {
     }
   };
 
+  // Add a function to handle avatar deletion
+  const handleDeleteAvatar = async () => {
+    try {
+      setUploadLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setAlertMessage('You are not logged in. Please log in again.');
+        setAlertSeverity('error');
+        return;
+      }
+      
+      const response = await fetchEndpoint('/uploads/delete-avatar', 'DELETE', token);
+      console.log('Delete avatar response:', response);
+      
+      // Reset avatar state
+      setAvatarUrl(null);
+      setAlertMessage('Profile picture deleted successfully!');
+      setAlertSeverity('success');
+      
+    } catch (error: any) {
+      console.error('Error deleting avatar:', error);
+      setAlertMessage(error.message || 'An error occurred while deleting the profile picture.');
+      setAlertSeverity('error');
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -236,20 +279,16 @@ const ProfileSettings = () => {
   };
 
   const getAvatarUrl = (avatarPath: string) => {
-    // If it's already a full URL, return it
     if (avatarPath.startsWith('http')) {
       return avatarPath;
     }
     
-    // Extract just the filename if it's a path
     const filename = avatarPath.includes('/')
       ? avatarPath.split('/').pop()
       : avatarPath;
       
-    // If we don't have a filename, return undefined
     if (!filename) return undefined;
     
-    // Construct the correct URL to match our image controller routes
     return `/uploads/avatars/${filename}`;
   };
 
@@ -339,7 +378,7 @@ const ProfileSettings = () => {
                     onChange={handleAvatarChange}
                   />
                   
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mt: 2, flexWrap: 'wrap', gap: 2 }}>
                     <Button
                       variant="outlined"
                       onClick={handleAvatarClick}
@@ -358,18 +397,53 @@ const ProfileSettings = () => {
                       Change Photo
                     </Button>
                     
+                    {/* Show upload button only when a file is selected */}
                     {avatar && (
                       <UploadButton
-                        variant="outlined"
+                        variant="contained"
                         onClick={handleUpload}
                         disabled={uploadLoading}
                         startIcon={uploadLoading ? 
                           <CircularProgress size={16} color="inherit" /> : 
                           <FAIcon icon="fas fa-cloud-arrow-up" />
                         }
+                        sx={{
+                          backgroundColor: '#0079d3',
+                          color: 'white',
+                          textTransform: 'none',
+                          fontFamily: '"Poppins", sans-serif',
+                          '&:hover': {
+                            backgroundColor: '#0056a3'
+                          }
+                        }}
                       >
                         {uploadLoading ? 'Uploading...' : 'Upload'}
                       </UploadButton>
+                    )}
+                    
+                    {/* Show delete button only when user has a profile picture that's not the default */}
+                    {avatarUrl && !avatar && avatarUrl !== 'default-avatar.png' && (
+                      <DeleteButton
+                        variant="outlined"
+                        onClick={handleDeleteAvatar}
+                        disabled={uploadLoading}
+                        startIcon={uploadLoading ? 
+                          <CircularProgress size={16} color="inherit" /> : 
+                          <FAIcon icon="fas fa-trash" />
+                        }
+                        sx={{
+                          color: '#f44336',
+                          borderColor: 'rgba(244, 67, 54, 0.5)',
+                          textTransform: 'none',
+                          fontFamily: '"Poppins", sans-serif',
+                          '&:hover': {
+                            borderColor: '#f44336',
+                            backgroundColor: 'rgba(244, 67, 54, 0.08)'
+                          }
+                        }}
+                      >
+                        {uploadLoading ? 'Deleting...' : 'Remove Photo'}
+                      </DeleteButton>
                     )}
                   </Box>
                   
