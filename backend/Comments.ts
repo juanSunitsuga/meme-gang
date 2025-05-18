@@ -80,6 +80,8 @@ router.put('/:commentId', authMiddleware, async (req: Request, res: Response) =>
     comment.content = content;
     await comment.save();
 
+    // await comment.update(req.body); -> kayanya bisa gini juga lebih pendek 
+
     res.status(200).json({ message: 'Comment updated', comment });
   } catch (error) {
     console.error('Error updating comment:', error);
