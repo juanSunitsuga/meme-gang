@@ -40,6 +40,8 @@ const sequelize = new Sequelize({
 
 // Later using the same path for API routes
 app.use('/uploads', uploadRoutes);
+app.use('/uploads/posts', express.static('uploads/post'));
+
 
 app.use(error)
 app.use('/auth', registerLoginRoutes);

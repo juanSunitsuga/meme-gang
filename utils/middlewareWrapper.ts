@@ -12,7 +12,9 @@ export function middlewareWrapper<T>(
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       await middlewareWrapper(req, res, next);
-      next();
+      if (!res.headersSent) {
+        next();
+      }
     } catch (error) {
       next(error);
     }
