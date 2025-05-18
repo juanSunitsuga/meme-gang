@@ -86,12 +86,14 @@ router.post('/login', controllerWrapper(async (req, res, next) => {
 
         // Generate JWT token with user data
         const token = jwt.sign(
-            { 
-                id: user.id, 
-                email: user.email, 
-                name: user.name || user.username 
-            }, appConfig.jwtSecret, { expiresIn: appConfig.jwtExpiration }
-        )
+            {
+                id: user.id,
+                email: user.email,
+                name: user.name || user.username
+            },
+            appConfig.jwtSecret,
+            { expiresIn: appConfig.jwtExpiration }
+        );
 
         // Return token and user info to the client
         return {
