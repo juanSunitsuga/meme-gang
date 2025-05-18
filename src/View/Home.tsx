@@ -2,9 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchEndpoint } from './FetchEndpoint';
 import PostCard from './Components/PostCard';
-import './Home.css';
 
-// Interfaces
 interface Post {
   title: string;
   imageUrl: string;
@@ -46,60 +44,21 @@ const Home: React.FC = () => {
 
   return (
     <div className="home-container">
-      <div className="home-header">
-        <h1>Meme Gang</h1>
-        <div className="sort-options">
-          <button
-            className={sortBy === 'recent' ? 'active' : ''}
-            onClick={() => setSortBy('recent')}
-            startIcon={<FAIcon icon="fas fa-clock" />}
-          >
-            Recent
-          </button>
-          <button
-            className={sortBy === 'popular' ? 'active' : ''}
-            onClick={() => setSortBy('popular')}
-            startIcon={<FAIcon icon="fas fa-fire" />}
-          >
-            Popular
-          </SortButton>
-        </Box>
-      </HomeHeader>
-
       {loading && (
-        <LoadingContainer>
-          <CircularProgress size={40} sx={{ mb: 2 }} />
-          <Typography variant="body1" fontFamily="'Poppins', sans-serif">
-            Loading memes...
-          </Typography>
-        </LoadingContainer>
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading memes...</p>
+        </div>
       )}
 
-      {error && (
-        <Alert 
-          severity="error" 
-          sx={{ 
-            my: 2.5, 
-            borderLeft: '4px solid #c62828',
-            '& .MuiAlert-message': {
-              fontFamily: '"Poppins", sans-serif',
-            }
-          }}
-        >
-          {error}
-        </Alert>
-      )}
+      {error && <div className="error-message">{error}</div>}
 
-      <PostsContainer>
+      <div className="posts-container">
         {posts.length === 0 && !loading ? (
-          <NoPostsContainer>
-            <Typography variant="h5" fontWeight={600} fontFamily="'Poppins', sans-serif">
-              No memes found
-            </Typography>
-            <Typography variant="body1" fontFamily="'Poppins', sans-serif" sx={{ mt: 1 }}>
-              Be the first to share a meme!
-            </Typography>
-          </NoPostsContainer>
+          <div className="no-posts">
+            <h2>No memes found</h2>
+            <p>Be the first to share a meme!</p>
+          </div>
         ) : (
           posts.map(post => (
             <PostCard
@@ -113,8 +72,8 @@ const Home: React.FC = () => {
             />
           ))
         )}
-      </PostsContainer>
-    </HomeContainer>
+      </div>
+    </div>
   );
 };
 

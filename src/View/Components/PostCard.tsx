@@ -37,7 +37,6 @@ const PostCard: React.FC<PostCardProps> = ({
   comments,
 }) => {
   return (
-    console.log(imageUrl),
     <Card
       sx={{
         width: '100%',
@@ -116,6 +115,20 @@ const PostCard: React.FC<PostCardProps> = ({
               <EmojiEmotionsOutlinedIcon fontSize="small" />
               <Typography variant="body2">Cheers</Typography>
             </Stack>
+
+            {/* Comment Button */}
+            <Box mt={2}>
+              <Chip
+                icon={<ChatBubbleOutlineIcon />}
+                label={`${comments} Comments`}
+                sx={{
+                  backgroundColor: '#2c2c2c',
+                  color: '#fff',
+                  borderRadius: 2,
+                  fontWeight: 500,
+                }}
+              />
+            </Box>
           </Stack>
 
           <Stack direction="row" spacing={2}>
@@ -127,20 +140,6 @@ const PostCard: React.FC<PostCardProps> = ({
             </IconButton>
           </Stack>
         </Stack>
-
-        {/* Comment Button */}
-        <Box mt={2}>
-          <Chip
-            icon={<ChatBubbleOutlineIcon />}
-            label={`Comments ${comments}`}
-            sx={{
-              backgroundColor: '#2c2c2c',
-              color: '#fff',
-              borderRadius: 2,
-              fontWeight: 500,
-            }}
-          />
-        </Box>
       </CardContent>
     </Card>
   );
