@@ -196,7 +196,8 @@ const ProfileSettings = () => {
       setAlertMessage('Profile picture uploaded successfully!');
       setAlertSeverity('success');
 
-      // Update avatar URL with the response
+      setAvatar(null);
+      
       if (response && response.profilePicture) {
         setAvatarUrl(response.profilePicture);
       }
@@ -232,6 +233,24 @@ const ProfileSettings = () => {
     } finally {
       setSaveLoading(false);
     }
+  };
+
+  const getAvatarUrl = (avatarPath: string) => {
+    // If it's already a full URL, return it
+    if (avatarPath.startsWith('http')) {
+      return avatarPath;
+    }
+    
+    // Extract just the filename if it's a path
+    const filename = avatarPath.includes('/')
+      ? avatarPath.split('/').pop()
+      : avatarPath;
+      
+    // If we don't have a filename, return undefined
+    if (!filename) return undefined;
+    
+    // Construct the correct URL to match our image controller routes
+    return `/uploads/avatars/${filename}`;
   };
 
   if (loading) {
@@ -294,7 +313,12 @@ const ProfileSettings = () => {
               
               <AvatarContainer>
                 <StyledAvatar 
-                  src={avatar ? URL.createObjectURL(avatar) : avatarUrl || undefined}
+                  src={avatar 
+                    ? URL.createObjectURL(avatar) 
+                    : avatarUrl 
+                      ? getAvatarUrl(avatarUrl)
+                      : undefined
+                  }
                   alt={name || "Profile"} 
                   onClick={handleAvatarClick}
                   sx={{

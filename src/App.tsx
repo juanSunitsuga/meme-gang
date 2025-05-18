@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import Navbar from './components/Navbar';
 import Settings from './View/Settings';
 import Login from './View/Login';
@@ -8,7 +9,34 @@ import Register from './View/Register';
 import SearchForm from './View/SearchForm';
 import ViewComments from './View/Comments/ViewComments';
 import Home from './View/Home'; // Import Home component
-import './App.css';
+
+const darkTheme = createTheme({
+    palette: {
+        mode: 'dark',
+        background: {
+            default: '#121212',
+            paper: '#1a1a1a',
+        },
+    },
+    components: {
+        MuiCssBaseline: {
+            styleOverrides: {
+                body: {
+                    margin: 0,
+                    padding: 0,
+                    backgroundColor: '#121212',
+                    overflow: 'hidden',
+                    boxSizing: 'border-box',
+                },
+                html: {
+                    margin: 0,
+                    padding: 0,
+                    boxSizing: 'border-box',
+                }
+            },
+        },
+    },
+});
 
 const theme = createTheme({
     typography: {
@@ -53,7 +81,8 @@ function App() {
     // Wrap everything in Router
     return (
         <Router>
-            <ThemeProvider theme={theme}>
+            <ThemeProvider theme={darkTheme}>
+                <CssBaseline /> {/* This helps reset browser defaults */}
                 <AppContent />
             </ThemeProvider>
         </Router>

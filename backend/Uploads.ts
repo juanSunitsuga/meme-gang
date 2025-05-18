@@ -5,6 +5,7 @@ import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import authMiddleware from '../middleware/Auth';
 import { User } from '../models/User';
+import { controllerWrapper } from '../utils/controllerWrapper';
 
 const router = express.Router();
 
@@ -71,12 +72,6 @@ const uploadPostImage = multer({
     fileFilter: fileFilter
 }).single('postImage');
 
-// Simple test route
-router.get('/test', (req, res) => {
-    console.log('Test route accessed');
-    res.json({ message: 'Upload routes are working!' });
-});
-
 // Avatar upload route
 router.post('/avatar', authMiddleware, (req, res) => {
     console.log('Avatar upload request received');
@@ -107,7 +102,7 @@ router.post('/avatar', authMiddleware, (req, res) => {
             }
 
             // Store the path without domain
-            const profilePicturePath = `/uploads/avatars/${req.file.filename}`;
+            const profilePicturePath = req.file.filename;
             
             // Update user's profile picture in database
             user.profilePicture = profilePicturePath;
@@ -150,5 +145,72 @@ router.post('/post-image', authMiddleware, (req, res) => {
         }
     });
 });
+
+// Helper function to determine content type
+const getContentType = (filename: string): string => {
+  const ext = path.extname(filename).toLowerCase();
+  if (ext === '.png') return 'image/png';
+  if (ext === '.gif') return 'image/gif';
+  if (ext === '.webp') return 'image/webp';
+  return 'image/jpeg'; // Default
+};
+
+// Serve avatar images
+router.get('/avatars/:filename', controllerWrapper(async (req, res) => {
+  const filename = req.params.filename;
+  const imagePath = path.join(process.cwd(), 'uploads', 'avatars', filename);
+  
+  if (!fs.existsSync(imagePath)) {
+    return {
+      status: 404,
+      message: 'Avatar not found'
+    };
+  }
+  
+  try {
+    const buffer = fs.readFileSync(imagePath);
+    const contentType = getContentType(filename);
+    
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for a day
+    res.status(200).send(buffer);
+    return null; // Signal that we've handled the response directly
+  } catch (error) {
+    console.error('Error serving avatar image:', error);
+    return {
+      status: 500,
+      message: 'Error serving image'
+    };
+  }
+}));
+
+// Serve post images
+router.get('/posts/:filename', controllerWrapper(async (req, res) => {
+  const filename = req.params.filename;
+  const imagePath = path.join(process.cwd(), 'uploads', 'posts', filename);
+  
+  if (!fs.existsSync(imagePath)) {
+    return {
+      status: 404,
+      message: 'Post image not found'
+    };
+  }
+  
+  try {
+    const buffer = fs.readFileSync(imagePath);
+    const contentType = getContentType(filename);
+    
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.status(200).send(buffer);
+    return null;
+  } catch (error) {
+    console.error('Error serving post image:', error);
+    return {
+      status: 500,
+      message: 'Error serving image'
+    };
+  }
+}));
 
 export default router;
