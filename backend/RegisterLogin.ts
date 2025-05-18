@@ -80,9 +80,8 @@ router.post('/login', controllerWrapper(async (req, res, next) => {
             };
         }
 
-        // Calculate token expiration time for client reference
         const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + 24); // Match JWT_EXPIRATION
+        expiresAt.setHours(expiresAt.getHours() + 1);
 
         // Generate JWT token with user data
         const token = jwt.sign(
