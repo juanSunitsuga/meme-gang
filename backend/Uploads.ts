@@ -74,48 +74,51 @@ const uploadPostImage = multer({
 
 // Avatar upload route
 router.post('/avatar', authMiddleware, controllerWrapper((req, res) => {
-    console.log('Avatar upload request received');
-
-    uploadAvatar(req, res, async (err) => {
-        console.log('Processing avatar upload', req.file);
-
-        if (err instanceof multer.MulterError) {
-            return res.status(400).json({ message: `Upload error: ${err.message}` });
-        } else if (err) {
-            return res.status(400).json({ message: err.message });
-        }
-
-        if (!req.file) {
-            return res.status(400).json({ message: 'No file uploaded' });
-        }
-
-        try {
-            if (!req.user) {
-                return res.status(401).json({ message: 'User not authenticated' });
+    return new Promise((resolve, reject) => {
+        uploadAvatar(req, res, async (err) => {
+            if (err) {
+                return resolve({
+                    status: 400,
+                    message: err.message
+                });
             }
 
-            const { id } = req.user;
-            const user = await User.findByPk(id);
-
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
+            if (!req.file) {
+                return resolve({
+                    status: 400,
+                    message: 'No file uploaded'
+                });
             }
 
-            // Store the path without domain
-            const profilePicturePath = req.file.filename;
+            try {
+                // Handle the upload
+                const { id } = req.user!;
+                const user = await User.findByPk(id);
+                
+                if (!user) {
+                    return resolve({
+                        status: 404,
+                        message: 'User not found'
+                    });
+                }
 
-            // Update user's profile picture in database
-            user.profilePicture = profilePicturePath;
-            await user.save();
-
-            res.status(200).json({
-                message: 'Profile picture uploaded successfully',
-                profilePicture: profilePicturePath
-            });
-        } catch (error) {
-            console.error('Error updating profile picture:', error);
-            res.status(500).json({ message: 'Internal server error' });
-        }
+                const profilePicturePath = req.file.filename;
+                user.profilePicture = profilePicturePath;
+                await user.save();
+                
+                return resolve({
+                    status: 200,
+                    message: 'Profile picture uploaded successfully',
+                    data: { profilePicture: profilePicturePath }
+                });
+            } catch (error) {
+                console.error('Error updating profile picture:', error);
+                return resolve({
+                    status: 500,
+                    message: 'Internal server error'
+                });
+            }
+        });
     });
 }));
 

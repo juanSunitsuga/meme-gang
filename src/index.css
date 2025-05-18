@@ -1,0 +1,39 @@
+/* Adjusted scrolling behavior fix */
+
+html, body {
+  /* Keep scrolling enabled */
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  margin: 0;
+  padding: 0;
+}
+
+/* Remove the excessive height constraints */
+#root, .app-container {
+  /* Don't force 100vh min-height */
+  min-height: unset;
+  height: auto;
+  overflow-y: auto;
+}
+
+/* Fix for Material UI containers */
+.MuiContainer-root, .MuiBox-root {
+  /* Let content determine height instead of viewport */
+  height: auto;
+  min-height: unset; 
+  overflow-y: visible;
+}
+
+/* Prevent content stretching in flex containers */
+.MuiPaper-root, .content-container {
+  height: auto;
+  /* Only grow to content size */
+  flex-grow: 0;
+}
+
+/* Maintain proper spacing */
+main, .main-content {
+  flex: 0 1 auto; /* Don't grow beyond content */
+  overflow-y: auto;
+}
