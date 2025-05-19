@@ -17,6 +17,7 @@ import {
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { fetchEndpoint } from './FetchEndpoint';
 import FAIcon from '../components/FAIcon';
+import { useAuth } from '../contexts/AuthContext';
 
 // Styled components to match the design system
 const StyledPaper = styled(Paper)(({ theme }) => ({
@@ -80,31 +81,31 @@ const Login: React.FC = () => {
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  // Get the login function from context
+  const { login } = useAuth();
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setAlertMessage(null);
     
     try {
-      const data = await fetchEndpoint('/auth/login', 'POST', null, { email, password });
+      // Your existing API call logic to log in
+      const response = await fetchEndpoint('/auth/login', 'POST', null, { 
+        email, 
+        password 
+      });
       
-      if (!data || !data.token) {
-        throw new Error('Your credentials are incorrect');
+      // When login is successful:
+      if (response && response.token) {
+        // Use the login function from context instead of directly setting localStorage
+        login(response.token);
+        
+        // Navigate to dashboard or home
+        navigate('/');
+      } else {
+        throw new Error(response?.message || 'Invalid login credentials');
       }
-
-      localStorage.removeItem('token');
-      
-      localStorage.setItem('token', data.token);
-      
-      if (data.expiresAt) {
-        localStorage.setItem('tokenExpires', data.expiresAt);
-      }
-      
-      console.log('Successfully logged in and stored token');
-      
-      navigate('/');
-      setTimeout(() => window.location.reload(), 100);
-    
     } catch (error) {
       console.error('Login error:', error);
       if (error instanceof Error) {

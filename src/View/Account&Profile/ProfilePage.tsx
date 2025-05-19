@@ -14,7 +14,7 @@ import {
   IconButton,
   Divider
 } from '@mui/material';
-import { fetchEndpoint } from '../FetchEndpoint';
+import { useProfile } from '../Settings'; // Import the context hook
 import FAIcon from '../../components/FAIcon';
 
 // Styled components to match Navbar and Account page theme
@@ -125,11 +125,12 @@ const HelperText = styled(Typography)(({ theme }) => ({
 }));
 
 const ProfileSettings = () => {
+  const { userData, loading, updateProfile, uploadAvatar, deleteAvatar } = useProfile();
+  
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [avatar, setAvatar] = useState<File | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
@@ -137,39 +138,14 @@ const ProfileSettings = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Set initial values from context
   useEffect(() => {
-    const fetchProfileData = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setAlertMessage('You are not logged in. Please log in.');
-          setAlertSeverity('error');
-          setLoading(false);
-          return;
-        }
-
-        const response = await fetchEndpoint('/profile/me', 'GET', token);
-
-        // Use the response directly
-        setName(response.name || '');
-        setBio(response.bio || '');
-
-        if (response.profilePicture) {
-          setAvatarUrl(response.profilePicture);
-        }else{
-          setAvatarUrl('default-avatar.png');
-        }
-      } catch (error) {
-        console.error('Error fetching profile data:', error);
-        setAlertMessage('Failed to fetch profile data. Please try again later.');
-        setAlertSeverity('error');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfileData();
-  }, []);
+    if (userData) {
+      setName(userData.name || '');
+      setBio(userData.bio || '');
+      setAvatarUrl(userData.profilePicture || 'default-avatar.png');
+    }
+  }, [userData]);
 
   const handleAvatarClick = () => {
     if (fileInputRef.current) {
@@ -192,29 +168,24 @@ const ProfileSettings = () => {
 
     try {
       setUploadLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setAlertMessage('You are not logged in. Please log in again.');
-        setAlertSeverity('error');
-        return;
-      }
-
+      
       // Create FormData
       const formData = new FormData();
       formData.append('profilePicture', avatar);
       
-      console.log('Uploading file:', avatar.name, 'size:', avatar.size, 'type:', avatar.type);
+      // Use the context function
+      const result = await uploadAvatar(formData);
       
-      const response = await fetchEndpoint('/uploads/avatar', 'POST', token, formData);
-      console.log('Upload response:', response);
-
-      setAlertMessage('Profile picture uploaded successfully!');
-      setAlertSeverity('success');
-
-      setAvatar(null);
-      
-      if (response && response.profilePicture) {
-        setAvatarUrl(response.profilePicture);
+      if (result.success) {
+        setAlertMessage('Profile picture uploaded successfully!');
+        setAlertSeverity('success');
+        setAvatar(null);
+        
+        if (result.profilePicture) {
+          setAvatarUrl(result.profilePicture);
+        }
+      } else {
+        throw new Error(result.message);
       }
     } catch (error: any) {
       console.error('Upload error:', error);
@@ -225,25 +196,20 @@ const ProfileSettings = () => {
     }
   };
 
-  // Add a function to handle avatar deletion
   const handleDeleteAvatar = async () => {
     try {
       setUploadLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setAlertMessage('You are not logged in. Please log in again.');
-        setAlertSeverity('error');
-        return;
+      
+      // Use the context function
+      const result = await deleteAvatar();
+      
+      if (result.success) {
+        setAvatarUrl(null);
+        setAlertMessage('Profile picture deleted successfully!');
+        setAlertSeverity('success');
+      } else {
+        throw new Error(result.message);
       }
-      
-      const response = await fetchEndpoint('/uploads/delete-avatar', 'DELETE', token);
-      console.log('Delete avatar response:', response);
-      
-      // Reset avatar state
-      setAvatarUrl(null);
-      setAlertMessage('Profile picture deleted successfully!');
-      setAlertSeverity('success');
-      
     } catch (error: any) {
       console.error('Error deleting avatar:', error);
       setAlertMessage(error.message || 'An error occurred while deleting the profile picture.');
@@ -258,17 +224,16 @@ const ProfileSettings = () => {
 
     try {
       setSaveLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setAlertMessage('You are not logged in. Please log in again.');
-        setAlertSeverity('error');
-        return;
+      
+      // Use the context function
+      const result = await updateProfile({ name, bio });
+      
+      if (result.success) {
+        setAlertMessage('Profile updated successfully!');
+        setAlertSeverity('success');
+      } else {
+        throw new Error(result.message);
       }
-
-      const response = await fetchEndpoint('/profile/edit-profile', 'PUT', token, { name, bio });
-
-      setAlertMessage('Profile updated successfully!');
-      setAlertSeverity('success');
     } catch (error: any) {
       console.error('Error updating profile:', error);
       setAlertMessage(error.message || 'An error occurred while updating the profile.');

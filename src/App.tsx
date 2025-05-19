@@ -10,6 +10,7 @@ import SearchForm from './View/SearchForm';
 import ViewComments from './View/Comments/ViewComments';
 import CreatePost from './View/CreatePost';
 import Home from './View/Home'; // Import Home component
+import { AuthProvider } from './contexts/AuthContext';
 
 const darkTheme = createTheme({
     palette: {
@@ -71,7 +72,7 @@ function AppContent() {
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/search" element={<SearchForm onSubmit={handleSearchSubmit} />} />
                     <Route path="/comments/:id/replies" element={<ViewComments />} />
-                    <Route path="/create-post" element={<CreatePost />}/>
+                    <Route path="/create-post" element={<CreatePost />} />
                     {/* <Route path="/post/:id/comments" element={<ViewComments />} /> */}
                     {/* Add other routes here */}
                 </Routes>
@@ -83,12 +84,14 @@ function AppContent() {
 function App() {
     // Wrap everything in Router
     return (
-        <Router>
-            <ThemeProvider theme={darkTheme}>
-                <CssBaseline /> {/* This helps reset browser defaults */}
-                <AppContent />
-            </ThemeProvider>
-        </Router>
+        <AuthProvider>
+            <Router>
+                <ThemeProvider theme={darkTheme}>
+                    <CssBaseline /> {/* This helps reset browser defaults */}
+                    <AppContent />
+                </ThemeProvider>
+            </Router>
+        </AuthProvider>
     );
 }
 

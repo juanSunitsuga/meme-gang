@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext'; // Import useAuth hook
 import {
   AppBar,
   Toolbar,
@@ -127,14 +128,8 @@ const MuiNavbar: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   
-  // Replace hardcoded value with state from localStorage
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  
-  // Check authentication status on component mount
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    setIsLoggedIn(!!token);
-  }, []);
+  // Use auth context instead of local state
+  const { isAuthenticated, logout } = useAuth();
 
   const handleMenuClose = () => {
     setAnchorEl(null);
@@ -149,24 +144,14 @@ const MuiNavbar: React.FC = () => {
   };
 
   const handleLogout = () => {
-    // Clear authentication data
-    localStorage.removeItem('token');
-    
-    // If you're using any session storage items, clear those too
-    sessionStorage.clear();
-    
-    // Update authentication state
-    setIsLoggedIn(false);
+    // Use the logout function from context
+    logout();
     
     // Close any open menus
     handleMenuClose();
     
     // Redirect to login page
     navigate('/login');
-    
-    // Optional: Show a logout success message
-    // If you have a toast/notification system
-    // toast.success("You have been logged out successfully");
     
     console.log('User logged out successfully');
   };
@@ -254,7 +239,7 @@ const MuiNavbar: React.FC = () => {
       </List>
       <Divider sx={{ backgroundColor: '#444' }} />
       <Box sx={{ p: 2 }}>
-        {isLoggedIn ? (
+        {isAuthenticated ? (
           <>
             <Button 
               fullWidth 
@@ -312,7 +297,7 @@ const MuiNavbar: React.FC = () => {
 
   return (
     <>
-      <StyledAppBar position="static">
+      <StyledAppBar position="fixed"> {/* Changed to fixed position */}
         <Toolbar>
           {isMobile && (
             <IconButton
@@ -380,11 +365,11 @@ const MuiNavbar: React.FC = () => {
           
           {!isMobile && (
             <>
-              {isLoggedIn ? (
+              {isAuthenticated ? ( // Changed from isLoggedIn to isAuthenticated
                 <>
                   <NavButton
                     startIcon={<FAIcon icon="fas fa-plus" />}
-                    onClick={() => { navigate('/create-post'); setDrawerOpen(false); }}
+                    onClick={() => { navigate('/create-post'); }}
                   >
                     Post
                   </NavButton>
