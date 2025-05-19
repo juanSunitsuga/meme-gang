@@ -73,138 +73,104 @@ const uploadPostImage = multer({
 }).single('postImage');
 
 // Avatar upload route
-router.post('/avatar', authMiddleware, controllerWrapper((req, res) => {
-    return new Promise((resolve, reject) => {
-        uploadAvatar(req, res, async (err) => {
+router.post('/avatar', authMiddleware, controllerWrapper(async (req, res) => {
+    await new Promise<void>((resolve, reject) => {
+        uploadAvatar(req, res, (err) => {
             if (err) {
-                return resolve({
-                    status: 400,
-                    message: err.message
-                });
-            }
-
-            if (!req.file) {
-                return resolve({
-                    status: 400,
-                    message: 'No file uploaded'
-                });
-            }
-
-            try {
-                // Handle the upload
-                const { id } = req.user!;
-                const user = await User.findByPk(id);
-                
-                if (!user) {
-                    return resolve({
-                        status: 404,
-                        message: 'User not found'
-                    });
-                }
-
-                const profilePicturePath = req.file.filename;
-                user.profilePicture = profilePicturePath;
-                await user.save();
-                
-                return resolve({
-                    status: 200,
-                    message: 'Profile picture uploaded successfully',
-                    data: { profilePicture: profilePicturePath }
-                });
-            } catch (error) {
-                console.error('Error updating profile picture:', error);
-                return resolve({
-                    status: 500,
-                    message: 'Internal server error'
-                });
+                reject(err);
+            } else {
+                resolve();
             }
         });
     });
+
+    if (!req.file) {
+        throw new Error('No file uploaded');
+    }
+
+    const { id } = req.user!;
+    const user = await User.findByPk(id);
+    
+    if (!user) {
+        res.locals.errorCode = 404;
+        throw new Error('User not found');
+    }
+
+    const profilePicturePath = req.file.filename;
+    user.profilePicture = profilePicturePath;
+    await user.save();
+    
+    return {
+        message: 'Profile picture uploaded successfully',
+        data: { profilePicture: profilePicturePath }
+    };
 }));
 
 
 router.delete('/delete-avatar', authMiddleware, controllerWrapper(async (req, res) => {
-    try {
-        const { id } = req.user!;
-        const user = await User.findByPk(id);
-        
-        if (!user) {
-            return {
-                status: 404,
-                message: 'User not found'
-            };
-        }
-        
-        if (!user.profilePicture) {
-            return {
-                status: 400,
-                message: 'No profile picture to delete'
-            };
-        }
-        
-        const filename = user.profilePicture.includes('/') 
-            ? user.profilePicture.split('/').pop() 
-            : user.profilePicture;
-            
-        if (!filename) {
-            return {
-                status: 400,
-                message: 'Invalid profile picture path'
-            };
-        }
-        
-        const filePath = path.join(process.cwd(), 'uploads', 'avatars', filename);
-        
-        console.log(`Attempting to delete profile picture at: ${filePath}`);
-        
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-            console.log('File deleted successfully');
-        } else {
-            console.log('File not found, only removing database reference');
-        }
-        
-        user.profilePicture = undefined;
-        await user.save();
-        
-        return {
-            status: 200,
-            message: 'Profile picture deleted successfully'
-        };
-    } catch (error) {
-        console.error('Error deleting profile picture:', error);
-        return {
-            status: 500,
-            message: 'An error occurred while deleting the profile picture'
-        };
+    const { id } = req.user!;
+    const user = await User.findByPk(id);
+    
+    if (!user) {
+        res.locals.errorCode = 404;
+        throw new Error('User not found');
     }
+    
+    if (!user.profilePicture) {
+        res.locals.errorCode = 400;
+        throw new Error('No profile picture to delete');
+    }
+    
+    const filename = user.profilePicture.includes('/') 
+        ? user.profilePicture.split('/').pop() 
+        : user.profilePicture;
+        
+    if (!filename) {
+        res.locals.errorCode = 400;
+        throw new Error('Invalid profile picture path');
+    }
+    
+    const filePath = path.join(process.cwd(), 'uploads', 'avatars', filename);
+    
+    console.log(`Attempting to delete profile picture at: ${filePath}`);
+    
+    if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log('File deleted successfully');
+    } else {
+        console.log('File not found, only removing database reference');
+    }
+    
+    user.profilePicture = undefined;
+    await user.save();
+    
+    return {
+        message: 'Profile picture deleted successfully'
+    };
 }));
 
 // Post image upload route
-router.post('/post-image', authMiddleware, controllerWrapper((req, res) => {
-    uploadPostImage(req, res, async (err) => {
-        if (err instanceof multer.MulterError) {
-            return res.status(400).json({ message: `Upload error: ${err.message}` });
-        } else if (err) {
-            return res.status(400).json({ message: err.message });
-        }
-
-        if (!req.file) {
-            return res.status(400).json({ message: 'No file uploaded' });
-        }
-
-        try {
-            const postImagePath = `/uploads/posts/${req.file.filename}`;
-
-            res.status(200).json({
-                message: 'Post image uploaded successfully',
-                postImage: postImagePath
-            });
-        } catch (error) {
-            console.error('Error uploading post image:', error);
-            res.status(500).json({ message: 'Internal server error' });
-        }
+router.post('/post-image', authMiddleware, controllerWrapper(async (req, res) => {
+    await new Promise<void>((resolve, reject) => {
+        uploadPostImage(req, res, (err) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
+            }
+        });
     });
+
+    if (!req.file) {
+        throw new Error('No file uploaded');
+    }
+
+    const postImagePath = `/uploads/posts/${req.file.filename}`;
+    
+    return {
+        message: 'Post image uploaded successfully',
+        postImage: postImagePath
+    };
 }));
 
 // Helper function to determine content type
@@ -233,9 +199,9 @@ router.get('/avatars/:filename', controllerWrapper(async (req, res) => {
         const contentType = getContentType(filename);
 
         res.setHeader('Content-Type', contentType);
-        res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for a day
+        res.setHeader('Cache-Control', 'public, max-age=86400');
         res.status(200).send(buffer);
-        return null; // Signal that we've handled the response directly
+        return null;
     } catch (error) {
         console.error('Error serving avatar image:', error);
         return {
