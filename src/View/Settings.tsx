@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, createContext, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Box, 
@@ -16,6 +16,29 @@ import AccountPage from './Account&Profile/AccountPage';
 import PasswordPage from './Account&Profile/PasswordPage';
 import ProfilePage from './Account&Profile/ProfilePage';
 import { fetchEndpoint } from './FetchEndpoint';
+
+// Create Profile Context
+interface ProfileContextType {
+  userData: any;
+  loading: boolean;
+  updateProfile: (data: any) => Promise<any>;
+  updateAccount: (data: any) => Promise<any>;
+  changePassword: (oldPassword: string, newPassword: string) => Promise<any>;
+  uploadAvatar: (formData: FormData) => Promise<any>;
+  deleteAvatar: () => Promise<any>;
+  errorMessage: string | null;
+}
+
+export const ProfileContext = createContext<ProfileContextType | null>(null);
+
+// Hook for child components to consume the context
+export const useProfile = () => {
+  const context = useContext(ProfileContext);
+  if (!context) {
+    throw new Error('useProfile must be used within a ProfileProvider');
+  }
+  return context;
+};
 
 // Styled components
 const SettingsContainer = styled(Box)(({ theme }) => ({
@@ -219,16 +242,118 @@ const Settings = () => {
     navigate(`?tab=${tab}`);
   };
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'Account':
-        return <AccountPage />;
-      case 'Password':
-        return <PasswordPage />;
-      case 'Profile':
-      default:
-        return <ProfilePage />;
+  // Functions to be shared via context
+  const updateProfile = async (data: any) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('You are not logged in');
+      
+      const response = await fetchEndpoint('/profile/edit-profile', 'PUT', token, data);
+      
+      // Update local userData with new values
+      setUserData(prev => ({ ...prev, ...data }));
+      
+      return { success: true, message: 'Profile updated successfully' };
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      return { success: false, message: error.message || 'Error updating profile' };
     }
+  };
+
+  const updateAccount = async (data: any) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('You are not logged in');
+      
+      const response = await fetchEndpoint('/profile/edit-account', 'PUT', token, data);
+      
+      // Update local userData with new values
+      setUserData(prev => ({ ...prev, ...data }));
+      
+      return { success: true, message: 'Account updated successfully' };
+    } catch (error: any) {
+      console.error('Error updating account:', error);
+      return { success: false, message: error.message || 'Error updating account' };
+    }
+  };
+
+  const changePassword = async (oldPassword: string, newPassword: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('You are not logged in');
+      
+      const response = await fetchEndpoint('/profile/change-password', 'POST', token, { 
+        oldPassword, newPassword 
+      });
+      
+      return { success: true, message: 'Password changed successfully' };
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      return { success: false, message: error.message || 'Error changing password' };
+    }
+  };
+
+  const uploadAvatar = async (formData: FormData) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('You are not logged in');
+      
+      const response = await fetchEndpoint('/uploads/avatar', 'POST', token, formData);
+      
+      if (response && response.profilePicture) {
+        setUserData(prev => ({ ...prev, profilePicture: response.profilePicture }));
+      }
+      
+      return { 
+        success: true, 
+        message: 'Profile picture uploaded successfully',
+        profilePicture: response.profilePicture
+      };
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      return { success: false, message: error.message || 'Error uploading avatar' };
+    }
+  };
+
+  const deleteAvatar = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('You are not logged in');
+      
+      const response = await fetchEndpoint('/uploads/delete-avatar', 'DELETE', token);
+      
+      // Update local userData, remove profile picture
+      setUserData(prev => ({ ...prev, profilePicture: undefined }));
+      
+      return { success: true, message: 'Profile picture deleted successfully' };
+    } catch (error: any) {
+      console.error('Error deleting avatar:', error);
+      return { success: false, message: error.message || 'Error deleting avatar' };
+    }
+  };
+
+  const renderContent = () => {
+    // Wrap the content in the context provider
+    return (
+      <ProfileContext.Provider value={{
+        userData,
+        loading,
+        updateProfile,
+        updateAccount,
+        changePassword,
+        uploadAvatar,
+        deleteAvatar,
+        errorMessage
+      }}>
+        {activeTab === 'Account' ? (
+          <AccountPage />
+        ) : activeTab === 'Password' ? (
+          <PasswordPage />
+        ) : (
+          <ProfilePage />
+        )}
+      </ProfileContext.Provider>
+    );
   };
 
   if (loading) {
