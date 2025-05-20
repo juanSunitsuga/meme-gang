@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Box, 
-  Typography, 
-  TextField, 
+import {
+  Box,
+  Typography,
+  TextField,
   Button,
-  Paper, 
-  Alert, 
-  AlertTitle, 
+  Paper,
+  Alert,
+  AlertTitle,
   CircularProgress,
   styled,
   alpha,
@@ -15,7 +15,7 @@ import {
   Divider
 } from '@mui/material';
 import { useProfile } from '../Settings'; // Import the context hook
-import FAIcon from '../../components/FAIcon';
+import FAIcon from '../Components/FAIcon';
 
 // Styled components to match Navbar and Account page theme
 const StyledPaper = styled(Paper)(({ theme }) => ({
@@ -126,7 +126,7 @@ const HelperText = styled(Typography)(({ theme }) => ({
 
 const ProfileSettings = () => {
   const { userData, loading, updateProfile, uploadAvatar, deleteAvatar } = useProfile();
-  
+
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [avatar, setAvatar] = useState<File | null>(null);
@@ -135,7 +135,7 @@ const ProfileSettings = () => {
   const [saveLoading, setSaveLoading] = useState(false);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [alertSeverity, setAlertSeverity] = useState<'success' | 'error' | null>(null);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Set initial values from context
@@ -168,21 +168,25 @@ const ProfileSettings = () => {
 
     try {
       setUploadLoading(true);
-      
+
       // Create FormData
       const formData = new FormData();
       formData.append('profilePicture', avatar);
-      
+
       // Use the context function
       const result = await uploadAvatar(formData);
-      
+
       if (result.success) {
         setAlertMessage('Profile picture uploaded successfully!');
         setAlertSeverity('success');
+
+        // Clear the file selection
         setAvatar(null);
-        
-        if (result.profilePicture) {
-          setAvatarUrl(result.profilePicture);
+
+        // Update the avatar URL with the new profile picture
+        if (result.data && result.data.profilePicture) {
+          // Add timestamp to force image refresh
+          setAvatarUrl(`${result.data.profilePicture}?t=${new Date().getTime()}`);
         }
       } else {
         throw new Error(result.message);
@@ -199,10 +203,10 @@ const ProfileSettings = () => {
   const handleDeleteAvatar = async () => {
     try {
       setUploadLoading(true);
-      
+
       // Use the context function
       const result = await deleteAvatar();
-      
+
       if (result.success) {
         setAvatarUrl(null);
         setAlertMessage('Profile picture deleted successfully!');
@@ -224,10 +228,10 @@ const ProfileSettings = () => {
 
     try {
       setSaveLoading(true);
-      
+
       // Use the context function
       const result = await updateProfile({ name, bio });
-      
+
       if (result.success) {
         setAlertMessage('Profile updated successfully!');
         setAlertSeverity('success');
@@ -244,17 +248,20 @@ const ProfileSettings = () => {
   };
 
   const getAvatarUrl = (avatarPath: string) => {
+    if (!avatarPath) return undefined;
+
     if (avatarPath.startsWith('http')) {
       return avatarPath;
     }
-    
+
     const filename = avatarPath.includes('/')
       ? avatarPath.split('/').pop()
       : avatarPath;
-      
+
     if (!filename) return undefined;
-    
-    return `/uploads/avatars/${filename}`;
+
+    const cacheBuster = avatarPath.includes('?t=') ? '' : `?t=${new Date().getTime()}`;
+    return `/uploads/avatars/${filename}${cacheBuster}`;
   };
 
   if (loading) {
@@ -267,13 +274,13 @@ const ProfileSettings = () => {
 
   return (
     <Box sx={{ maxWidth: '800px', mx: 'auto', py: 4, px: 2 }}>
-      <Typography 
-        variant="h4" 
-        component="h1" 
-        sx={{ 
-          mb: 3, 
+      <Typography
+        variant="h4"
+        component="h1"
+        sx={{
+          mb: 3,
           fontFamily: '"Poppins", sans-serif',
-          fontWeight: 600 
+          fontWeight: 600
         }}
       >
         Profile Settings
@@ -281,9 +288,9 @@ const ProfileSettings = () => {
 
       {/* Alert Section */}
       {alertMessage && alertSeverity && (
-        <Alert 
-          severity={alertSeverity} 
-          sx={{ 
+        <Alert
+          severity={alertSeverity}
+          sx={{
             mb: 3,
             '& .MuiAlert-message': {
               fontFamily: '"Poppins", sans-serif',
@@ -302,11 +309,11 @@ const ProfileSettings = () => {
         <form onSubmit={handleSubmit}>
           <FormContainer>
             <Box>
-              <Typography 
-                variant="subtitle1" 
+              <Typography
+                variant="subtitle1"
                 component="h3"
-                sx={{ 
-                  mb: 1, 
+                sx={{
+                  mb: 1,
                   fontFamily: '"Poppins", sans-serif',
                   fontWeight: 600,
                   color: '#fff'
@@ -314,16 +321,16 @@ const ProfileSettings = () => {
               >
                 Profile Picture
               </Typography>
-              
+
               <AvatarContainer>
-                <StyledAvatar 
-                  src={avatar 
-                    ? URL.createObjectURL(avatar) 
-                    : avatarUrl 
+                <StyledAvatar
+                  src={avatar
+                    ? URL.createObjectURL(avatar)
+                    : avatarUrl
                       ? getAvatarUrl(avatarUrl)
                       : undefined
                   }
-                  alt={name || "Profile"} 
+                  alt={name || "Profile"}
                   onClick={handleAvatarClick}
                   sx={{
                     cursor: 'pointer',
@@ -334,7 +341,7 @@ const ProfileSettings = () => {
                 >
                   {!avatar && !avatarUrl && (name ? name[0].toUpperCase() : <FAIcon icon="fas fa-user" />)}
                 </StyledAvatar>
-                
+
                 <Box>
                   <HiddenInput
                     type="file"
@@ -342,7 +349,7 @@ const ProfileSettings = () => {
                     ref={fileInputRef}
                     onChange={handleAvatarChange}
                   />
-                  
+
                   <Box sx={{ display: 'flex', alignItems: 'center', mt: 2, flexWrap: 'wrap', gap: 2 }}>
                     <Button
                       variant="outlined"
@@ -361,15 +368,15 @@ const ProfileSettings = () => {
                     >
                       Change Photo
                     </Button>
-                    
+
                     {/* Show upload button only when a file is selected */}
                     {avatar && (
                       <UploadButton
                         variant="contained"
                         onClick={handleUpload}
                         disabled={uploadLoading}
-                        startIcon={uploadLoading ? 
-                          <CircularProgress size={16} color="inherit" /> : 
+                        startIcon={uploadLoading ?
+                          <CircularProgress size={16} color="inherit" /> :
                           <FAIcon icon="fas fa-cloud-arrow-up" />
                         }
                         sx={{
@@ -385,15 +392,15 @@ const ProfileSettings = () => {
                         {uploadLoading ? 'Uploading...' : 'Upload'}
                       </UploadButton>
                     )}
-                    
+
                     {/* Show delete button only when user has a profile picture that's not the default */}
                     {avatarUrl && !avatar && avatarUrl !== 'default-avatar.png' && (
                       <DeleteButton
                         variant="outlined"
                         onClick={handleDeleteAvatar}
                         disabled={uploadLoading}
-                        startIcon={uploadLoading ? 
-                          <CircularProgress size={16} color="inherit" /> : 
+                        startIcon={uploadLoading ?
+                          <CircularProgress size={16} color="inherit" /> :
                           <FAIcon icon="fas fa-trash" />
                         }
                         sx={{
@@ -411,14 +418,14 @@ const ProfileSettings = () => {
                       </DeleteButton>
                     )}
                   </Box>
-                  
+
                   <HelperText>
                     JPG, GIF or PNG, Max size: 10MB
                   </HelperText>
                 </Box>
               </AvatarContainer>
             </Box>
-            
+
             <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
 
             <Box>
@@ -446,9 +453,9 @@ const ProfileSettings = () => {
             </Box>
 
             <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 2 }}>
-              <SaveButton 
-                type="submit" 
-                variant="contained" 
+              <SaveButton
+                type="submit"
+                variant="contained"
                 startIcon={saveLoading ? undefined : <FAIcon icon="fas fa-save" />}
                 disabled={saveLoading}
               >

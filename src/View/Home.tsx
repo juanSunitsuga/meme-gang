@@ -44,7 +44,7 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="home-container" style={{marginTop: '80px'}}>
+    <div className="home-container" style={{marginTop: '1%'}}>
       {loading && (
         <div className="loading-container">
           <div className="loading-spinner"></div>

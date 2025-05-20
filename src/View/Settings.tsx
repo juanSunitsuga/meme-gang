@@ -300,14 +300,14 @@ const Settings = () => {
       
       const response = await fetchEndpoint('/uploads/avatar', 'POST', token, formData);
       
-      if (response && response.profilePicture) {
-        setUserData(prev => ({ ...prev, profilePicture: response.profilePicture }));
+      if (response && response.data && response.data.profilePicture) {
+        setUserData(prev => ({ ...prev, profilePicture: response.data.profilePicture }));
       }
       
       return { 
         success: true, 
         message: 'Profile picture uploaded successfully',
-        profilePicture: response.profilePicture
+        data: response.data
       };
     } catch (error: any) {
       console.error('Error uploading avatar:', error);

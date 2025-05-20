@@ -14,7 +14,7 @@ import {
   alpha
 } from '@mui/material';
 import { fetchEndpoint } from '../FetchEndpoint';
-import FAIcon from '../../components/FAIcon';
+import FAIcon from '../Components/FAIcon';
 
 // Styled components to match Navbar and Account page theme
 const StyledPaper = styled(Paper)(({ theme }) => ({

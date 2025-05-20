@@ -4,29 +4,21 @@ import {
   Typography, 
   TextField, 
   Button,
-  Paper, 
-  Alert, 
-  AlertTitle,
+  Dialog,
+  DialogContent,
+  IconButton,
   InputAdornment,
   CircularProgress,
+  Alert,
+  AlertTitle,
   styled,
   Link
 } from '@mui/material';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { fetchEndpoint } from '../FetchEndpoint';
-import FAIcon from '../../components/FAIcon';
+import FAIcon from '../Components/FAIcon';
+import { useModal } from '../contexts/ModalContext';
 
 // Styled components to match the Login styling
-const StyledPaper = styled(Paper)(({ theme }) => ({
-  backgroundColor: '#1a1a1a',
-  color: 'white',
-  padding: theme.spacing(4),
-  borderRadius: theme.spacing(1),
-  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-  width: '100%',
-  maxWidth: '400px',
-}));
-
 const StyledTextField = styled(TextField)(({ theme }) => ({
   marginBottom: theme.spacing(2.5),
   '& .MuiOutlinedInput-root': {
@@ -70,13 +62,14 @@ const ActionButton = styled(Button)(({ theme }) => ({
   },
 }));
 
-const ForgotPassword: React.FC = () => {
+const ForgotPasswordModal: React.FC = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [alertSeverity, setAlertSeverity] = useState<'success' | 'error'>('error');
   const [submitted, setSubmitted] = useState(false);
-  const navigate = useNavigate();
+  
+  const { isForgotPasswordModalOpen, closeForgotPasswordModal, switchToLogin, switchToResetPassword } = useModal();
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,10 +77,8 @@ const ForgotPassword: React.FC = () => {
     setAlertMessage(null);
     
     try {
-      // Call the backend API to send a password reset email
       const response = await fetchEndpoint('/auth/forgot-password', 'POST', null, { email });
       
-      // If successful, show success message
       setAlertSeverity('success');
       setAlertMessage('Password reset instructions have been sent to your email.');
       setSubmitted(true);
@@ -104,18 +95,43 @@ const ForgotPassword: React.FC = () => {
     }
   };
 
+  const handleClose = () => {
+    closeForgotPasswordModal();
+    setEmail('');
+    setSubmitted(false);
+    setAlertMessage(null);
+  };
+
   return (
-    <Box 
-      sx={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '100vh',
-        backgroundColor: '#121212',
-        padding: 2
+    <Dialog 
+      open={isForgotPasswordModalOpen} 
+      onClose={handleClose}
+      maxWidth="xs"
+      fullWidth
+      disableScrollLock={true}
+      PaperProps={{
+        sx: {
+          backgroundColor: '#1a1a1a',
+          borderRadius: 2,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.4)'
+        }
+      }}
+      slotProps={{
+        backdrop: {
+          sx: {
+            backdropFilter: 'blur(8px)',
+            backgroundColor: 'rgba(0,0,0,0.5)'
+          }
+        }
       }}
     >
-      <StyledPaper>
+      <DialogContent sx={{ p: 4 }}>
+        <Box sx={{ position: 'absolute', top: 12, right: 12 }}>
+          <IconButton onClick={handleClose} sx={{ color: '#aaa' }}>
+            <FAIcon icon="fas fa-times" />
+          </IconButton>
+        </Box>
+        
         <Typography 
           variant="h4" 
           component="h1" 
@@ -124,6 +140,7 @@ const ForgotPassword: React.FC = () => {
             mb: 3,
             fontWeight: 600,
             fontFamily: '"Poppins", sans-serif',
+            color: 'white'
           }}
         >
           Reset Password
@@ -215,7 +232,7 @@ const ForgotPassword: React.FC = () => {
             <ActionButton
               fullWidth
               variant="contained"
-              onClick={() => navigate('/reset-password')}
+              onClick={switchToResetPassword}
               startIcon={<FAIcon icon="fas fa-key" />}
             >
               Enter Reset Code
@@ -233,8 +250,9 @@ const ForgotPassword: React.FC = () => {
           >
             Remember your password?{' '}
             <Link 
-              component={RouterLink} 
-              to="/login" 
+              component="button"
+              type="button"
+              onClick={switchToLogin}
               sx={{ 
                 color: '#1976d2',
                 fontWeight: 500,
@@ -248,9 +266,9 @@ const ForgotPassword: React.FC = () => {
             </Link>
           </Typography>
         </Box>
-      </StyledPaper>
-    </Box>
+      </DialogContent>
+    </Dialog>
   );
 };
 
-export default ForgotPassword;
+export default ForgotPasswordModal;

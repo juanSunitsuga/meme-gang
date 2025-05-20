@@ -37,3 +37,24 @@ main, .main-content {
   flex: 0 1 auto; /* Don't grow beyond content */
   overflow-y: auto;
 }
+
+/* Fix for layout shift when modal dialogs open */
+html {
+  overflow-y: scroll;
+}
+
+body {
+  padding-right: 0 !important; /* Prevent Material UI from adding padding */
+  margin-right: 0 !important;
+}
+
+/* Ensure modals don't add padding */
+.MuiDialog-root .MuiDialog-container,
+.MuiPopover-root .MuiPopover-paper {
+  padding-right: 0 !important;
+}
+
+/* Adjust backdrop width to account for scrollbar */
+.MuiBackdrop-root {
+  width: 100vw !important;
+}

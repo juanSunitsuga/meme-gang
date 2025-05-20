@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext'; // Import useAuth hook
+import { useAuth } from '../contexts/AuthContext';
+import { useModal } from '../contexts/ModalContext';
 import {
   AppBar,
   Toolbar,
@@ -30,7 +31,7 @@ const LogoTypography = styled(Typography)(({ theme }) => ({
   cursor: 'pointer',
   marginRight: theme.spacing(2),
   fontSize: '1.3rem',
-  fontFamily: '"Poppins", sans-serif', // Add specific font styling
+  fontFamily: '"Poppins", sans-serif', 
 }));
 
 // Add font styling to your buttons
@@ -38,8 +39,8 @@ const NavButton = styled(Button)(({ theme }) => ({
   margin: theme.spacing(0, 0.5),
   color: 'white',
   textTransform: 'none',
-  fontFamily: '"Poppins", sans-serif', // Add specific font styling
-  fontWeight: 500, // Medium weight
+  fontFamily: '"Poppins", sans-serif', 
+  fontWeight: 500,
   '&:hover': {
     backgroundColor: alpha(theme.palette.common.white, 0.1),
   },
@@ -50,8 +51,8 @@ const SignUpButton = styled(Button)(({ theme }) => ({
   backgroundColor: '#1976d2',
   color: 'white',
   textTransform: 'none',
-  fontFamily: '"Poppins", sans-serif', // Add specific font styling
-  fontWeight: 600, // Semi-bold
+  fontFamily: '"Poppins", sans-serif', 
+  fontWeight: 600, 
   '&:hover': {
     backgroundColor: '#1565c0',
   },
@@ -62,7 +63,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   color: 'inherit',
   width: '100%',
   height: '100%',
-  fontFamily: '"Poppins", sans-serif', // Add specific font styling
+  fontFamily: '"Poppins", sans-serif',
   '& .MuiInputBase-input': {
     padding: theme.spacing(1, 1, 1, 0),
     paddingLeft: `calc(1em + ${theme.spacing(4)})`,
@@ -76,7 +77,6 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
-// Add this IconWrapper for Font Awesome icons
 const IconWrapper = styled('div')({
   display: 'flex',
   alignItems: 'center',
@@ -115,7 +115,7 @@ const SearchIconWrapper = styled('div')(({ theme }) => ({
 
 // Add styled AppBar
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
-  backgroundColor: '#1a1a1a', // Changed back to dark color
+  backgroundColor: '#1a1a1a',
   boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
   color: 'white',
 }));
@@ -130,6 +130,7 @@ const MuiNavbar: React.FC = () => {
   
   // Use auth context instead of local state
   const { isAuthenticated, logout } = useAuth();
+  const { openLoginModal, openRegisterModal, openCreatePostModal } = useModal();
 
   const handleMenuClose = () => {
     setAnchorEl(null);
@@ -144,13 +145,10 @@ const MuiNavbar: React.FC = () => {
   };
 
   const handleLogout = () => {
-    // Use the logout function from context
     logout();
     
-    // Close any open menus
     handleMenuClose();
     
-    // Redirect to login page
     navigate('/login');
     
     console.log('User logged out successfully');
@@ -158,7 +156,6 @@ const MuiNavbar: React.FC = () => {
 
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Your search submit logic here
     console.log('Search:', searchQuery);
   };
 
@@ -174,7 +171,6 @@ const MuiNavbar: React.FC = () => {
         elevation: 3,
         sx: { backgroundColor: '#222', color: 'white' }
       }}
-      // Add these props to prevent the layout shift
       disableScrollLock={true}
       slotProps={{
         backdrop: {
@@ -304,7 +300,7 @@ const MuiNavbar: React.FC = () => {
 
   return (
     <>
-      <StyledAppBar position="sticky"> {/* Changed to fixed position */}
+      <StyledAppBar position="sticky">
         <Toolbar>
           {isMobile && (
             <IconButton
@@ -372,11 +368,11 @@ const MuiNavbar: React.FC = () => {
           
           {!isMobile && (
             <>
-              {isAuthenticated ? ( // Changed from isLoggedIn to isAuthenticated
+              {isAuthenticated ? (
                 <>
                   <NavButton
                     startIcon={<FAIcon icon="fas fa-plus" />}
-                    onClick={() => { navigate('/create-post'); }}
+                    onClick={openCreatePostModal}
                   >
                     Post
                   </NavButton>
@@ -395,13 +391,13 @@ const MuiNavbar: React.FC = () => {
                 <>
                   <NavButton
                     startIcon={<FAIcon icon="fas fa-sign-in-alt" />}
-                    onClick={() => navigate('/login')}
+                    onClick={openLoginModal}
                   >
                     Log In
                   </NavButton>
                   <SignUpButton
                     variant="contained"
-                    onClick={() => navigate('/register')}
+                    onClick={openRegisterModal}
                   >
                     Sign Up
                   </SignUpButton>
