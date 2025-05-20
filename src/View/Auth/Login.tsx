@@ -15,9 +15,9 @@ import {
   alpha
 } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { fetchEndpoint } from './FetchEndpoint';
-import FAIcon from '../components/FAIcon';
-import { useAuth } from '../contexts/AuthContext';
+import { fetchEndpoint } from '../FetchEndpoint';
+import FAIcon from '../../components/FAIcon';
+import { useAuth } from '../../contexts/AuthContext';
 
 // Styled components to match the design system
 const StyledPaper = styled(Paper)(({ theme }) => ({

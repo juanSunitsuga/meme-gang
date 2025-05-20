@@ -4,13 +4,15 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Navbar from './components/Navbar';
 import Settings from './View/Settings';
-import Login from './View/Login';
-import Register from './View/Register';
+import Login from './View/Auth/Login';
+import Register from './View/Auth/Register';
 import SearchForm from './View/SearchForm';
 import ViewComments from './View/Comments/ViewComments';
 import CreatePost from './View/CreatePost';
-import Home from './View/Home'; // Import Home component
+import Home from './View/Home';
 import { AuthProvider } from './contexts/AuthContext';
+import ForgotPassword from './View/Auth/ForgotPassword'; 
+import ResetPassword from './View/Auth/ResetPassword'; 
 
 const darkTheme = createTheme({
     palette: {
@@ -73,6 +75,8 @@ function AppContent() {
                     <Route path="/search" element={<SearchForm onSubmit={handleSearchSubmit} />} />
                     <Route path="/comments/:id/replies" element={<ViewComments />} />
                     <Route path="/create-post" element={<CreatePost />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
                     {/* <Route path="/post/:id/comments" element={<ViewComments />} /> */}
                     {/* Add other routes here */}
                 </Routes>

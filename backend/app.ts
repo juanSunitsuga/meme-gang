@@ -6,8 +6,9 @@ import { User } from '../models/User';
 import { SavedPost } from '../models/Saved_Post';
 import { Tag } from '../models/Tag';
 import { UpvoteDownvote } from '../models/Upvote_Downvote_Post';
+import { ResetToken } from '../models/ResetToken';
 import profileRoutes from './Profile';
-import registerLoginRoutes from './RegisterLogin';
+import registerLoginRoutes from './Auth';
 import uploadRoutes from './Uploads';
 import commentsRoutes from './Comments';
 import commentReplyRoutes from './CommentsReply';
@@ -15,7 +16,6 @@ import searchRoutes from './Search';
 import config from '../config/config.json';
 import cors from 'cors';
 import error from '../middleware/errorHandler';
-import path from 'path';
 import postRouter from './post';
 
 const app = express();
@@ -33,7 +33,7 @@ import { Dialect } from 'sequelize'; // Add this import if not already present
 const sequelize = new Sequelize({
     ...config.development,
     dialect: config.development.dialect as Dialect, // Cast dialect to Dialect type
-    models: [Comment, Post, User, SavedPost, Tag, UpvoteDownvote],
+    models: [Comment, Post, User, SavedPost, Tag, UpvoteDownvote, ResetToken],
 });
 
 

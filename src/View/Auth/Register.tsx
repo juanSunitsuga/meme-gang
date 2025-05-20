@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { fetchEndpoint } from './FetchEndpoint';
+import { fetchEndpoint } from '../FetchEndpoint';
 import { 
   Alert, 
   AlertTitle, 
@@ -16,7 +16,7 @@ import {
   alpha
 } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import FAIcon from '../components/FAIcon';
+import FAIcon from '../../components/FAIcon';
 
 // Styled components to match the design system
 const StyledPaper = styled(Paper)(({ theme }) => ({

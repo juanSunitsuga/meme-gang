@@ -174,6 +174,13 @@ const MuiNavbar: React.FC = () => {
         elevation: 3,
         sx: { backgroundColor: '#222', color: 'white' }
       }}
+      // Add these props to prevent the layout shift
+      disableScrollLock={true}
+      slotProps={{
+        backdrop: {
+          sx: { backdropFilter: 'none' }
+        }
+      }}
     >
       <MenuItem onClick={() => { navigate('/settings'); handleMenuClose(); }}>
         <ListItemIcon>
@@ -297,7 +304,7 @@ const MuiNavbar: React.FC = () => {
 
   return (
     <>
-      <StyledAppBar position="fixed"> {/* Changed to fixed position */}
+      <StyledAppBar position="sticky"> {/* Changed to fixed position */}
         <Toolbar>
           {isMobile && (
             <IconButton
