@@ -14,6 +14,7 @@ interface Post {
   commentsCount: number;
   upvotes: number;
   downvotes: number;
+  tags: string[];
 }
 
 const Home: React.FC = () => {
@@ -69,6 +70,7 @@ const Home: React.FC = () => {
               upvotes={post.upvotes}
               downvotes={post.downvotes}
               comments={post.commentsCount}
+              tags={post.tags}
             />
           ))
         )}

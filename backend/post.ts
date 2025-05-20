@@ -189,17 +189,47 @@ router.get(
             commentMap[c.post_id] = Number(c.commentCount);
         }
 
-        // Attach upvotes and downvotes to each post
-        const postsWithVotes = posts.map(post => {
-            const votes = voteMap[post.id] || { upvotes: 0, downvotes: 0 };
-            const commentCount = commentMap[post.id] || 0;
-            return {
-                ...post.toJSON(),
-                upvotes: votes.upvotes,
-                downvotes: votes.downvotes,
-                commentsCount: commentCount,
-            };
+        // Fetch all PostTags for these posts
+        const postTags = await PostTag.findAll({
+            where: { post_id: { [Op.in]: postIds } },
+            raw: true,
         });
+
+        // Map post_id to array of tag_ids
+        const postIdToTagIds: { [key: string]: string[] } = {};
+        postTags.forEach(pt => {
+            if (!postIdToTagIds[pt.post_id]) postIdToTagIds[pt.post_id] = [];
+            postIdToTagIds[pt.post_id].push(pt.tag_id);
+        });
+
+        // Collect all unique tag IDs used in these posts
+        const allTagIds = Array.from(new Set(postTags.map(pt => pt.tag_id)));
+
+        // Query tag names for all unique tag IDs
+        const tags = await Tag.findAll({
+            where: { id: { [Op.in]: allTagIds } },
+            raw: true,
+        });
+
+        // Map tag_id to tag_name for easy lookup
+        const tagIdToName: { [key: string]: string } = {};
+        tags.forEach(tag => {
+            tagIdToName[tag.id] = tag.tag_name;
+        });
+
+        const postsWithVotes = posts.map(post => {
+        const votes = voteMap[post.id] || { upvotes: 0, downvotes: 0 };
+        const commentCount = commentMap[post.id] || 0;
+        const tagIds = postIdToTagIds[post.id] || [];
+        const tagNames = tagIds.map(tagId => tagIdToName[tagId]).filter(Boolean); // get tag names
+        return {
+            ...post.toJSON(),
+            upvotes: votes.upvotes,
+            downvotes: votes.downvotes,
+            commentsCount: commentCount,
+            tags: tagNames,
+        };
+    });
 
         if (popular) {
             postsWithVotes.sort((a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes));
