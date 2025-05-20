@@ -74,9 +74,10 @@ function AppContent() {
                     <Route path="/search" element={<SearchForm onSubmit={handleSearchSubmit} />} />
                     <Route path="/comments/:id/replies" element={<ViewComments />} />
                     <Route path="/create-post" element={<CreatePost />} />
-                    <Route path="/posts/:postId" element={<PostDetailPage />} />
+                    <Route path="/post/:postId" element={<PostDetailPage />} />
                     {/* <Route path="/post/:id/comments" element={<ViewComments />} /> */}
                     {/* Add other routes here */}
+                    
                 </Routes>
             </div>
         </div>

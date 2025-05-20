@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import PostCard from './Components/PostCard';
-import CommentList from './Components/CommentList';
-// import dayjs from 'dayjs';
-// import relativeTime from 'dayjs/plugin/relativeTime';
-
-// dayjs.extend(relativeTime);
+// import CommentList from './Components/CommentList';
+import { fetchEndpoint } from './FetchEndpoint';
 
 interface PostDetail {
   id: string;
@@ -21,20 +18,20 @@ const PostDetailPage: React.FC = () => {
   const { postId } = useParams<{ postId: string }>();
   const [post, setPost] = useState<PostDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [commentText, setCommentText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [refresh, setRefresh] = useState(0); // Add refresh state
 
   useEffect(() => {
     async function fetchPost() {
       try {
-        const res = await fetch(`http://localhost:3000/posts/${postId}`);
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        const postData = await res.json();
-        console.log('Fetched post:', postData); // Debug log
-        setPost(postData);
+        setLoading(true); // Ensure loading is set when fetching
+        const endpoint = `/post/${postId}`;
+        const data = await fetchEndpoint(endpoint, 'GET');
+        setPost(data);
       } catch (error) {
         console.error('Failed to fetch post detail', error);
-        setPost(null); // Pastikan set null kalau error
+        setPost(null);
       } finally {
         setLoading(false);
       }
@@ -43,26 +40,111 @@ const PostDetailPage: React.FC = () => {
     if (postId) {
       fetchPost();
     }
-  }, [postId]);
+  }, [postId, refresh]); // Add refresh as dependency
+
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const trimmedComment = commentText.trim();
+    if (!trimmedComment) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('Token tidak ditemukan. Pengguna belum login.');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      const response = await fetch(`http://localhost:3000/post/${postId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          content: trimmedComment,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Gagal menambahkan komentar:', errorData);
+        return;
+      }
+
+      setCommentText('');
+      setRefresh((prev) => prev + 1); // Trigger refresh after comment
+    } catch (error) {
+      console.error('Terjadi kesalahan saat submit komentar:', error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
 
   if (loading) return <div>Loading...</div>;
   if (!post) return <div>Post not found</div>;
 
   return (
     <div style={{ maxWidth: 640, margin: 'auto', padding: 16 }}>
-      <PostCard
-        postId={post.id}
-        imageUrl={post.image_url || ''}
-        title={post.title}
-        username="Unknown" // TODO: Ganti jika backend punya data username
-        timeAgo="just now" // TODO: Gunakan dayjs jika perlu
-        upvotes={post.upvotes}
-        downvotes={post.downvotes}
-        comments={post.commentsCount}
-      />
+        <PostCard
+            postId={post.id}
+            imageUrl={post.image_url || ''}
+            title={post.title}
+            username="Unknown"
+            timeAgo="just now"
+            upvotes={post.upvotes}
+            downvotes={post.downvotes}
+            comments={post.commentsCount}
+        />
 
-      {/* Tampilkan komentar */}
-      <CommentList postId={post.id} />
+      <div style={{ marginTop: 32 }}>
+        <form
+            onSubmit={handleCommentSubmit}
+            style={{
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: '#1e1e1e',
+            padding: 8,
+            borderRadius: 8,
+            }}
+        >
+            <input
+            type="text"
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder="Leave a comment..."
+            style={{
+                flex: 1,
+                padding: '10px 14px',
+                borderRadius: 6,
+                border: '1px solid #333',
+                backgroundColor: '#121212',
+                color: '#fff',
+                fontSize: 14,
+                marginRight: 8,
+                outline: 'none',
+            }}
+            />
+            <button
+            type="submit"
+            disabled={submitting}
+            style={{
+                padding: '10px 16px',
+                backgroundColor: '#007bff',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                fontWeight: 600,
+                cursor: 'pointer',
+            }}
+            >
+            {submitting ? 'Post' : 'Post'}
+            </button>
+        </form>
+        </div>
     </div>
   );
 };

@@ -74,8 +74,6 @@ const Home: React.FC = () => {
               comments={post.commentsCount}
               onCommentClick={() => navigate(`/post/${post.id}`)} // ini handler navigasinya
             />
-
-            
           ))
         )}
       </div>

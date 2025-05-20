@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CircularProgress, Stack, Typography, Box } from '@mui/material';
 import MainCommentCard from './MainCommentCard';
+import { fetchEndpoint } from '../FetchEndpoint';
 
 interface Comment {
   id: string;
@@ -23,17 +24,11 @@ const CommentList: React.FC<CommentListProps> = ({ postId: propPostId }) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchComments = async () => {
+  const fetchComments = React.useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:3000/post/${postId}/comments`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const data = await fetchEndpoint(`/post/${postId}/comments`, 'GET', token);
 
-      if (!res.ok) throw new Error('Gagal mengambil komentar');
-      const data = await res.json();
       setComments(data);
     } catch (err) {
       console.error(err);
@@ -41,63 +36,69 @@ const CommentList: React.FC<CommentListProps> = ({ postId: propPostId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [postId]);
 
   useEffect(() => {
     if (postId) {
       fetchComments();
     }
-  }, [postId]);
+  }, [postId, fetchComments]);
 
-  const handleDelete = async (commentId: string) => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:3000/comments/${commentId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) throw new Error('Gagal menghapus komentar');
-
-      const deleteRecursively = (list: Comment[]): Comment[] =>
-        list
-          .filter((c) => c.id !== commentId)
-          .map((c) => ({ ...c, replies: deleteRecursively(c.replies) }));
-
-      setComments((prev) => deleteRecursively(prev));
-    } catch (err) {
-      console.error(err);
-      alert('Terjadi kesalahan saat menghapus komentar 😥');
+const handleDelete = async (commentId: string) => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Token tidak ditemukan. Silakan login ulang 😥');
+      return;
     }
-  };
+
+    await fetchEndpoint(`/comments/${commentId}`, 'DELETE', token);
+
+    const deleteRecursively = (comments: Comment[]): Comment[] =>
+      comments
+        .filter(comment => comment.id !== commentId)
+        .map(comment => ({
+          ...comment,
+          replies: deleteRecursively(comment.replies),
+        }));
+
+    setComments(prevComments => deleteRecursively(prevComments));
+  } catch (error) {
+    console.error('Gagal menghapus komentar:', error);
+    alert('Terjadi kesalahan saat menghapus komentar 😥');
+  }
+};
+
 
   const handleEditSuccess = async (commentId: string, updatedText: string) => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:3000/comments/${commentId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ text: updatedText }),
-      });
-
-      if (!res.ok) throw new Error('Gagal mengupdate komentar');
-
-      const editRecursively = (list: Comment[]): Comment[] =>
-        list.map((c) =>
-          c.id === commentId
-            ? { ...c, text: updatedText }
-            : { ...c, replies: editRecursively(c.replies) }
-        );
-
-      setComments((prev) => editRecursively(prev));
-    } catch (err) {
-      console.error(err);
-      alert('Terjadi kesalahan saat mengupdate komentar 😥');
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Token tidak ditemukan. Silakan login ulang 😥');
+      return;
     }
-  };
+
+    await fetchEndpoint(
+      `/comments/${commentId}`,
+      'PUT',
+      token,
+      { text: updatedText }
+    );
+
+    const editRecursively = (comments: Comment[]): Comment[] =>
+      comments.map(comment =>
+        comment.id === commentId
+          ? { ...comment, text: updatedText }
+          : { ...comment, replies: editRecursively(comment.replies) }
+      );
+
+    setComments(prevComments => editRecursively(prevComments));
+  } catch (error) {
+    console.error('Gagal mengupdate komentar:', error);
+    alert('Terjadi kesalahan saat mengupdate komentar 😥');
+  }
+};
+
 
   const handleReplySend = async (
     parentId: string,
@@ -121,16 +122,8 @@ const CommentList: React.FC<CommentListProps> = ({ postId: propPostId }) => {
       );
 
       if (!res.ok) throw new Error('Gagal mengirim balasan');
-      const newReply = await res.json();
-
-      const addReplyRecursively = (list: Comment[]): Comment[] =>
-        list.map((comment) =>
-          comment.id === parentId
-            ? { ...comment, replies: [...comment.replies, newReply] }
-            : { ...comment, replies: addReplyRecursively(comment.replies) }
-        );
-
-      setComments((prev) => addReplyRecursively(prev));
+      // Refresh comments after posting a reply
+      await fetchComments();
     } catch (err) {
       console.error(err);
       alert('Gagal mengirim balasan 😢');
