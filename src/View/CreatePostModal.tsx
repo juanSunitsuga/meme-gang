@@ -395,3 +395,7 @@ const CreatePostModal: React.FC = () => {
 };
 
 export default CreatePostModal;
+
+function alpha(main: string, arg1: number): import("csstype").Property.BackgroundColor | readonly string[] | readonly import("csstype").Property.BackgroundColor[] | undefined {
+  throw new Error('Function not implemented.');
+}

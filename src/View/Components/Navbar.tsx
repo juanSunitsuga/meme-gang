@@ -44,7 +44,7 @@ const NavButton = styled(Button)(({ theme }) => ({
   '&:hover': {
     backgroundColor: alpha(theme.palette.common.white, 0.1),
   },
-}));
+})) as typeof Button;
 
 const SignUpButton = styled(Button)(({ theme }) => ({
   margin: theme.spacing(0, 0.5),
@@ -149,8 +149,6 @@ const MuiNavbar: React.FC = () => {
     
     handleMenuClose();
     
-    navigate('/login');
-    
     console.log('User logged out successfully');
   };
 
@@ -221,19 +219,19 @@ const MuiNavbar: React.FC = () => {
       </Box>
       <Divider sx={{ backgroundColor: '#444' }} />
       <List>
-        <ListItem button component={RouterLink} to="/trending" onClick={() => setDrawerOpen(false)}>
+        <ListItem component={RouterLink} to="/trending" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
           <ListItemIcon sx={{ color: '#aaa' }}>
             <FAIcon icon="fas fa-fire-flame-curved" />
           </ListItemIcon>
           <ListItemText primary="Trending" />
         </ListItem>
-        <ListItem button component={RouterLink} to="/fresh" onClick={() => setDrawerOpen(false)}>
+        <ListItem component={RouterLink} to="/fresh" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
           <ListItemIcon sx={{ color: '#aaa' }}>
             <FAIcon icon="fas fa-clock" />
           </ListItemIcon>
           <ListItemText primary="Fresh" />
         </ListItem>
-        <ListItem button component={RouterLink} to="/top" onClick={() => setDrawerOpen(false)}>
+        <ListItem component={RouterLink} to="/top" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
           <ListItemIcon sx={{ color: '#aaa' }}>
             <FAIcon icon="fas fa-chart-line" />
           </ListItemIcon>
