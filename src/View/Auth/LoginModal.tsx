@@ -4,31 +4,22 @@ import {
   Typography, 
   TextField, 
   Button,
-  Paper, 
-  Alert, 
-  AlertTitle,
+  Dialog,
+  DialogContent,
   InputAdornment,
   IconButton,
   Link,
   CircularProgress,
-  styled,
-  alpha
+  Alert,
+  AlertTitle,
+  styled
 } from '@mui/material';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { fetchEndpoint } from './FetchEndpoint';
-import FAIcon from '../components/FAIcon';
+import { fetchEndpoint } from '../FetchEndpoint';
+import FAIcon from '../Components/FAIcon';
+import { useAuth } from '../contexts/AuthContext';
+import { useModal } from '../contexts/ModalContext';
 
-// Styled components to match the design system
-const StyledPaper = styled(Paper)(({ theme }) => ({
-  backgroundColor: '#1a1a1a',
-  color: 'white',
-  padding: theme.spacing(4),
-  borderRadius: theme.spacing(1),
-  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-  width: '100%',
-  maxWidth: '400px',
-}));
-
+// Reuse same styled components
 const StyledTextField = styled(TextField)(({ theme }) => ({
   marginBottom: theme.spacing(2.5),
   '& .MuiOutlinedInput-root': {
@@ -72,39 +63,35 @@ const LoginButton = styled(Button)(({ theme }) => ({
   },
 }));
 
-const Login: React.FC = () => {
+const LoginModal: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
-  const navigate = useNavigate();
-
+  
+  const { login } = useAuth();
+  const { isLoginModalOpen, closeLoginModal, switchToRegister, openForgotPasswordModal } = useModal();
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setAlertMessage(null);
     
     try {
-      const data = await fetchEndpoint('/auth/login', 'POST', null, { email, password });
+      const response = await fetchEndpoint('/auth/login', 'POST', null, { 
+        email, 
+        password 
+      });
       
-      if (!data || !data.token) {
-        throw new Error('Your credentials are incorrect');
+      if (response && response.token) {
+        login(response.token);
+        closeLoginModal();
+        setEmail('');
+        setPassword('');
+      } else {
+        throw new Error(response?.message || 'Invalid login credentials');
       }
-
-      localStorage.removeItem('token');
-      
-      localStorage.setItem('token', data.token);
-      
-      if (data.expiresAt) {
-        localStorage.setItem('tokenExpires', data.expiresAt);
-      }
-      
-      console.log('Successfully logged in and stored token');
-      
-      navigate('/');
-      setTimeout(() => window.location.reload(), 100);
-    
     } catch (error) {
       console.error('Login error:', error);
       if (error instanceof Error) {
@@ -117,18 +104,43 @@ const Login: React.FC = () => {
     }
   };
 
+  const handleClose = () => {
+    setAlertMessage(null);
+    setEmail('');
+    setPassword('');
+    closeLoginModal();
+  };
+
   return (
-    <Box 
-      sx={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '100vh',
-        backgroundColor: '#121212',
-        padding: 2
+    <Dialog 
+      open={isLoginModalOpen} 
+      onClose={handleClose}
+      maxWidth="xs"
+      fullWidth
+      disableScrollLock={true}
+      PaperProps={{
+        sx: {
+          backgroundColor: '#121212',
+          borderRadius: 2,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.4)'
+        }
+      }}
+      slotProps={{
+        backdrop: {
+          sx: {
+            backdropFilter: 'blur(8px)',
+            backgroundColor: 'rgba(0,0,0,0.5)'
+          }
+        }
       }}
     >
-      <StyledPaper>
+      <DialogContent sx={{ p: 4 }}>
+        <Box sx={{ position: 'absolute', top: 12, right: 12 }}>
+          <IconButton onClick={handleClose} sx={{ color: '#aaa' }}>
+            <FAIcon icon="fas fa-times" />
+          </IconButton>
+        </Box>
+        
         <Typography 
           variant="h4" 
           component="h1" 
@@ -137,6 +149,7 @@ const Login: React.FC = () => {
             mb: 3,
             fontWeight: 600,
             fontFamily: '"Poppins", sans-serif',
+            color: 'white'
           }}
         >
           Login
@@ -208,8 +221,12 @@ const Login: React.FC = () => {
           
           <Box sx={{ textAlign: 'right', mb: 2 }}>
             <Link 
-              component={RouterLink} 
-              to="/forgot-password" 
+              component="button"
+              type="button"
+              onClick={() => {
+                closeLoginModal();
+                openForgotPasswordModal();
+              }}
               sx={{ 
                 color: '#1976d2',
                 fontFamily: '"Poppins", sans-serif',
@@ -251,8 +268,9 @@ const Login: React.FC = () => {
             >
               Don't have an account?{' '}
               <Link 
-                component={RouterLink} 
-                to="/register" 
+                component="button"
+                type="button"
+                onClick={switchToRegister}
                 sx={{ 
                   color: '#1976d2',
                   fontWeight: 500,
@@ -267,9 +285,9 @@ const Login: React.FC = () => {
             </Typography>
           </Box>
         </form>
-      </StyledPaper>
-    </Box>
+      </DialogContent>
+    </Dialog>
   );
 };
 
-export default Login;
+export default LoginModal;

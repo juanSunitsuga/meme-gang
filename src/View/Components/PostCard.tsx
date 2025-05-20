@@ -25,6 +25,7 @@ interface PostCardProps {
   upvotes: number;
   downvotes: number;
   comments: number;
+  tags: string[];
 }
 
 const PostCard: React.FC<PostCardProps> = ({
@@ -35,6 +36,7 @@ const PostCard: React.FC<PostCardProps> = ({
   upvotes,
   downvotes,
   comments,
+  tags,
 }) => {
   return (
     <Card
@@ -89,8 +91,16 @@ const PostCard: React.FC<PostCardProps> = ({
 
         {/* Tags (optional example) */}
         <Stack direction="row" spacing={1} mt={1}>
-          <Chip label="wtf" size="small" sx={{ bgcolor: '#2c2c2c', color: '#fff' }} />
-          <Chip label="funny" size="small" sx={{ bgcolor: '#2c2c2c', color: '#fff' }} />
+          {tags && tags.length > 0 ? (
+            tags.map((tag) => (
+              <Chip
+                key={tag}
+                label={tag}
+                size="small"
+                sx={{ bgcolor: '#2c2c2c', color: '#fff' }}
+              />
+            ))
+          ) : null}
         </Stack>
 
         {/* Interaction Row */}

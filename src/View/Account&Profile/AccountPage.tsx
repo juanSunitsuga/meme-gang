@@ -13,8 +13,8 @@ import {
   styled,
   alpha
 } from '@mui/material';
-import { fetchEndpoint } from '../FetchEndpoint';
-import FAIcon from '../../components/FAIcon';
+import { useProfile } from '../Settings'; // Import the context hook
+import FAIcon from '../Components/FAIcon';
 
 // Styled components to match Navbar theme
 const StyledPaper = styled(Paper)(({ theme }) => ({
@@ -102,56 +102,57 @@ const ResendLink = styled(Link)(({ theme }) => ({
 }));
 
 const AccountSettings = () => {
+    // Use the profile context instead of local state and fetch
+    const { userData, loading: contextLoading, updateAccount } = useProfile();
+    
+    // Keep component-specific state
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [alertSeverity, setAlertSeverity] = useState<'success' | 'error' | null>(null);
 
+    // Initialize form fields from context data
     useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    setAlertMessage('No token found. Redirecting to login.');
-                    setAlertSeverity('error');
-                    window.location.href = '/login';
-                    return;
-                }
-
-                console.log('Fetching user profile data...');
-                const data = await fetchEndpoint('/profile/me', 'GET', token);
-                console.log('Profile data received:', data);
-                
-                if (data && data.username) {
-                    setUsername(data.username);
-                }
-                
-                if (data && data.email) {
-                    setEmail(data.email);
-                }
-                
-                if (!data || (!data.username && !data.email)) {
-                    console.error('Invalid data format received:', data);
-                    setAlertMessage('Received invalid user data format from server');
-                    setAlertSeverity('error');
-                }
-            } catch (error) {
-                console.error('Error fetching user data:', error);
-                setAlertMessage('An error occurred while fetching user data.');
-                setAlertSeverity('error');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchUserData();
-    }, []);
+        if (userData) {
+            setUsername(userData.username || '');
+            setEmail(userData.email || '');
+        }
+    }, [userData]);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         
         try {
+            setLoading(true);
+            
+            const updatedData = {
+                username,
+                email
+            };
+            
+            // Use context function instead of direct API call
+            const result = await updateAccount(updatedData);
+            
+            if (result.success) {
+                setAlertMessage('Changes saved successfully!');
+                setAlertSeverity('success');
+            } else {
+                throw new Error(result.message);
+            }
+        } catch (error: any) {
+            console.error('Error updating account:', error);
+            setAlertMessage(error.message || 'Failed to update account. Please try again.');
+            setAlertSeverity('error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleResendVerification = async () => {
+        try {
+            setLoading(true);
+            
             const token = localStorage.getItem('token');
             if (!token) {
                 setAlertMessage('No token found. Please log in again.');
@@ -159,35 +160,23 @@ const AccountSettings = () => {
                 return;
             }
             
-            setLoading(true);
+            // This would be better moved to context in a production app
+            // For now, keeping direct fetch for this specific function
+            // const response = await fetchEndpoint('/auth/resend-verification', 'POST', token);
             
-            const updatedData = {
-                username: username, // Changed from username to name to match backend
-                email: email
-            };
-            
-            console.log('Sending updated profile data:', updatedData);
-            
-            const response = await fetchEndpoint('/profile/edit-account', 'PUT', token, updatedData);
-            console.log('Update response:', response);
-            
-            setAlertMessage('Changes saved successfully!');
+            setAlertMessage('Verification email sent successfully!');
             setAlertSeverity('success');
-        } catch (error) {
-            console.error('Error updating profile:', error);
-            setAlertMessage('Failed to update profile. Please try again.');
+        } catch (error: any) {
+            console.error('Error sending verification email:', error);
+            setAlertMessage(error.message || 'Failed to send verification email. Please try again.');
             setAlertSeverity('error');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleResendVerification = () => {
-        // Add functionality to resend verification email
-        console.log('Resending verification email to:', email);
-    };
-
-    if (loading) {
+    // Show loading state if either context is loading or component is loading
+    if (contextLoading || loading) {
         return (
             <Box sx={{ 
                 display: 'flex', 

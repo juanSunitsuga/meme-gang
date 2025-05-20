@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { useModal } from '../contexts/ModalContext';
 import {
   AppBar,
   Toolbar,
@@ -19,7 +21,8 @@ import {
   alpha,
   styled,
   useMediaQuery,
-  useTheme
+  useTheme,
+  Avatar,
 } from '@mui/material';
 
 import FAIcon from './FAIcon';
@@ -29,7 +32,7 @@ const LogoTypography = styled(Typography)(({ theme }) => ({
   cursor: 'pointer',
   marginRight: theme.spacing(2),
   fontSize: '1.3rem',
-  fontFamily: '"Poppins", sans-serif', // Add specific font styling
+  fontFamily: '"Poppins", sans-serif', 
 }));
 
 // Add font styling to your buttons
@@ -37,20 +40,20 @@ const NavButton = styled(Button)(({ theme }) => ({
   margin: theme.spacing(0, 0.5),
   color: 'white',
   textTransform: 'none',
-  fontFamily: '"Poppins", sans-serif', // Add specific font styling
-  fontWeight: 500, // Medium weight
+  fontFamily: '"Poppins", sans-serif', 
+  fontWeight: 500,
   '&:hover': {
     backgroundColor: alpha(theme.palette.common.white, 0.1),
   },
-}));
+})) as typeof Button;
 
 const SignUpButton = styled(Button)(({ theme }) => ({
   margin: theme.spacing(0, 0.5),
   backgroundColor: '#1976d2',
   color: 'white',
   textTransform: 'none',
-  fontFamily: '"Poppins", sans-serif', // Add specific font styling
-  fontWeight: 600, // Semi-bold
+  fontFamily: '"Poppins", sans-serif', 
+  fontWeight: 600, 
   '&:hover': {
     backgroundColor: '#1565c0',
   },
@@ -61,7 +64,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   color: 'inherit',
   width: '100%',
   height: '100%',
-  fontFamily: '"Poppins", sans-serif', // Add specific font styling
+  fontFamily: '"Poppins", sans-serif',
   '& .MuiInputBase-input': {
     padding: theme.spacing(1, 1, 1, 0),
     paddingLeft: `calc(1em + ${theme.spacing(4)})`,
@@ -75,7 +78,6 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
-// Add this IconWrapper for Font Awesome icons
 const IconWrapper = styled('div')({
   display: 'flex',
   alignItems: 'center',
@@ -114,7 +116,7 @@ const SearchIconWrapper = styled('div')(({ theme }) => ({
 
 // Add styled AppBar
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
-  backgroundColor: '#1a1a1a', // Changed back to dark color
+  backgroundColor: '#1a1a1a',
   boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
   color: 'white',
 }));
@@ -127,14 +129,9 @@ const MuiNavbar: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   
-  // Replace hardcoded value with state from localStorage
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  
-  // Check authentication status on component mount
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    setIsLoggedIn(!!token);
-  }, []);
+  // Use auth context instead of local state
+  const { isAuthenticated, logout, userData } = useAuth();
+  const { openLoginModal, openRegisterModal, openCreatePostModal } = useModal();
 
   const handleMenuClose = () => {
     setAnchorEl(null);
@@ -149,33 +146,49 @@ const MuiNavbar: React.FC = () => {
   };
 
   const handleLogout = () => {
-    // Clear authentication data
-    localStorage.removeItem('token');
+    logout();
     
-    // If you're using any session storage items, clear those too
-    sessionStorage.clear();
-    
-    // Update authentication state
-    setIsLoggedIn(false);
-    
-    // Close any open menus
     handleMenuClose();
-    
-    // Redirect to login page
-    navigate('/login');
-    
-    // Optional: Show a logout success message
-    // If you have a toast/notification system
-    // toast.success("You have been logged out successfully");
+    navigate('/');
     
     console.log('User logged out successfully');
   };
 
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Your search submit logic here
     console.log('Search:', searchQuery);
   };
+
+  const getProfilePictureUrl = () => {
+    if (!userData || !userData.profilePicture) return undefined;
+    
+    if (userData.profilePicture.startsWith('http')) {
+      return userData.profilePicture;
+    }
+    
+    return `/uploads/avatars/${userData.profilePicture}`;
+  };
+
+  // Replace your current getAvatarUrl function with this one:
+  const getAvatarUrl = (avatarPath: string | undefined) => {
+    if (!avatarPath) return undefined;
+
+    if (avatarPath.startsWith('http')) {
+      return avatarPath;
+    }
+
+    const filename = avatarPath.includes('/')
+      ? avatarPath.split('/').pop()
+      : avatarPath;
+
+    if (!filename) return undefined;
+
+    const cacheBuster = avatarPath.includes('?t=') ? '' : `?t=${new Date().getTime()}`;
+    return `/uploads/avatars/${filename}${cacheBuster}`;
+  };
+
+  console.log('User Data:', userData);
+  console.log('Avatar URL:', getAvatarUrl(userData?.profilePicture));
 
   const menuId = 'primary-account-menu';
   const renderMenu = (
@@ -187,9 +200,69 @@ const MuiNavbar: React.FC = () => {
       onClose={handleMenuClose}
       PaperProps={{
         elevation: 3,
-        sx: { backgroundColor: '#222', color: 'white' }
+        sx: { 
+          backgroundColor: '#222', 
+          color: 'white',
+          minWidth: '200px'
+        }
+      }}
+      disableScrollLock={true}
+      slotProps={{
+        backdrop: {
+          sx: { backdropFilter: 'none' }
+        }
       }}
     >
+      {/* Add user profile header */}
+      {userData && (
+        <>
+          <Box sx={{ 
+            p: 2, 
+            display: 'flex', 
+            alignItems: 'center',
+            borderBottom: '1px solid rgba(255,255,255,0.1)'
+          }}>
+            {userData.profilePicture ? (
+              <Avatar 
+                src={getAvatarUrl(userData.profilePicture)} 
+                alt={userData.username}
+                sx={{ 
+                  width: 40, 
+                  height: 40,
+                  mr: 1.5,
+                  border: '2px solid rgba(255,255,255,0.2)'
+                }} 
+              />
+            ) : (
+              <Avatar sx={{ 
+                width: 40, 
+                height: 40,
+                mr: 1.5,
+                bgcolor: '#1976d2'
+              }}>
+                {userData.username[0].toUpperCase()}
+              </Avatar>
+            )}
+            <Box>
+              <Typography sx={{ 
+                fontWeight: 500,
+                lineHeight: 1.2,
+                fontFamily: '"Poppins", sans-serif'
+              }}>
+                {userData.name}
+              </Typography>
+              <Typography variant="body2" sx={{ 
+                color: '#aaa',
+                fontSize: '0.8rem',
+                fontFamily: '"Poppins", sans-serif'
+              }}>
+                @{userData.username}
+              </Typography>
+            </Box>
+          </Box>
+        </>
+      )}
+      
       <MenuItem onClick={() => { navigate('/settings'); handleMenuClose(); }}>
         <ListItemIcon>
           <IconWrapper>
@@ -233,19 +306,19 @@ const MuiNavbar: React.FC = () => {
       </Box>
       <Divider sx={{ backgroundColor: '#444' }} />
       <List>
-        <ListItem button component={RouterLink} to="/trending" onClick={() => setDrawerOpen(false)}>
+        <ListItem component={RouterLink} to="/trending" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
           <ListItemIcon sx={{ color: '#aaa' }}>
             <FAIcon icon="fas fa-fire-flame-curved" />
           </ListItemIcon>
           <ListItemText primary="Trending" />
         </ListItem>
-        <ListItem button component={RouterLink} to="/fresh" onClick={() => setDrawerOpen(false)}>
+        <ListItem component={RouterLink} to="/fresh" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
           <ListItemIcon sx={{ color: '#aaa' }}>
             <FAIcon icon="fas fa-clock" />
           </ListItemIcon>
           <ListItemText primary="Fresh" />
         </ListItem>
-        <ListItem button component={RouterLink} to="/top" onClick={() => setDrawerOpen(false)}>
+        <ListItem component={RouterLink} to="/top" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
           <ListItemIcon sx={{ color: '#aaa' }}>
             <FAIcon icon="fas fa-chart-line" />
           </ListItemIcon>
@@ -254,7 +327,7 @@ const MuiNavbar: React.FC = () => {
       </List>
       <Divider sx={{ backgroundColor: '#444' }} />
       <Box sx={{ p: 2 }}>
-        {isLoggedIn ? (
+        {isAuthenticated ? (
           <>
             <Button 
               fullWidth 
@@ -312,7 +385,7 @@ const MuiNavbar: React.FC = () => {
 
   return (
     <>
-      <StyledAppBar position="fixed">
+      <StyledAppBar position="sticky">
         <Toolbar>
           {isMobile && (
             <IconButton
@@ -380,11 +453,11 @@ const MuiNavbar: React.FC = () => {
           
           {!isMobile && (
             <>
-              {isLoggedIn ? (
+              {isAuthenticated ? (
                 <>
                   <NavButton
                     startIcon={<FAIcon icon="fas fa-plus" />}
-                    onClick={() => { navigate('/create-post'); setDrawerOpen(false); }}
+                    onClick={openCreatePostModal}
                   >
                     Post
                   </NavButton>
@@ -395,21 +468,40 @@ const MuiNavbar: React.FC = () => {
                     aria-haspopup="true"
                     onClick={handleProfileMenuOpen}
                     color="inherit"
+                    sx={{ p: 0.5 }} // Add padding for better appearance
                   >
-                    <FAIcon icon="fas fa-user-circle" />
+                    {userData?.profilePicture ? (
+                      <Avatar 
+                        src={getAvatarUrl(userData.profilePicture)} 
+                        alt={userData.username}
+                        sx={{ 
+                          width: 36, 
+                          height: 36,
+                          border: '2px solid rgba(255,255,255,0.2)'
+                        }} 
+                      />
+                    ) : (
+                      <Avatar sx={{ 
+                        width: 36, 
+                        height: 36,
+                        bgcolor: '#1976d2'
+                      }}>
+                        {userData?.username ? userData.username[0].toUpperCase() : <FAIcon icon="fas fa-user" />}
+                      </Avatar>
+                    )}
                   </IconButton>
                 </>
               ) : (
                 <>
                   <NavButton
                     startIcon={<FAIcon icon="fas fa-sign-in-alt" />}
-                    onClick={() => navigate('/login')}
+                    onClick={openLoginModal}
                   >
                     Log In
                   </NavButton>
                   <SignUpButton
                     variant="contained"
-                    onClick={() => navigate('/register')}
+                    onClick={openRegisterModal}
                   >
                     Sign Up
                   </SignUpButton>
@@ -426,7 +518,146 @@ const MuiNavbar: React.FC = () => {
         onClose={handleDrawerToggle}
         ModalProps={{ keepMounted: true }}
       >
-        {drawer}
+        <Box sx={{ width: 250, backgroundColor: '#222', height: '100%', color: 'white' }}>
+          {isAuthenticated && userData && (
+            <Box sx={{ 
+              p: 2, 
+              display: 'flex', 
+              alignItems: 'center',
+              borderBottom: '1px solid rgba(255,255,255,0.1)'
+            }}>
+              {userData.profilePicture ? (
+                <Avatar 
+                  src={getAvatarUrl(userData.profilePicture)} 
+                  alt={userData.username}
+                  sx={{ 
+                    width: 40, 
+                    height: 40,
+                    mr: 1.5,
+                    border: '2px solid rgba(255,255,255,0.2)'
+                  }} 
+                />
+              ) : (
+                <Avatar sx={{ 
+                  width: 40, 
+                  height: 40,
+                  mr: 1.5,
+                  bgcolor: '#1976d2'
+                }}>
+                  {userData.username[0].toUpperCase()}
+                </Avatar>
+              )}
+              <Box>
+                <Typography sx={{ 
+                  fontWeight: 500,
+                  lineHeight: 1.2,
+                  fontFamily: '"Poppins", sans-serif'
+                }}>
+                  {userData.name || userData.username}
+                </Typography>
+                <Typography variant="body2" sx={{ 
+                  color: '#aaa',
+                  fontSize: '0.8rem',
+                  fontFamily: '"Poppins", sans-serif'
+                }}>
+                  @{userData.username}
+                </Typography>
+              </Box>
+            </Box>
+          )}
+          
+          {/* Rest of drawer content */}
+          <Box sx={{ p: 2 }}>
+            <Search sx={{ width: '100%', maxWidth: '400px' }}>
+              <SearchIconWrapper>
+                <FAIcon icon="fas fa-search" />
+              </SearchIconWrapper>
+              <StyledInputBase
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                inputProps={{ 'aria-label': 'search' }}
+                fullWidth
+              />
+            </Search>
+          </Box>
+          <Divider sx={{ backgroundColor: '#444' }} />
+          <List>
+            <ListItem component={RouterLink} to="/trending" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
+              <ListItemIcon sx={{ color: '#aaa' }}>
+                <FAIcon icon="fas fa-fire-flame-curved" />
+              </ListItemIcon>
+              <ListItemText primary="Trending" />
+            </ListItem>
+            <ListItem component={RouterLink} to="/fresh" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
+              <ListItemIcon sx={{ color: '#aaa' }}>
+                <FAIcon icon="fas fa-clock" />
+              </ListItemIcon>
+              <ListItemText primary="Fresh" />
+            </ListItem>
+            <ListItem component={RouterLink} to="/top" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
+              <ListItemIcon sx={{ color: '#aaa' }}>
+                <FAIcon icon="fas fa-chart-line" />
+              </ListItemIcon>
+              <ListItemText primary="Top" />
+            </ListItem>
+          </List>
+          <Divider sx={{ backgroundColor: '#444' }} />
+          <Box sx={{ p: 2 }}>
+            {isAuthenticated ? (
+              <>
+                <Button 
+                  fullWidth 
+                  variant="contained" 
+                  sx={{ mb: 1 }}
+                  onClick={() => { navigate('/create-post'); setDrawerOpen(false); }}
+                  startIcon={<FAIcon icon="fas fa-plus" />}
+
+                >
+                  Post
+                </Button>
+                <Button 
+                  fullWidth 
+                  variant="outlined" 
+                  sx={{ mb: 1 }}
+                  onClick={() => { navigate('/settings'); setDrawerOpen(false); }}
+                  startIcon={<FAIcon icon="fas fa-gear" />}
+                >
+                  Settings
+                </Button>
+                <Button 
+                  fullWidth 
+                  variant="outlined" 
+                  onClick={handleLogout}
+                  color="error"
+                  startIcon={<FAIcon icon="fas fa-sign-out-alt" />}
+                >
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button 
+                  fullWidth 
+                  variant="outlined" 
+                  sx={{ mb: 1 }}
+                  onClick={() => { navigate('/login'); setDrawerOpen(false); }}
+                  color="primary"
+                  startIcon={<FAIcon icon="fas fa-sign-in-alt" />}
+                >
+                  Log In
+                </Button>
+                <Button 
+                  fullWidth 
+                  variant="contained" 
+                  onClick={() => { navigate('/register'); setDrawerOpen(false); }}
+                >
+                  Sign Up
+                </Button>
+              </>
+            )}
+          </Box>
+        </Box>
       </Drawer>
       
       {renderMenu}
