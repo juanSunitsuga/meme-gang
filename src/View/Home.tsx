@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { fetchEndpoint } from './FetchEndpoint';
 import PostCard from './Components/PostCard';
 
+
 interface Post {
+  id: string;
   title: string;
   image_url: string;
   user: {
@@ -62,6 +64,7 @@ const Home: React.FC = () => {
         ) : (
           posts.map(post => (
             <PostCard
+              postId={post.id} 
               imageUrl={post.image_url}
               title={post.title}
               username='Juan'
@@ -69,7 +72,10 @@ const Home: React.FC = () => {
               upvotes={post.upvotes}
               downvotes={post.downvotes}
               comments={post.commentsCount}
+              onCommentClick={() => navigate(`/post/${post.id}`)} // ini handler navigasinya
             />
+
+            
           ))
         )}
       </div>
