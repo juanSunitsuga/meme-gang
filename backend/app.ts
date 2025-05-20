@@ -7,6 +7,7 @@ import { SavedPost } from '../models/Saved_Post';
 import { Tag } from '../models/Tag';
 import { UpvoteDownvote } from '../models/Upvote_Downvote_Post';
 import { ResetToken } from '../models/ResetToken';
+import { PostTag } from '../models/PostTags';
 import profileRoutes from './Profile';
 import registerLoginRoutes from './Auth';
 import uploadRoutes from './Uploads';
@@ -33,7 +34,7 @@ import { Dialect } from 'sequelize'; // Add this import if not already present
 const sequelize = new Sequelize({
     ...config.development,
     dialect: config.development.dialect as Dialect, // Cast dialect to Dialect type
-    models: [Comment, Post, User, SavedPost, Tag, UpvoteDownvote, ResetToken],
+    models: [Comment, Post, User, SavedPost, Tag, UpvoteDownvote, ResetToken, PostTag],
 });
 
 
