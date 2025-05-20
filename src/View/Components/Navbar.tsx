@@ -21,7 +21,8 @@ import {
   alpha,
   styled,
   useMediaQuery,
-  useTheme
+  useTheme,
+  Avatar,
 } from '@mui/material';
 
 import FAIcon from './FAIcon';
@@ -129,7 +130,7 @@ const MuiNavbar: React.FC = () => {
   const navigate = useNavigate();
   
   // Use auth context instead of local state
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, userData } = useAuth();
   const { openLoginModal, openRegisterModal, openCreatePostModal } = useModal();
 
   const handleMenuClose = () => {
@@ -148,6 +149,7 @@ const MuiNavbar: React.FC = () => {
     logout();
     
     handleMenuClose();
+    navigate('/');
     
     console.log('User logged out successfully');
   };
@@ -156,6 +158,37 @@ const MuiNavbar: React.FC = () => {
     e.preventDefault();
     console.log('Search:', searchQuery);
   };
+
+  const getProfilePictureUrl = () => {
+    if (!userData || !userData.profilePicture) return undefined;
+    
+    if (userData.profilePicture.startsWith('http')) {
+      return userData.profilePicture;
+    }
+    
+    return `/uploads/avatars/${userData.profilePicture}`;
+  };
+
+  // Replace your current getAvatarUrl function with this one:
+  const getAvatarUrl = (avatarPath: string | undefined) => {
+    if (!avatarPath) return undefined;
+
+    if (avatarPath.startsWith('http')) {
+      return avatarPath;
+    }
+
+    const filename = avatarPath.includes('/')
+      ? avatarPath.split('/').pop()
+      : avatarPath;
+
+    if (!filename) return undefined;
+
+    const cacheBuster = avatarPath.includes('?t=') ? '' : `?t=${new Date().getTime()}`;
+    return `/uploads/avatars/${filename}${cacheBuster}`;
+  };
+
+  console.log('User Data:', userData);
+  console.log('Avatar URL:', getAvatarUrl(userData?.profilePicture));
 
   const menuId = 'primary-account-menu';
   const renderMenu = (
@@ -167,7 +200,11 @@ const MuiNavbar: React.FC = () => {
       onClose={handleMenuClose}
       PaperProps={{
         elevation: 3,
-        sx: { backgroundColor: '#222', color: 'white' }
+        sx: { 
+          backgroundColor: '#222', 
+          color: 'white',
+          minWidth: '200px'
+        }
       }}
       disableScrollLock={true}
       slotProps={{
@@ -176,6 +213,56 @@ const MuiNavbar: React.FC = () => {
         }
       }}
     >
+      {/* Add user profile header */}
+      {userData && (
+        <>
+          <Box sx={{ 
+            p: 2, 
+            display: 'flex', 
+            alignItems: 'center',
+            borderBottom: '1px solid rgba(255,255,255,0.1)'
+          }}>
+            {userData.profilePicture ? (
+              <Avatar 
+                src={getAvatarUrl(userData.profilePicture)} 
+                alt={userData.username}
+                sx={{ 
+                  width: 40, 
+                  height: 40,
+                  mr: 1.5,
+                  border: '2px solid rgba(255,255,255,0.2)'
+                }} 
+              />
+            ) : (
+              <Avatar sx={{ 
+                width: 40, 
+                height: 40,
+                mr: 1.5,
+                bgcolor: '#1976d2'
+              }}>
+                {userData.username[0].toUpperCase()}
+              </Avatar>
+            )}
+            <Box>
+              <Typography sx={{ 
+                fontWeight: 500,
+                lineHeight: 1.2,
+                fontFamily: '"Poppins", sans-serif'
+              }}>
+                {userData.name}
+              </Typography>
+              <Typography variant="body2" sx={{ 
+                color: '#aaa',
+                fontSize: '0.8rem',
+                fontFamily: '"Poppins", sans-serif'
+              }}>
+                @{userData.username}
+              </Typography>
+            </Box>
+          </Box>
+        </>
+      )}
+      
       <MenuItem onClick={() => { navigate('/settings'); handleMenuClose(); }}>
         <ListItemIcon>
           <IconWrapper>
@@ -381,8 +468,27 @@ const MuiNavbar: React.FC = () => {
                     aria-haspopup="true"
                     onClick={handleProfileMenuOpen}
                     color="inherit"
+                    sx={{ p: 0.5 }} // Add padding for better appearance
                   >
-                    <FAIcon icon="fas fa-user-circle" />
+                    {userData?.profilePicture ? (
+                      <Avatar 
+                        src={getAvatarUrl(userData.profilePicture)} 
+                        alt={userData.username}
+                        sx={{ 
+                          width: 36, 
+                          height: 36,
+                          border: '2px solid rgba(255,255,255,0.2)'
+                        }} 
+                      />
+                    ) : (
+                      <Avatar sx={{ 
+                        width: 36, 
+                        height: 36,
+                        bgcolor: '#1976d2'
+                      }}>
+                        {userData?.username ? userData.username[0].toUpperCase() : <FAIcon icon="fas fa-user" />}
+                      </Avatar>
+                    )}
                   </IconButton>
                 </>
               ) : (
@@ -412,7 +518,146 @@ const MuiNavbar: React.FC = () => {
         onClose={handleDrawerToggle}
         ModalProps={{ keepMounted: true }}
       >
-        {drawer}
+        <Box sx={{ width: 250, backgroundColor: '#222', height: '100%', color: 'white' }}>
+          {isAuthenticated && userData && (
+            <Box sx={{ 
+              p: 2, 
+              display: 'flex', 
+              alignItems: 'center',
+              borderBottom: '1px solid rgba(255,255,255,0.1)'
+            }}>
+              {userData.profilePicture ? (
+                <Avatar 
+                  src={getAvatarUrl(userData.profilePicture)} 
+                  alt={userData.username}
+                  sx={{ 
+                    width: 40, 
+                    height: 40,
+                    mr: 1.5,
+                    border: '2px solid rgba(255,255,255,0.2)'
+                  }} 
+                />
+              ) : (
+                <Avatar sx={{ 
+                  width: 40, 
+                  height: 40,
+                  mr: 1.5,
+                  bgcolor: '#1976d2'
+                }}>
+                  {userData.username[0].toUpperCase()}
+                </Avatar>
+              )}
+              <Box>
+                <Typography sx={{ 
+                  fontWeight: 500,
+                  lineHeight: 1.2,
+                  fontFamily: '"Poppins", sans-serif'
+                }}>
+                  {userData.name || userData.username}
+                </Typography>
+                <Typography variant="body2" sx={{ 
+                  color: '#aaa',
+                  fontSize: '0.8rem',
+                  fontFamily: '"Poppins", sans-serif'
+                }}>
+                  @{userData.username}
+                </Typography>
+              </Box>
+            </Box>
+          )}
+          
+          {/* Rest of drawer content */}
+          <Box sx={{ p: 2 }}>
+            <Search sx={{ width: '100%', maxWidth: '400px' }}>
+              <SearchIconWrapper>
+                <FAIcon icon="fas fa-search" />
+              </SearchIconWrapper>
+              <StyledInputBase
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                inputProps={{ 'aria-label': 'search' }}
+                fullWidth
+              />
+            </Search>
+          </Box>
+          <Divider sx={{ backgroundColor: '#444' }} />
+          <List>
+            <ListItem component={RouterLink} to="/trending" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
+              <ListItemIcon sx={{ color: '#aaa' }}>
+                <FAIcon icon="fas fa-fire-flame-curved" />
+              </ListItemIcon>
+              <ListItemText primary="Trending" />
+            </ListItem>
+            <ListItem component={RouterLink} to="/fresh" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
+              <ListItemIcon sx={{ color: '#aaa' }}>
+                <FAIcon icon="fas fa-clock" />
+              </ListItemIcon>
+              <ListItemText primary="Fresh" />
+            </ListItem>
+            <ListItem component={RouterLink} to="/top" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
+              <ListItemIcon sx={{ color: '#aaa' }}>
+                <FAIcon icon="fas fa-chart-line" />
+              </ListItemIcon>
+              <ListItemText primary="Top" />
+            </ListItem>
+          </List>
+          <Divider sx={{ backgroundColor: '#444' }} />
+          <Box sx={{ p: 2 }}>
+            {isAuthenticated ? (
+              <>
+                <Button 
+                  fullWidth 
+                  variant="contained" 
+                  sx={{ mb: 1 }}
+                  onClick={() => { navigate('/create-post'); setDrawerOpen(false); }}
+                  startIcon={<FAIcon icon="fas fa-plus" />}
+
+                >
+                  Post
+                </Button>
+                <Button 
+                  fullWidth 
+                  variant="outlined" 
+                  sx={{ mb: 1 }}
+                  onClick={() => { navigate('/settings'); setDrawerOpen(false); }}
+                  startIcon={<FAIcon icon="fas fa-gear" />}
+                >
+                  Settings
+                </Button>
+                <Button 
+                  fullWidth 
+                  variant="outlined" 
+                  onClick={handleLogout}
+                  color="error"
+                  startIcon={<FAIcon icon="fas fa-sign-out-alt" />}
+                >
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button 
+                  fullWidth 
+                  variant="outlined" 
+                  sx={{ mb: 1 }}
+                  onClick={() => { navigate('/login'); setDrawerOpen(false); }}
+                  color="primary"
+                  startIcon={<FAIcon icon="fas fa-sign-in-alt" />}
+                >
+                  Log In
+                </Button>
+                <Button 
+                  fullWidth 
+                  variant="contained" 
+                  onClick={() => { navigate('/register'); setDrawerOpen(false); }}
+                >
+                  Sign Up
+                </Button>
+              </>
+            )}
+          </Box>
+        </Box>
       </Drawer>
       
       {renderMenu}

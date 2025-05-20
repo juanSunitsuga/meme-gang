@@ -190,12 +190,11 @@ const Settings = () => {
         }
 
         const response = await fetchEndpoint('/auth/session', 'GET', token);
-        console.log('Session check response:', response);
 
       } catch (error: any) {
         setErrorMessage('Session invalid or expired. Redirecting to login...');
-        localStorage.removeItem('token'); // Clear invalid token
-        navigate('/login');
+        localStorage.removeItem('token');
+        navigate('/');
       } finally {
         console.log('checkSession function completed');
       }

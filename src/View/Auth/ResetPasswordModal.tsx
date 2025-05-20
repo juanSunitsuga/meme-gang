@@ -138,7 +138,7 @@ const ResetPasswordModal: React.FC = () => {
       disableScrollLock={true}
       PaperProps={{
         sx: {
-          backgroundColor: '#1a1a1a',
+          backgroundColor: '#121212',
           borderRadius: 2,
           boxShadow: '0 8px 24px rgba(0,0,0,0.4)'
         }
