@@ -34,6 +34,13 @@ const countVotes = async (postId: string): Promise<{ upvotes: number; downvotes:
     return { upvotes, downvotes };
 }
 
+const countComments = async (postId: string): Promise<number> => {
+    const comments = await Comment.count({
+        where: { post_id: postId },
+    });
+    return comments;
+}
+
 router.post(
     '/submit',
     authMiddleware,
@@ -68,7 +75,7 @@ router.post(
         const post = await Post.create({
             id: v4(),
             user_id: userId.id,
-            title,
+            title: title,
             image_url: imageUrl,
             createdAt: date,
             updatedAt: date,
@@ -109,8 +116,16 @@ router.post(
             );
         }
 
+        const result = {
+            ...post.toJSON(),
+            upvotes: 0,
+            downvotes: 0,
+            commentsCount: 0,
+            ...tags,
+        }
 
-        return { message: 'Post created successfully' };
+
+        return result;
     })
 );
 
@@ -203,8 +218,13 @@ router.get(
             res.locals.errorCode = 401;
             throw new Error('Post not found');
         }
-        const votes = await countVotes(postId);
-        return {post, votes};
+        const votesCount = await countVotes(postId);
+        const commentCount = await countComments(postId);
+        return {
+            ...post.toJSON(),
+            ...votesCount,
+            commentsCount: commentCount,
+        };
     })
 );
 
