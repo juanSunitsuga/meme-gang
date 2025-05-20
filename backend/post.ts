@@ -2,7 +2,9 @@ import express from 'express';
 import { Request, Response, Router } from 'express';
 import { Post } from '../models/Post';
 import { Comment } from '../models/Comment';
+import { Tag } from '../models/Tag';
 import { UpvoteDownvote } from '../models/Upvote_Downvote_Post';
+import { PostTag } from '../models/PostTags';
 import multer from 'multer';
 import authMiddleware from '../middleware/Auth';
 import { controllerWrapper } from '../utils/controllerWrapper';
@@ -39,6 +41,7 @@ router.post(
     controllerWrapper(async (req: Request, res: Response) => {
         const { title } = req.body;
         const userId = req.user;
+        const tags: string[] = Array.isArray(req.body.tag) ? req.body.tag : [req.body.tag];
 
         if (!userId) {
             res.locals.errorCode = 401;
@@ -50,8 +53,17 @@ router.post(
             throw new Error('Image file is required');
         }
 
-        const imageUrl = `/uploads/posts/${req.file.filename}`; // Public URL path
+        // Check if the tag already exists in database
+        const existingTags = await Tag.findAll({
+            where: {
+                tag_name: {
+                    [Op.in]: tags,
+                },
+            },
+        });
 
+        // Create the post first to get its ID
+        const imageUrl = `/uploads/posts/${req.file.filename}`; // Public URL path
         const date = new Date();
         const post = await Post.create({
             id: v4(),
@@ -62,8 +74,43 @@ router.post(
             updatedAt: date,
         });
 
-        const votes = await countVotes(post.id);
-        return { post, votes };
+        // Execute if user added tags to the post
+        if (tags) {
+            // Get the tag names that exist
+            const existingTagNames = existingTags.map(tag => tag.tag_name);
+    
+            // Find tags that do not exist yet
+            const newTags = tags.filter(tag => !existingTagNames.includes(tag));
+    
+            // Insert new tags into the Tags table
+            const createdTags = await Promise.all(
+                newTags.map(async (tagName) => {
+                    return await Tag.create({
+                        id: v4(),
+                        tag_name: tagName,
+                    });
+                })
+            );
+    
+            // Combine existing and newly created tags
+            const allTagInstances = [
+                ...existingTags,
+                ...createdTags
+            ];
+    
+            // Add entries to PostTags table using the PostTags model
+            await Promise.all(
+                allTagInstances.map(async (tag) => {
+                    await PostTag.create({
+                        post_id: post.id,
+                        tag_id: tag.id,
+                    });
+                })
+            );
+        }
+
+
+        return { message: 'Post created successfully' };
     })
 );
 
