@@ -1,20 +1,18 @@
 import { Router, Request, Response } from 'express';
-import { Sequelize } from 'sequelize-typescript';
 import { Op } from 'sequelize';
 import { User } from '../models/User';
 import bcrypt from 'bcrypt';
 import multer from 'multer';
 import fs from 'fs';
-import path from 'path';
 import bodyParser from 'body-parser';
 import authMiddleware from '../middleware/Auth';
-import jwt from 'jsonwebtoken';
+import { controllerWrapper } from '../utils/controllerWrapper';
 
 declare global {
     namespace Express {
         interface Request {
-            user?: { 
-                id: string, 
+            user?: {
+                id: string,
                 username: string,
                 email: string,
             };
@@ -46,146 +44,144 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Endpoint to retrieve a user by ID
-router.get('/me', authMiddleware, async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { id } = req.user ?? {};
-        if (!id) {
-            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
-            return;
-        }
-        const user = await User.findByPk(id);
-
-        if (!user) {
-            res.status(404).json({ message: 'User not found' });
-            return;
-        }
-
-        const baseUrl = '../../';
-        const profilePictureUrl = user.profilePicture
-            ? `${baseUrl}${user.profilePicture}`
-            : null;
-
-        res.status(200).json({
-            id: user.id,
-            name: user.name,
-            bio: user.bio,
-            profilePicture: profilePictureUrl,
-            username: user.username,
-            email: user.email,
-        });
-    } catch (error) {
-        console.error('Error retrieving user profile:', error);
-        res.status(500).json({ message: 'Internal Server Error' });
+router.get('/me', authMiddleware, controllerWrapper(async (req: Request, res: Response) => {
+    const { id } = req.user ?? {};
+    if (!id) {
+        res.locals.errorCode = 401;
+        throw new Error('Unauthorized: User not authenticated');
     }
-});
+    const user = await User.findByPk(id);
+
+    if (!user) {
+        res.locals.errorCode = 404;
+        throw new Error('User not found');
+    }
+
+    const baseUrl = '../../';
+    const profilePictureUrl = user.profilePicture
+        ? `${baseUrl}${user.profilePicture}`
+        : null;
+
+    return {
+        id: user.id,
+        name: user.name,
+        bio: user.bio,
+        profilePicture: profilePictureUrl,
+        username: user.username,
+        email: user.email,
+    };
+}));
 
 // Endpoint to update profile
-router.put('/edit-profile', authMiddleware, async (req: Request, res: Response) => {
-    console.log('Request user:', req.user);
-    try {
-        if (!req.user) {
-            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
-            return 
-        }
-
-        const { id } = req.user;
-        const { name, bio } = req.body;
-
-        const user = await User.findByPk(id);
-        if (!user) {
-            res.status(404).json({ message: 'User not found' });
-            return 
-        }
-
-        user.name = name || user.username;
-        user.bio = bio || user.bio;
-
-        await user.save();
-        res.status(200).json({ message: 'Profile updated successfully', user });
-
-    } catch (error) {
-        console.error('Error updating profile:', error);
-        res.status(500).json({ message: 'An error occurred while updating the profile' });
+router.put('/edit-profile', authMiddleware, controllerWrapper(async (req: Request, res: Response) => {
+    const { id } = req.user ?? {};
+    if (!id) {
+        res.locals.errorCode = 401;
+        throw new Error('Unauthorized: User not authenticated');
     }
-});
 
-router.put('/edit-account', authMiddleware, async (req: Request, res: Response) => {
-    try {
-        if (!req.user) {
-            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
-            return;
-        }
+    const { name, bio } = req.body;
 
-        const { id } = req.user;
-        const { email, username } = req.body;
-
-        const user = await User.findByPk(id);
-        if (!user) {
-            res.status(404).json({ message: 'User not found' });
-            return;
-        }
-
-        if (email) {
-            const emailExists = await User.findOne({ where: { email, id: { [Op.ne]: id } } });
-            if (emailExists) {
-                res.status(400).json({ message: 'Email is already in use by another account' });
-                return;
-            }
-            user.email = email;
-        }
-
-        if (username) {
-            const usernameExists = await User.findOne({ where: { username, id: { [Op.ne]: id } } });
-            if (usernameExists) {
-                res.status(400).json({ message: 'Username is already in use by another account' });
-                return;
-            }
-            user.username = username;
-        }
-
-        await user.save();
-        res.status(200).json({ message: 'Account updated successfully', user });
-    } catch (error) {
-        console.error('Error updating account:', error);
-        res.status(500).json({ message: 'An error occurred while updating the account' });
+    const user = await User.findByPk(id);
+    if (!user) {
+        res.locals.errorCode = 404;
+        throw new Error('User not found');
     }
-});
+
+    user.name = name || user.username;
+    user.bio = bio || user.bio;
+
+    await user.save();
+    
+    return {
+        message: 'Profile updated successfully',
+        user: {
+            id: user.id,
+            name: user.name,
+            bio: user.bio
+        }
+    };
+}));
+
+// Endpoint to update account details
+router.put('/edit-account', authMiddleware, controllerWrapper(async (req: Request, res: Response) => {
+    const { id } = req.user ?? {};
+    if (!id) {
+        res.locals.errorCode = 401;
+        throw new Error('Unauthorized: User not authenticated');
+    }
+
+    const { email, username } = req.body;
+
+    const user = await User.findByPk(id);
+    if (!user) {
+        res.locals.errorCode = 404;
+        throw new Error('User not found');
+    }
+
+    if (email) {
+        const emailExists = await User.findOne({ where: { email, id: { [Op.ne]: id } } });
+        if (emailExists) {
+            res.locals.errorCode = 400;
+            throw new Error('Email is already in use by another account');
+        }
+        user.email = email;
+    }
+
+    if (username) {
+        const usernameExists = await User.findOne({ where: { username, id: { [Op.ne]: id } } });
+        if (usernameExists) {
+            res.locals.errorCode = 400;
+            throw new Error('Username is already in use by another account');
+        }
+        user.username = username;
+    }
+
+    await user.save();
+    
+    return {
+        message: 'Account updated successfully',
+        user: {
+            id: user.id,
+            username: user.username,
+            email: user.email
+        }
+    };
+}));
 
 // Endpoint to change password
-router.post('/change-password', async (req: Request, res: Response) => {
-    const token = req.headers['authorization']?.split(' ')[1];
-
-    if (!token) {
-        res.status(401).json({ message: 'No token provided' });
-        return 
+router.post('/change-password', authMiddleware, controllerWrapper(async (req: Request, res: Response) => {
+    const { id } = req.user ?? {};
+    if (!id) {
+        res.locals.errorCode = 401;
+        throw new Error('Unauthorized: User not authenticated');
     }
 
-    try {
-        const decoded = jwt.verify(token, 'meme-gang-lover') as { id: string };
-
-        const user = await User.findOne({ where: { id: decoded.id } });
-        if (!user) {
-            res.status(404).json({ message: 'User not found' });
-            return 
-        }
-
-        const isPasswordValid = await bcrypt.compare(req.body.oldPassword, user.password);
-        if (!isPasswordValid) {
-            res.status(400).json({ message: 'Old password is incorrect' });
-            return 
-        }
-
-        const hashedPassword = await bcrypt.hash(req.body.newPassword, 10);
-        user.password = hashedPassword;
-        await user.save();
-
-        res.status(200).json({ message: 'Password changed successfully' });
-        return 
-    } catch (error) {
-        console.error('Error in /change-password route:', error);
-        res.status(500).json({ message: 'Internal Server Error' });
-        return 
+    const user = await User.findByPk(id);
+    if (!user) {
+        res.locals.errorCode = 404;
+        throw new Error('User not found');
     }
-});
+
+    const { oldPassword, newPassword } = req.body;
+    if (!oldPassword || !newPassword) {
+        res.locals.errorCode = 400;
+        throw new Error('Old password and new password are required');
+    }
+
+    const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+    if (!isPasswordValid) {
+        res.locals.errorCode = 400;
+        throw new Error('Old password is incorrect');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    return {
+        message: 'Password changed successfully'
+    };
+}));
 
 export default router;

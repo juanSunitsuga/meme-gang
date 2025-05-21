@@ -14,7 +14,7 @@ import {
   alpha
 } from '@mui/material';
 import { useProfile } from '../Settings'; // Import the context hook
-import FAIcon from '../../components/FAIcon';
+import FAIcon from '../Components/FAIcon';
 
 // Styled components to match Navbar theme
 const StyledPaper = styled(Paper)(({ theme }) => ({

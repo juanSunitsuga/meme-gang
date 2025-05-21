@@ -1,38 +1,27 @@
 import React, { useState } from 'react';
-import { fetchEndpoint } from './FetchEndpoint';
 import { 
-  Alert, 
-  AlertTitle, 
   Box, 
   Typography, 
-  TextField,
+  TextField, 
   Button,
-  Paper,
+  Dialog,
+  DialogContent,
   InputAdornment,
   IconButton,
   Link,
   CircularProgress,
-  styled,
-  alpha
+  Alert,
+  AlertTitle,
+  styled
 } from '@mui/material';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import FAIcon from '../components/FAIcon';
+import { fetchEndpoint } from '../FetchEndpoint';
+import FAIcon from '../Components/FAIcon';
+import { useModal } from '../contexts/ModalContext';
 
-// Styled components to match the design system
-const StyledPaper = styled(Paper)(({ theme }) => ({
-  backgroundColor: '#1a1a1a',
-  color: 'white',
-  padding: theme.spacing(4),
-  borderRadius: theme.spacing(1),
-  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-  width: '100%',
-  maxWidth: '450px',
-}));
-
+// Reuse same styled components
 const StyledTextField = styled(TextField)(({ theme }) => ({
   marginBottom: theme.spacing(2.5),
   '& .MuiOutlinedInput-root': {
-    backgroundColor: 'transparent', // Ensure background is transparent
     '& fieldset': {
       borderColor: 'rgba(255, 255, 255, 0.23)',
     },
@@ -45,7 +34,6 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
     '& input': {
       color: 'white',
       fontFamily: '"Poppins", sans-serif',
-      backgroundColor: 'transparent', // Ensure input background is transparent
     },
   },
   '& .MuiInputLabel-root': {
@@ -74,7 +62,7 @@ const RegisterButton = styled(Button)(({ theme }) => ({
   },
 }));
 
-const Register: React.FC = () => {
+const RegisterModal: React.FC = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -85,7 +73,7 @@ const Register: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  const navigate = useNavigate();
+  const { isRegisterModalOpen, closeRegisterModal, switchToLogin } = useModal();
   
   // Validation states
   const [usernameError, setUsernameError] = useState<string | null>(null);
@@ -96,7 +84,6 @@ const Register: React.FC = () => {
   const validateForm = () => {
     let isValid = true;
     
-    // Username validation
     if (username.length < 3) {
       setUsernameError('Username must be at least 3 characters');
       isValid = false;
@@ -104,7 +91,6 @@ const Register: React.FC = () => {
       setUsernameError(null);
     }
     
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setEmailError('Please enter a valid email address');
@@ -113,7 +99,6 @@ const Register: React.FC = () => {
       setEmailError(null);
     }
     
-    // Password validation
     if (password.length < 8) {
       setPasswordError('Password must be at least 8 characters');
       isValid = false;
@@ -121,7 +106,6 @@ const Register: React.FC = () => {
       setPasswordError(null);
     }
     
-    // Confirm password validation
     if (password !== confirmPassword) {
       setConfirmPasswordError('Passwords do not match');
       isValid = false;
@@ -135,7 +119,6 @@ const Register: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate form inputs
     if (!validateForm()) {
       return;
     }
@@ -154,22 +137,19 @@ const Register: React.FC = () => {
       setAlertMessage('Registration successful! You can now log in.');
       setAlertSeverity('success');
       
-      // Clear form
       setUsername('');
       setEmail('');
       setPassword('');
       setConfirmPassword('');
       
-      // Optional: Auto-redirect after delay
       setTimeout(() => {
-        navigate('/login');
-      }, 3000);
+        closeRegisterModal();
+        switchToLogin();
+      }, 1000);
       
     } catch (error: any) {
-      // Handle error from fetchEndpoint
       console.error('Registration error:', error);
       
-      // Display specific error from API if available
       if (error.message) {
         setAlertMessage(`Registration failed: ${error.message}`);
       } else {
@@ -181,18 +161,45 @@ const Register: React.FC = () => {
     }
   };
 
+  const handleClose = () => {
+    setAlertMessage(null);
+    setUsername('');
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    closeRegisterModal();
+  };
+
   return (
-    <Box 
-      sx={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '100vh',
-        backgroundColor: '#121212',
-        padding: 2
+    <Dialog 
+      open={isRegisterModalOpen} 
+      onClose={handleClose}
+      maxWidth="xs"
+      fullWidth
+      disableScrollLock={true}
+      PaperProps={{
+        sx: {
+          backgroundColor: '#121212',
+          borderRadius: 2,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.4)'
+        }
+      }}
+      slotProps={{
+        backdrop: {
+          sx: {
+            backdropFilter: 'blur(8px)',
+            backgroundColor: 'rgba(0,0,0,0.5)'
+          }
+        }
       }}
     >
-      <StyledPaper>
+      <DialogContent sx={{ p: 4 }}>
+        <Box sx={{ position: 'absolute', top: 12, right: 12 }}>
+          <IconButton onClick={handleClose} sx={{ color: '#aaa' }}>
+            <FAIcon icon="fas fa-times" />
+          </IconButton>
+        </Box>
+        
         <Typography 
           variant="h4" 
           component="h1" 
@@ -201,6 +208,7 @@ const Register: React.FC = () => {
             mb: 3,
             fontWeight: 600,
             fontFamily: '"Poppins", sans-serif',
+            color: 'white'
           }}
         >
           Create Account
@@ -331,7 +339,7 @@ const Register: React.FC = () => {
                 fontFamily: '"Poppins", sans-serif',
               }}
             >
-              By registering, you agree to our <Link component={RouterLink} to="/terms" sx={{ color: '#1976d2' }}>Terms of Service</Link> and <Link component={RouterLink} to="/privacy" sx={{ color: '#1976d2' }}>Privacy Policy</Link>.
+              By registering, you agree to our Terms of Service and Privacy Policy.
             </Typography>
           </Box>
           
@@ -362,8 +370,9 @@ const Register: React.FC = () => {
             >
               Already have an account?{' '}
               <Link 
-                component={RouterLink} 
-                to="/login" 
+                component="button"
+                type="button"
+                onClick={switchToLogin}
                 sx={{ 
                   color: '#1976d2',
                   fontWeight: 500,
@@ -374,9 +383,9 @@ const Register: React.FC = () => {
             </Typography>
           </Box>
         </form>
-      </StyledPaper>
-    </Box>
+      </DialogContent>
+    </Dialog>
   );
 };
 
-export default Register;
+export default RegisterModal;

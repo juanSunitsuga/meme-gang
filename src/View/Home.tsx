@@ -16,6 +16,7 @@ interface Post {
   commentsCount: number;
   upvotes: number;
   downvotes: number;
+  tags: string[];
 }
 
 const Home: React.FC = () => {
@@ -45,7 +46,7 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="home-container" style={{marginTop: '80px'}}>
+    <div className="home-container" style={{marginTop: '1%'}}>
       {loading && (
         <div className="loading-container">
           <div className="loading-spinner"></div>
@@ -73,6 +74,7 @@ const Home: React.FC = () => {
               downvotes={post.downvotes}
               comments={post.commentsCount}
               onCommentClick={() => navigate(`/post/${post.id}`)} // ini handler navigasinya
+              tags={post.tags}
             />
           ))
         )}

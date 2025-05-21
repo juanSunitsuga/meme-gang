@@ -190,12 +190,11 @@ const Settings = () => {
         }
 
         const response = await fetchEndpoint('/auth/session', 'GET', token);
-        console.log('Session check response:', response);
 
       } catch (error: any) {
         setErrorMessage('Session invalid or expired. Redirecting to login...');
-        localStorage.removeItem('token'); // Clear invalid token
-        navigate('/login');
+        localStorage.removeItem('token');
+        navigate('/');
       } finally {
         console.log('checkSession function completed');
       }
@@ -250,7 +249,6 @@ const Settings = () => {
       
       const response = await fetchEndpoint('/profile/edit-profile', 'PUT', token, data);
       
-      // Update local userData with new values
       setUserData(prev => ({ ...prev, ...data }));
       
       return { success: true, message: 'Profile updated successfully' };
@@ -267,7 +265,6 @@ const Settings = () => {
       
       const response = await fetchEndpoint('/profile/edit-account', 'PUT', token, data);
       
-      // Update local userData with new values
       setUserData(prev => ({ ...prev, ...data }));
       
       return { success: true, message: 'Account updated successfully' };
@@ -322,7 +319,6 @@ const Settings = () => {
       
       const response = await fetchEndpoint('/uploads/delete-avatar', 'DELETE', token);
       
-      // Update local userData, remove profile picture
       setUserData(prev => ({ ...prev, profilePicture: undefined }));
       
       return { success: true, message: 'Profile picture deleted successfully' };
@@ -333,7 +329,6 @@ const Settings = () => {
   };
 
   const renderContent = () => {
-    // Wrap the content in the context provider
     return (
       <ProfileContext.Provider value={{
         userData,
@@ -421,7 +416,10 @@ const Settings = () => {
           {['Profile', 'Account', 'Password'].map((item) => (
             <StyledListItem
               key={item}
-              selected={activeTab === item}
+              sx={{
+                backgroundColor: activeTab === item ? '#333' : 'transparent',
+                color: activeTab === item ? 'white' : '#ccc',
+              }}
               onClick={() => handleTabChange(item)}
             >
               <ListItemText 
@@ -442,6 +440,5 @@ const Settings = () => {
   );
 };
 
-// Export the styled components for use in child components
 export { FormGroup, InputField, TextareaField, SaveButton };
 export default Settings;

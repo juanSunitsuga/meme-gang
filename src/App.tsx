@@ -2,12 +2,18 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import Navbar from './components/Navbar';
+import Navbar from './View/Components/Navbar';
 import Settings from './View/Settings';
-import Login from './View/Login';
-import Register from './View/Register';
 import SearchForm from './View/SearchForm';
 import ViewComments from './View/Comments/ViewComments';
+import Home from './View/Home';
+import { AuthProvider } from './View/contexts/AuthContext';
+import { ModalProvider } from './View/contexts/ModalContext';
+import LoginModal from './View/Auth/LoginModal';
+import RegisterModal from './View/Auth/RegisterModal';
+import ForgotPasswordModal from './View/Auth/ForgotPasswordModal';
+import ResetPasswordModal from './View/Auth/ResetPasswordModal';
+import CreatePostModal from './View/CreatePostModal';
 import CreatePost from './View/CreatePost';
 import Home from './View/Home'; // Import Home component
 import PostDetailPage from './View/PostDetailPage';
@@ -67,9 +73,7 @@ function AppContent() {
             <Navbar />
             <div className="content-container">
                 <Routes>
-                    <Route path="/" element={<Home />} /> {/* Add a Home route */}
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
+                    <Route path="/" element={<Home />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/search" element={<SearchForm onSubmit={handleSearchSubmit} />} />
                     <Route path="/comments/:id/replies" element={<ViewComments />} />
@@ -85,15 +89,23 @@ function AppContent() {
 }
 
 function App() {
-    // Wrap everything in Router
     return (
         <AuthProvider>
-            <Router>
-                <ThemeProvider theme={darkTheme}>
-                    <CssBaseline /> {/* This helps reset browser defaults */}
-                    <AppContent />
-                </ThemeProvider>
-            </Router>
+            <ModalProvider>
+                <Router>
+                    <ThemeProvider theme={darkTheme}>
+                        <CssBaseline />
+                        <AppContent />
+                        
+                        {/* Add all modals so they're available throughout the app */}
+                        <LoginModal />
+                        <RegisterModal />
+                        <ForgotPasswordModal />
+                        <ResetPasswordModal />
+                        <CreatePostModal />
+                    </ThemeProvider>
+                </Router>
+            </ModalProvider>
         </AuthProvider>
     );
 }
