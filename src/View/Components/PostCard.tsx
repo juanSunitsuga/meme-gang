@@ -19,6 +19,9 @@ import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CommentList from './CommentList'; // make sure path ini sesuai
 // import { useNavigate } from 'react-router-dom';
+import ErrorBoundary from '../ErrorBoundary';
+
+
 
 interface PostCardProps {
   postId: string;
@@ -169,7 +172,9 @@ const PostCard: React.FC<PostCardProps> = ({
 
       <Collapse in={showComments} timeout="auto" unmountOnExit>
       <Box id={`comments-${postId}`} px={2} pb={2}>
+        <ErrorBoundary>
         <CommentList key={postId} postId={postId} />
+        </ErrorBoundary>
       </Box>
     </Collapse>
 

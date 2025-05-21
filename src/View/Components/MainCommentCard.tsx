@@ -18,7 +18,6 @@ interface MainCommentCardProps {
   text: string;
   createdAt: string;
   onDelete?: () => void;
-  onReply?: () => void;
   onReplySend?: (parentId: string, replyText: string, parentUsername: string) => void;
 }
 
@@ -29,7 +28,6 @@ const MainCommentCard: React.FC<MainCommentCardProps> = ({
   text,
   createdAt,
   onDelete,
-  onReply,
   onReplySend,
 }) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
