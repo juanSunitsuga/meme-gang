@@ -2,15 +2,15 @@ import express, { Request, Response } from 'express';
 import { Comment } from '../models/Comment';
 import { User } from '../models/User';
 import authMiddleware from '../middleware/Auth';
+import { controllerWrapper } from '../utils/controllerWrapper';
 
-const router = express.Router({ mergeParams: true }); // mergeParams penting biar bisa akses :commentsId
+const router = express.Router({ mergeParams: true });
 
-// Lihat semua reply dari suatu komentar
-router.get('/', async (req: Request, res: Response) => {
-  try {
+router.get(
+  '/',
+  controllerWrapper(async (req: Request, res: Response) => {
     const { id } = req.params;
 
-    // Get the main comment
     const mainComment = await Comment.findByPk(id, {
       include: [
         {
@@ -21,11 +21,10 @@ router.get('/', async (req: Request, res: Response) => {
     });
 
     if (!mainComment) {
-      res.status(404).json({ message: 'Comment not found' });
-      return 
+      res.locals.errorCode = 404;
+      throw new Error('Comment not found');
     }
 
-    // Get replies of the main comment
     const replies = await Comment.findAll({
       where: { reply_to: id },
       include: [
@@ -37,11 +36,11 @@ router.get('/', async (req: Request, res: Response) => {
       order: [['createdAt', 'DESC']],
     });
 
-    res.status(200).json({
+    return {
       id: mainComment.id,
       user: {
         name: mainComment.user.username,
-        avatar: mainComment.user.profilePicture, // 👈 match frontend expectations
+        avatar: mainComment.user.profilePicture,
       },
       text: mainComment.content,
       createdAt: mainComment.createdAt,
@@ -54,25 +53,22 @@ router.get('/', async (req: Request, res: Response) => {
         text: reply.content,
         createdAt: reply.createdAt,
       })),
-    });
-  } catch (error) {
-    console.error('Error getting comment and replies:', error);
-    res.status(500).json({ message: 'Failed to get comment and replies' });
-  }
-});
+    };
+  })
+);
 
-
-// Buat reply ke suatu komentar
-router.post('/', authMiddleware, async (req: Request, res: Response) => {
-  try {
+router.post(
+  '/',
+  authMiddleware,
+  controllerWrapper(async (req: Request, res: Response) => {
     const { id: reply_to } = req.params;
     const { content } = req.body;
     const user_id = req.user!.id;
 
     const parentComment = await Comment.findByPk(reply_to);
     if (!parentComment) {
-      res.status(404).json({ message: 'Parent comment not found' });
-      return;
+      res.locals.errorCode = 404;
+      throw new Error('Parent comment not found');
     }
 
     const reply = await Comment.create({
@@ -82,54 +78,57 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
       user_id,
     });
 
-    res.status(201).json({ message: 'Reply created', reply });
-  } catch (error) {
-    console.error('Error creating reply:', error);
-    res.status(500).json({ message: 'Failed to create reply' });
-  }
-});
+    return { message: 'Reply created', reply };
+  })
+);
 
-// Edit reply
-router.put('/:replyId', authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const replyId = req.params.replyId;  // Gunakan replyId dari params
+router.put(
+  '/:replyId',
+  authMiddleware,
+  controllerWrapper(async (req: Request, res: Response) => {
+    const { replyId } = req.params;
     const { content } = req.body;
     const user_id = req.user!.id;
 
     const reply = await Comment.findByPk(replyId);
-    if (!reply || reply.user_id !== user_id) {
-      res.status(403).json({ message: 'Not authorized to edit this reply' });
-      return;
+    if (!reply) {
+      res.locals.errorCode = 404;
+      throw new Error('Reply not found');
+    }
+
+    if (reply.user_id !== user_id) {
+      res.locals.errorCode = 403;
+      throw new Error('Not authorized to edit this reply');
     }
 
     reply.content = content;
     await reply.save();
 
-    res.status(200).json({ message: 'Reply updated', reply });
-  } catch (error) {
-    console.error('Error updating reply:', error);
-    res.status(500).json({ message: 'Failed to update reply' });
-  }
-});
+    return { message: 'Reply updated', reply };
+  })
+);
 
-// Hapus reply
-router.delete('/:replyId', authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const replyId = req.params.replyId;  // Gunakan replyId dari params
+router.delete(
+  '/:replyId',
+  authMiddleware,
+  controllerWrapper(async (req: Request, res: Response) => {
+    const { replyId } = req.params;
     const user_id = req.user!.id;
 
     const reply = await Comment.findByPk(replyId);
-    if (!reply || reply.user_id !== user_id) {
-      res.status(403).json({ message: 'Not authorized to delete this reply' });
-      return;
+    if (!reply) {
+      res.locals.errorCode = 404;
+      throw new Error('Reply not found');
+    }
+
+    if (reply.user_id !== user_id) {
+      res.locals.errorCode = 403;
+      throw new Error('Not authorized to delete this reply');
     }
 
     await reply.destroy();
-    res.status(200).json({ message: 'Reply deleted' });
-  } catch (error) {
-    console.error('Error deleting reply:', error);
-    res.status(500).json({ message: 'Failed to delete reply' });
-  }
-});
+    return { message: 'Reply deleted' };
+  })
+);
 
 export default router;

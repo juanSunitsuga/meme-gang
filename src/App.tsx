@@ -14,6 +14,10 @@ import RegisterModal from './View/Auth/RegisterModal';
 import ForgotPasswordModal from './View/Auth/ForgotPasswordModal';
 import ResetPasswordModal from './View/Auth/ResetPasswordModal';
 import CreatePostModal from './View/CreatePostModal';
+import CreatePost from './View/CreatePost';
+import Home from './View/Home'; // Import Home component
+import PostDetailPage from './View/PostDetailPage';
+import { AuthProvider } from './contexts/AuthContext';
 
 const darkTheme = createTheme({
     palette: {
@@ -73,8 +77,11 @@ function AppContent() {
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/search" element={<SearchForm onSubmit={handleSearchSubmit} />} />
                     <Route path="/comments/:id/replies" element={<ViewComments />} />
+                    <Route path="/create-post" element={<CreatePost />} />
+                    <Route path="/post/:postId" element={<PostDetailPage />} />
                     {/* <Route path="/post/:id/comments" element={<ViewComments />} /> */}
                     {/* Add other routes here */}
+                    
                 </Routes>
             </div>
         </div>

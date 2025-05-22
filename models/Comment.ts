@@ -19,17 +19,20 @@ export class Comment extends Model {
     type: DataType.UUID,
     allowNull: false,
   })
-  declare user_id: string;
+  declare user_id: string; // Foreign key to User
 
   @BelongsTo(() => User)
-  declare user: User;
+  declare user: User; // setiap komen punya satu user
+  // setiap user bisa punya banyak komen
 
   @ForeignKey(() => Post)
   @Column({
     type: DataType.UUID,
     allowNull: false,
   })
-  declare post_id: string;
+  declare post_id: string; // Foreign key to Post
+  // setiap komen punya satu post
+  // setiap post bisa punya banyak komen
 
   @BelongsTo(() => Post)
   declare post: Post;

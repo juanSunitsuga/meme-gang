@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -8,6 +8,7 @@ import {
   Stack,
   Avatar,
   Chip,
+  Collapse,
 } from '@mui/material';
 import ThumbUpAltOutlinedIcon from '@mui/icons-material/ThumbUpAltOutlined';
 import ThumbDownAltOutlinedIcon from '@mui/icons-material/ThumbDownAltOutlined';
@@ -16,8 +17,14 @@ import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import CommentList from './CommentList'; // make sure path ini sesuai
+// import { useNavigate } from 'react-router-dom';
+import ErrorBoundary from '../ErrorBoundary';
+
+
 
 interface PostCardProps {
+  postId: string;
   imageUrl: string;
   title: string;
   username: string;
@@ -25,10 +32,13 @@ interface PostCardProps {
   upvotes: number;
   downvotes: number;
   comments: number;
+  onCommentClick?: () => void;  // optional handler click comment
+
   tags: string[];
 }
 
 const PostCard: React.FC<PostCardProps> = ({
+  postId,
   imageUrl,
   title,
   username,
@@ -36,8 +46,26 @@ const PostCard: React.FC<PostCardProps> = ({
   upvotes,
   downvotes,
   comments,
+  onCommentClick,
+
   tags,
 }) => {
+  const [showComments, setShowComments] = useState(false);
+  // const navigate = useNavigate();
+
+  // Ini fungsi baru untuk handle comment click
+  const handleCommentClick = () => {
+    if (onCommentClick) {
+      onCommentClick(); // kalau ada callback dari parent, panggil navigasi
+    } else {
+      setShowComments((prev) => !prev); // kalau gak ada, toggle expand comment seperti biasa
+      setTimeout(() => {
+        const el = document.getElementById(`comments-${postId}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 200);
+    }
+  };
+  
   return (
     <Card
       sx={{
@@ -127,18 +155,18 @@ const PostCard: React.FC<PostCardProps> = ({
             </Stack>
 
             {/* Comment Button */}
-            <Box mt={2}>
-              <Chip
-                icon={<ChatBubbleOutlineIcon />}
-                label={`${comments} Comments`}
-                sx={{
-                  backgroundColor: '#2c2c2c',
-                  color: '#fff',
-                  borderRadius: 2,
-                  fontWeight: 500,
-                }}
-              />
-            </Box>
+            <Chip
+              icon={<ChatBubbleOutlineIcon />}
+              label={`${comments} Comments`}
+              onClick={handleCommentClick} // Ganti sini, pake fungsi baru
+              sx={{
+                backgroundColor: '#2c2c2c',
+                color: '#fff',
+                borderRadius: 2,
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}
+            />
           </Stack>
 
           <Stack direction="row" spacing={2}>
@@ -151,6 +179,15 @@ const PostCard: React.FC<PostCardProps> = ({
           </Stack>
         </Stack>
       </CardContent>
+
+      <Collapse in={showComments} timeout="auto" unmountOnExit>
+      <Box id={`comments-${postId}`} px={2} pb={2}>
+        <ErrorBoundary>
+        <CommentList key={postId} postId={postId} />
+        </ErrorBoundary>
+      </Box>
+    </Collapse>
+
     </Card>
   );
 };

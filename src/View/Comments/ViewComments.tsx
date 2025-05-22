@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Avatar,
@@ -14,6 +14,7 @@ import {
 import ReplyIcon from '@mui/icons-material/Reply';
 import SendIcon from '@mui/icons-material/Send';
 import CloseIcon from '@mui/icons-material/Close';
+
 
 interface Reply {
   id: string;
@@ -39,6 +40,9 @@ const CommentDetailPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [isReplyingFor, setIsReplyingFor] = useState<string | null>(null);
   const [replyTextForReply, setReplyTextForReply] = useState<Record<string, string>>({});
+
+  // Ref for the main container
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const fetchCommentAndReplies = async () => {
     try {
@@ -81,7 +85,7 @@ const CommentDetailPage = () => {
 
       setReplyText('');
       setIsReplying(false);
-      fetchCommentAndReplies(); // Refresh replies
+      fetchCommentAndReplies();
     } catch (err) {
       console.error(err);
       alert('Gagal mengirim balasan.');
@@ -90,6 +94,7 @@ const CommentDetailPage = () => {
     }
   };
 
+
   const handleReplyForReplySubmit = async (replyId: string) => {
     const replyContent = replyTextForReply[replyId];
     if (replyContent.trim() === '') return;
@@ -97,7 +102,7 @@ const CommentDetailPage = () => {
     setSubmitting(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:3000/replies/${replyId}/replies`, {
+      const res = await fetch(`http://localhost:3000/comments/${replyId}/replies`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -111,10 +116,10 @@ const CommentDetailPage = () => {
       const updatedReplies = { ...replyTextForReply, [replyId]: '' };
       setReplyTextForReply(updatedReplies);
       setIsReplyingFor(null);
-      fetchCommentAndReplies(); // Refresh replies
+      fetchCommentAndReplies(); 
     } catch (err) {
       console.error(err);
-      alert('Gagal mengirim balasan untuk balasan.');
+      alert('Gagal mengirim balasan.');
     } finally {
       setSubmitting(false);
     }
@@ -143,26 +148,53 @@ const CommentDetailPage = () => {
   };
 
   if (loading) return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '70vh' }}>
-      <CircularProgress size={40} />
+    <Box sx={{ 
+      display: 'flex', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      height: '100vh',
+      bgcolor: '#1A1A1A'
+    }}>
+      <CircularProgress size={40} sx={{ color: '#58a9ff' }} />
     </Box>
   );
   
   if (!comment) return (
-    <Paper sx={{ p: 3, textAlign: 'center', mt: 4, borderRadius: 2 }}>
-      <Typography variant="h6" color="text.secondary">Komentar tidak ditemukan 😢</Typography>
+    <Paper sx={{ 
+      p: 3, 
+      textAlign: 'center', 
+      mt: 4, 
+      borderRadius: 2,
+      bgcolor: '#2D2D2D',
+      color: 'rgba(255,255,255,0.8)'
+    }}>
+      <Typography variant="h6">Komentar tidak ditemukan</Typography>
     </Paper>
   );
 
   return (
-    <Box sx={{ maxWidth: 700, mx: 'auto', mt: 6, px: 2 }}>
+    <Box 
+      ref={containerRef}
+      sx={{ 
+        minHeight: '100vh', 
+        maxWidth: 700, 
+        mx: 'auto', 
+        px: 2,
+        pb: 5,
+        color: 'white',
+      }}
+    >
+
       {/* Main Comment */}
       <Card
         elevation={2}
         sx={{
           p: 3,
           mb: 3,
+          mt: 4,
           borderRadius: 3,
+          bgcolor: '#2D2D2D',
+          color: 'white',
           transition: 'box-shadow 0.3s ease',
           '&:hover': {
             boxShadow: 4,
@@ -175,20 +207,21 @@ const CommentDetailPage = () => {
             sx={{ 
               width: 48, 
               height: 48,
-              boxShadow: '0 0 0 2px #fff, 0 0 0 4px #f0f0f0'
+              bgcolor: '#666',
+              boxShadow: '0 0 0 2px #2D2D2D, 0 0 0 4px #444'
             }}
           />
           <Box sx={{ width: '100%' }}>
             <Typography 
               fontWeight="600" 
               fontSize="1.1rem"
-              sx={{ color: 'primary.dark' }}
+              sx={{ color: '#58a9ff' }}
             >
               {comment.user.name}
             </Typography>
             <Typography 
               mt={1} 
-              color="text.primary"
+              color="white"
               sx={{ 
                 lineHeight: 1.6,
                 fontSize: '1rem'
@@ -198,7 +231,7 @@ const CommentDetailPage = () => {
             </Typography>
             <Typography 
               variant="caption" 
-              color="text.secondary" 
+              color="rgba(255,255,255,0.6)" 
               mt={1.5} 
               display="block"
               sx={{ fontSize: '0.8rem' }}
@@ -206,7 +239,7 @@ const CommentDetailPage = () => {
               {formatDate(comment.createdAt)}
             </Typography>
 
-            <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 2, bgcolor: 'rgba(255,255,255,0.1)' }} />
 
             <Box mt={1}>
               {!isReplying ? (
@@ -221,8 +254,9 @@ const CommentDetailPage = () => {
                     textTransform: 'none',
                     fontSize: '0.9rem',
                     fontWeight: 500,
+                    color: '#58a9ff',
                     '&:hover': {
-                      backgroundColor: 'rgba(25, 118, 210, 0.08)'
+                      backgroundColor: 'rgba(88, 169, 255, 0.1)'
                     }
                   }}
                 >
@@ -248,13 +282,20 @@ const CommentDetailPage = () => {
                       mb: 2,
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
-                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                        '&:hover': {
-                          backgroundColor: 'rgba(0, 0, 0, 0.03)'
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        color: 'white',
+                        '& fieldset': {
+                          borderColor: 'rgba(255, 255, 255, 0.2)'
                         },
-                        '&.Mui-focused': {
-                          backgroundColor: '#fff'
+                        '&:hover fieldset': {
+                          borderColor: 'rgba(255, 255, 255, 0.3)'
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: '#58a9ff'
                         }
+                      },
+                      '& .MuiInputBase-input::placeholder': {
+                        color: 'rgba(255, 255, 255, 0.5)'
                       }
                     }}
                     autoFocus
@@ -267,7 +308,13 @@ const CommentDetailPage = () => {
                       sx={{ 
                         borderRadius: 2,
                         textTransform: 'none',
-                        fontWeight: 500
+                        fontWeight: 500,
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        borderColor: 'rgba(255, 255, 255, 0.3)',
+                        '&:hover': {
+                          borderColor: 'rgba(255, 255, 255, 0.5)',
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)'
+                        }
                       }}
                     >
                       Batal
@@ -281,7 +328,14 @@ const CommentDetailPage = () => {
                         borderRadius: 2,
                         textTransform: 'none',
                         fontWeight: 500,
-                        boxShadow: 1
+                        bgcolor: '#58a9ff',
+                        '&:hover': {
+                          bgcolor: '#4a90e2'
+                        },
+                        '&.Mui-disabled': {
+                          backgroundColor: 'rgba(88, 169, 255, 0.3)',
+                          color: 'rgba(255, 255, 255, 0.4)'
+                        }
                       }}
                     >
                       {submitting ? 'Mengirim...' : 'Kirim'}
@@ -299,7 +353,7 @@ const CommentDetailPage = () => {
         <Box sx={{ pl: 2, mb: 2 }}>
           <Typography 
             variant="body2" 
-            color="text.secondary"
+            color="rgba(255,255,255,0.7)"
             sx={{ fontWeight: 500 }}
           >
             {comment.replies.length} Balasan
@@ -310,12 +364,11 @@ const CommentDetailPage = () => {
       {/* Replies */}
       <Box 
         sx={{ 
-          maxHeight: 500, 
-          overflowY: 'auto', 
           pr: 1,
           position: 'relative'
         }}
       >
+
         {comment.replies.length > 0 && (
           <Box 
             sx={{
@@ -324,7 +377,7 @@ const CommentDetailPage = () => {
               top: 0,
               bottom: 16,
               width: 2,
-              bgcolor: 'divider',
+              bgcolor: '#444',
               zIndex: 0
             }}
           />
@@ -339,14 +392,15 @@ const CommentDetailPage = () => {
               ml: 6,
               p: 2,
               borderRadius: 2.5,
-              backgroundColor: '#fafafa',
-              borderColor: '#eaeaea',
+              backgroundColor: '#222',
+              borderColor: '#333',
+              color: 'white',
               position: 'relative',
               zIndex: 1,
               transition: 'all 0.2s ease',
               '&:hover': {
-                boxShadow: 2,
-                backgroundColor: '#ffffff'
+                boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                backgroundColor: '#282828'
               }
             }}
           >
@@ -356,27 +410,28 @@ const CommentDetailPage = () => {
                 sx={{ 
                   width: 36, 
                   height: 36,
-                  boxShadow: '0 0 0 2px #fff'
+                  bgcolor: '#666',
+                  boxShadow: '0 0 0 2px #222'
                 }}
               />
               <Box>
                 <Typography 
                   fontWeight="600" 
                   fontSize="0.95rem"
-                  sx={{ color: 'primary.dark' }}
+                  sx={{ color: '#58a9ff' }}
                 >
                   {reply.user.name}
                 </Typography>
                 <Typography 
                   mt={0.5} 
-                  color="text.primary"
+                  color="white"
                   sx={{ fontSize: '0.95rem', lineHeight: 1.5 }}
                 >
                   {reply.text}
                 </Typography>
                 <Typography 
                   variant="caption" 
-                  color="text.secondary" 
+                  color="rgba(255,255,255,0.6)" 
                   mt={1} 
                   display="block"
                   sx={{ fontSize: '0.75rem' }}
@@ -394,7 +449,11 @@ const CommentDetailPage = () => {
                       mt: 1,
                       textTransform: 'none',
                       fontSize: '0.85rem',
-                      fontWeight: 500
+                      fontWeight: 500,
+                      color: '#58a9ff',
+                      '&:hover': {
+                        backgroundColor: 'rgba(88, 169, 255, 0.1)'
+                      }
                     }}
                   >
                     Balas
@@ -419,30 +478,47 @@ const CommentDetailPage = () => {
                         mb: 2,
                         '& .MuiOutlinedInput-root': {
                           borderRadius: 2,
-                          backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                          '&:hover': {
-                            backgroundColor: 'rgba(0, 0, 0, 0.03)'
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          color: 'white',
+                          '& fieldset': {
+                            borderColor: 'rgba(255, 255, 255, 0.2)'
                           },
-                          '&.Mui-focused': {
-                            backgroundColor: '#fff'
+                          '&:hover fieldset': {
+                            borderColor: 'rgba(255, 255, 255, 0.3)'
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#58a9ff'
                           }
+                        },
+                        '& .MuiInputBase-input::placeholder': {
+                          color: 'rgba(255, 255, 255, 0.5)'
                         }
                       }}
                       autoFocus
                     />
                     <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
                       <Button
-                        variant="outlined"
-                        onClick={() => setIsReplyingFor(null)}
-                        startIcon={<CloseIcon />}
-                        sx={{ 
-                          borderRadius: 2,
-                          textTransform: 'none',
-                          fontWeight: 500
-                        }}
-                      >
-                        Batal
-                      </Button>
+                      variant="outlined"
+                      onClick={() => {
+                        setIsReplyingFor(null);
+                        setReplyText('');
+                      }}
+                      startIcon={<CloseIcon />}
+                      sx={{
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        fontWeight: 500,
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        borderColor: 'rgba(255, 255, 255, 0.3)',
+                        '&:hover': {
+                          borderColor: 'rgba(255, 255, 255, 0.5)',
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)'
+                        }
+                      }}
+                    >
+                      Batal
+                    </Button>
+
                       <Button
                         variant="contained"
                         onClick={() => handleReplyForReplySubmit(reply.id)}
@@ -452,7 +528,14 @@ const CommentDetailPage = () => {
                           borderRadius: 2,
                           textTransform: 'none',
                           fontWeight: 500,
-                          boxShadow: 1
+                          bgcolor: '#58a9ff',
+                          '&:hover': {
+                            bgcolor: '#4a90e2'
+                          },
+                          '&.Mui-disabled': {
+                            backgroundColor: 'rgba(88, 169, 255, 0.3)',
+                            color: 'rgba(255, 255, 255, 0.4)'
+                          }
                         }}
                       >
                         {submitting ? 'Mengirim...' : 'Kirim'}
@@ -466,7 +549,7 @@ const CommentDetailPage = () => {
         ))}
         
         {comment.replies.length === 0 && (
-          <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
+          <Box sx={{ textAlign: 'center', py: 4, color: 'rgba(255,255,255,0.6)' }}>
             <Typography variant="body2">Belum ada balasan. Jadilah yang pertama membalas!</Typography>
           </Box>
         )}
