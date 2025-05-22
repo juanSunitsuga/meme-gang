@@ -46,6 +46,9 @@ const PostCard: React.FC<PostCardProps> = ({
   upvotes,
   downvotes,
   comments,
+  onCommentClick,
+
+  tags,
 }) => {
   const [showComments, setShowComments] = useState(false);
   // const navigate = useNavigate();
