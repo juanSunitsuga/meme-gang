@@ -13,7 +13,7 @@ import RegisterModal from './View/Auth/RegisterModal';
 import ForgotPasswordModal from './View/Auth/ForgotPasswordModal';
 import ResetPasswordModal from './View/Auth/ResetPasswordModal';
 import CreatePostModal from './View/CreatePostModal';
-import PostCard from './View/Components/PostCard';
+import PostDetailPage from './View/PostDetailPage';
 // import Comment from './View/Comments/CommentList';
 
 const darkTheme = createTheme({
@@ -73,7 +73,7 @@ function AppContent() {
                     <Route path="/" element={<Home />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/search" element={<SearchForm onSubmit={handleSearchSubmit} />} />
-                    <Route path="/post/:id" element={<PostCard />} />
+                    <Route path="/post/:postId" element={<PostDetailPage />} />
                     {/* <Route path="/post/:id" element={<Comment />} /> */}
                     {/* Add other routes here */}
                 </Routes>
