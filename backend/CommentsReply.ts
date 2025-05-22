@@ -3,6 +3,7 @@ import { Comment } from '../models/Comment';
 import { User } from '../models/User';
 import authMiddleware from '../middleware/Auth';
 import { controllerWrapper } from '../utils/controllerWrapper';
+// import { Op } from 'sequelize';
 
 const router = express.Router({ mergeParams: true });
 
@@ -26,36 +27,22 @@ router.get(
     }
 
     const replies = await Comment.findAll({
-      where: { reply_to: id },
+      where: {
+        reply_to: id,
+      },
       include: [
         {
           model: User,
-          attributes: ['username', 'profilePicture'],
+          attributes: ['username', 'profilePicture', 'createdAt', ],
         },
       ],
       order: [['createdAt', 'DESC']],
     });
-
-    return {
-      id: mainComment.id,
-      user: {
-        name: mainComment.user.username,
-        avatar: mainComment.user.profilePicture,
-      },
-      text: mainComment.content,
-      createdAt: mainComment.createdAt,
-      replies: replies.map(reply => ({
-        id: reply.id,
-        user: {
-          name: reply.user.username,
-          avatar: reply.user.profilePicture,
-        },
-        text: reply.content,
-        createdAt: reply.createdAt,
-      })),
-    };
+    
+    return replies;
   })
 );
+
 
 router.post(
   '/',

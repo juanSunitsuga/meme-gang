@@ -14,7 +14,10 @@ router.get(
     const { id: post_id } = req.params;
 
     const comments = await Comment.findAll({
-      where: { post_id },
+      where: {
+        post_id,
+        reply_id: null, // hanya ambil komentar utama, bukan reply
+      },      
       include: [{ model: User, attributes: ['username'] }],
       order: [['createdAt', 'DESC']],
     });
