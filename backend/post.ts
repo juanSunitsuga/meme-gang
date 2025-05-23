@@ -10,6 +10,7 @@ import authMiddleware from '../middleware/Auth';
 import { controllerWrapper } from '../utils/controllerWrapper';
 import { v4 } from 'uuid';
 import sequelize, { Op } from 'sequelize';
+import { countVotes, countComments} from './FetchPostData';
 
 
 const storage = multer.diskStorage({
@@ -23,23 +24,6 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 const router = Router();
-
-const countVotes = async (postId: string): Promise<{ upvotes: number; downvotes: number }> => {
-    const upvotes = await UpvoteDownvote.count({
-        where: { post_id: postId, is_upvote: true },
-    });
-    const downvotes = await UpvoteDownvote.count({
-        where: { post_id: postId, is_upvote: false },
-    });
-    return { upvotes, downvotes };
-}
-
-const countComments = async (postId: string): Promise<number> => {
-    const comments = await Comment.count({
-        where: { post_id: postId },
-    });
-    return comments;
-}
 
 router.post(
     '/submit',
