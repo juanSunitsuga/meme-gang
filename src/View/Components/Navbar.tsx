@@ -385,7 +385,7 @@ const MuiNavbar: React.FC = () => {
 
   return (
     <>
-      <StyledAppBar position="sticky">
+      <StyledAppBar position="fixed">
         <Toolbar>
           {isMobile && (
             <IconButton
