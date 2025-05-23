@@ -25,7 +25,7 @@ const FetchComment = ({ postId }: CommentListProps) => {
 
   return (
     <div>
-      <h3>Comments</h3>
+      {/* <h3>Comments</h3> */}
       {comments.map(comment => (
         <CommentItem key={comment.id} comment={comment} />
       ))}

@@ -96,7 +96,7 @@ router.put(
 );
 
 router.delete(
-  '/:replyId',
+  '/',
   authMiddleware,
   controllerWrapper(async (req: Request, res: Response) => {
     const { replyId } = req.params;
@@ -117,5 +117,36 @@ router.delete(
     return { message: 'Reply deleted' };
   })
 );
+
+router.delete(
+  '/',
+  authMiddleware,
+  controllerWrapper(async (req: Request, res: Response) => {
+    const { replyId } = req.params;
+    const user_id = req.user!.id;
+
+    const comment = await Comment.findByPk(replyId);
+
+    if (!comment) {
+      res.locals.errorCode = 404;
+      throw new Error('Comment not found');
+    }
+
+    if (comment.user_id !== user_id) {
+      res.locals.errorCode = 403;
+      throw new Error('Not authorized to delete this comment');
+    }
+
+    // Hapus semua replies jika ini main comment
+    if (comment.reply_to === null) {
+      await Comment.destroy({ where: { reply_to: replyId } });
+    }
+
+    await comment.destroy();
+
+    return { message: 'Comment and its replies deleted successfully' };
+  })
+);
+
 
 export default router;

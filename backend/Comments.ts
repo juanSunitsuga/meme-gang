@@ -10,13 +10,13 @@ const router = express.Router({ mergeParams: true });
 
 router.get(
   '/',
-  controllerWrapper(async (req: Request, res: Response) => {
+  controllerWrapper(async (req: Request) => {
     const { id: post_id } = req.params;
 
     const comments = await Comment.findAll({
       where: {
         post_id,
-        reply_id: null, // hanya ambil komentar utama, bukan reply
+        reply_to: null, 
       },      
       include: [{ model: User, attributes: ['username'] }],
       order: [['createdAt', 'DESC']],
@@ -82,9 +82,8 @@ router.put(
   })
 );
 
-// ✅ Hapus komentar
 router.delete(
-  '/:commentId',
+  '/',
   authMiddleware,
   controllerWrapper(async (req: Request, res: Response) => {
     const { commentId } = req.params;
