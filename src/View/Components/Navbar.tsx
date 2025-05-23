@@ -21,7 +21,7 @@ import {
   alpha,
   styled,
   useMediaQuery,
-  useTheme,
+  // useTheme,
   Avatar,
 } from '@mui/material';
 
@@ -115,7 +115,7 @@ const SearchIconWrapper = styled('div')(({ theme }) => ({
 }));
 
 // Add styled AppBar
-const StyledAppBar = styled(AppBar)(({ theme }) => ({
+const StyledAppBar = styled(AppBar)(() => ({
   backgroundColor: '#1a1a1a',
   boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
   color: 'white',
@@ -126,7 +126,7 @@ const MuiNavbar: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const isMobile = useMediaQuery('(max-width:600px)');
-  const theme = useTheme();
+  // const theme = useTheme();
   const navigate = useNavigate();
   
   // Use auth context instead of local state
@@ -159,15 +159,15 @@ const MuiNavbar: React.FC = () => {
     console.log('Search:', searchQuery);
   };
 
-  const getProfilePictureUrl = () => {
-    if (!userData || !userData.profilePicture) return undefined;
+  // const getProfilePictureUrl = () => {
+  //   if (!userData || !userData.profilePicture) return undefined;
     
-    if (userData.profilePicture.startsWith('http')) {
-      return userData.profilePicture;
-    }
+  //   if (userData.profilePicture.startsWith('http')) {
+  //     return userData.profilePicture;
+  //   }
     
-    return `/uploads/avatars/${userData.profilePicture}`;
-  };
+  //   return `/uploads/avatars/${userData.profilePicture}`;
+  // };
 
   // Replace your current getAvatarUrl function with this one:
   const getAvatarUrl = (avatarPath: string | undefined) => {
@@ -215,173 +215,173 @@ const MuiNavbar: React.FC = () => {
     >
       {/* Add user profile header */}
       {userData && (
-        <>
-          <Box sx={{ 
-            p: 2, 
-            display: 'flex', 
-            alignItems: 'center',
-            borderBottom: '1px solid rgba(255,255,255,0.1)'
-          }}>
-            {userData.profilePicture ? (
-              <Avatar 
-                src={getAvatarUrl(userData.profilePicture)} 
-                alt={userData.username}
-                sx={{ 
-                  width: 40, 
-                  height: 40,
-                  mr: 1.5,
-                  border: '2px solid rgba(255,255,255,0.2)'
-                }} 
-              />
-            ) : (
-              <Avatar sx={{ 
+        <Box sx={{ 
+          p: 2, 
+          display: 'flex', 
+          alignItems: 'center',
+          borderBottom: '1px solid rgba(255,255,255,0.1)'
+        }}>
+          {userData.profilePicture ? (
+            <Avatar 
+              src={getAvatarUrl(userData.profilePicture)} 
+              alt={userData.username}
+              sx={{ 
                 width: 40, 
                 height: 40,
                 mr: 1.5,
-                bgcolor: '#1976d2'
-              }}>
-                {userData.username[0].toUpperCase()}
-              </Avatar>
-            )}
-            <Box>
-              <Typography sx={{ 
-                fontWeight: 500,
-                lineHeight: 1.2,
-                fontFamily: '"Poppins", sans-serif'
-              }}>
-                {userData.name}
-              </Typography>
-              <Typography variant="body2" sx={{ 
-                color: '#aaa',
-                fontSize: '0.8rem',
-                fontFamily: '"Poppins", sans-serif'
-              }}>
-                @{userData.username}
-              </Typography>
-            </Box>
+                border: '2px solid rgba(255,255,255,0.2)'
+              }} 
+            />
+          ) : (
+            <Avatar sx={{ 
+              width: 40, 
+              height: 40,
+              mr: 1.5,
+              bgcolor: '#1976d2'
+            }}>
+              {userData.username[0].toUpperCase()}
+            </Avatar>
+          )}
+          <Box>
+            <Typography sx={{ 
+              fontWeight: 500,
+              lineHeight: 1.2,
+              fontFamily: '"Poppins", sans-serif'
+            }}>
+              {userData.name}
+            </Typography>
+            <Typography variant="body2" sx={{ 
+              color: '#aaa',
+              fontSize: '0.8rem',
+              fontFamily: '"Poppins", sans-serif'
+            }}>
+              @{userData.username}
+            </Typography>
           </Box>
-        </>
+        </Box>
       )}
-      
-      <MenuItem onClick={() => { navigate('/settings'); handleMenuClose(); }}>
-        <ListItemIcon>
-          <IconWrapper>
-            <FAIcon icon="fas fa-gear" />
-          </IconWrapper>
-        </ListItemIcon>
-        <Typography>Settings</Typography>
-      </MenuItem>
-      <MenuItem onClick={handleLogout}>
-        <ListItemIcon>
-          <IconWrapper>
-            <FAIcon icon="fas fa-sign-out-alt" />
-          </IconWrapper>
-        </ListItemIcon>
-        <Typography>Logout</Typography>
-      </MenuItem>
+
+      {[
+        <MenuItem onClick={() => { navigate('/settings'); handleMenuClose(); }}>
+          <ListItemIcon>
+            <IconWrapper>
+              <FAIcon icon="fas fa-gear" />
+            </IconWrapper>
+          </ListItemIcon>
+          <Typography>Settings</Typography>
+        </MenuItem>,
+        <MenuItem onClick={handleLogout}>
+          <ListItemIcon>
+            <IconWrapper>
+              <FAIcon icon="fas fa-sign-out-alt" />
+            </IconWrapper>
+          </ListItemIcon>
+          <Typography>Logout</Typography>
+        </MenuItem>
+        ]}
     </Menu>
   );
 
-  const drawer = (
-    <Box sx={{ width: 250, backgroundColor: '#222', height: '100%', color: 'white' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-          MEME GANG
-        </Typography>
-      </Box>
-      <Divider sx={{ backgroundColor: '#444' }} />
-      <Box sx={{ p: 2 }}>
-        <Search sx={{ width: '100%', maxWidth: '400px' }}>
-          <SearchIconWrapper>
-            <FAIcon icon="fas fa-search" />
-          </SearchIconWrapper>
-          <StyledInputBase
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            inputProps={{ 'aria-label': 'search' }}
-            fullWidth
-          />
-        </Search>
-      </Box>
-      <Divider sx={{ backgroundColor: '#444' }} />
-      <List>
-        <ListItem component={RouterLink} to="/trending" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
-          <ListItemIcon sx={{ color: '#aaa' }}>
-            <FAIcon icon="fas fa-fire-flame-curved" />
-          </ListItemIcon>
-          <ListItemText primary="Trending" />
-        </ListItem>
-        <ListItem component={RouterLink} to="/fresh" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
-          <ListItemIcon sx={{ color: '#aaa' }}>
-            <FAIcon icon="fas fa-clock" />
-          </ListItemIcon>
-          <ListItemText primary="Fresh" />
-        </ListItem>
-        <ListItem component={RouterLink} to="/top" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
-          <ListItemIcon sx={{ color: '#aaa' }}>
-            <FAIcon icon="fas fa-chart-line" />
-          </ListItemIcon>
-          <ListItemText primary="Top" />
-        </ListItem>
-      </List>
-      <Divider sx={{ backgroundColor: '#444' }} />
-      <Box sx={{ p: 2 }}>
-        {isAuthenticated ? (
-          <>
-            <Button 
-              fullWidth 
-              variant="contained" 
-              sx={{ mb: 1 }}
-              onClick={() => { navigate('/create-post'); setDrawerOpen(false); }}
-              startIcon={<FAIcon icon="fas fa-plus" />}
+  // const drawer = (
+  //   <Box sx={{ width: 250, backgroundColor: '#222', height: '100%', color: 'white' }}>
+  //     <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+  //       <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+  //         MEME GANG
+  //       </Typography>
+  //     </Box>
+  //     <Divider sx={{ backgroundColor: '#444' }} />
+  //     <Box sx={{ p: 2 }}>
+  //       <Search sx={{ width: '100%', maxWidth: '400px' }}>
+  //         <SearchIconWrapper>
+  //           <FAIcon icon="fas fa-search" />
+  //         </SearchIconWrapper>
+  //         <StyledInputBase
+  //           placeholder="Search..."
+  //           value={searchQuery}
+  //           onChange={(e) => setSearchQuery(e.target.value)}
+  //           inputProps={{ 'aria-label': 'search' }}
+  //           fullWidth
+  //         />
+  //       </Search>
+  //     </Box>
+  //     <Divider sx={{ backgroundColor: '#444' }} />
+  //     <List>
+  //       <ListItem component={RouterLink} to="/trending" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
+  //         <ListItemIcon sx={{ color: '#aaa' }}>
+  //           <FAIcon icon="fas fa-fire-flame-curved" />
+  //         </ListItemIcon>
+  //         <ListItemText primary="Trending" />
+  //       </ListItem>
+  //       <ListItem component={RouterLink} to="/fresh" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
+  //         <ListItemIcon sx={{ color: '#aaa' }}>
+  //           <FAIcon icon="fas fa-clock" />
+  //         </ListItemIcon>
+  //         <ListItemText primary="Fresh" />
+  //       </ListItem>
+  //       <ListItem component={RouterLink} to="/top" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
+  //         <ListItemIcon sx={{ color: '#aaa' }}>
+  //           <FAIcon icon="fas fa-chart-line" />
+  //         </ListItemIcon>
+  //         <ListItemText primary="Top" />
+  //       </ListItem>
+  //     </List>
+  //     <Divider sx={{ backgroundColor: '#444' }} />
+  //     <Box sx={{ p: 2 }}>
+  //       {isAuthenticated ? (
+  //         <>
+  //           <Button 
+  //             fullWidth 
+  //             variant="contained" 
+  //             sx={{ mb: 1 }}
+  //             onClick={() => { navigate('/create-post'); setDrawerOpen(false); }}
+  //             startIcon={<FAIcon icon="fas fa-plus" />}
 
-            >
-              Post
-            </Button>
-            <Button 
-              fullWidth 
-              variant="outlined" 
-              sx={{ mb: 1 }}
-              onClick={() => { navigate('/settings'); setDrawerOpen(false); }}
-              startIcon={<FAIcon icon="fas fa-gear" />}
-            >
-              Settings
-            </Button>
-            <Button 
-              fullWidth 
-              variant="outlined" 
-              onClick={handleLogout}
-              color="error"
-              startIcon={<FAIcon icon="fas fa-sign-out-alt" />}
-            >
-              Logout
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button 
-              fullWidth 
-              variant="outlined" 
-              sx={{ mb: 1 }}
-              onClick={() => { navigate('/login'); setDrawerOpen(false); }}
-              color="primary"
-              startIcon={<FAIcon icon="fas fa-sign-in-alt" />}
-            >
-              Log In
-            </Button>
-            <Button 
-              fullWidth 
-              variant="contained" 
-              onClick={() => { navigate('/register'); setDrawerOpen(false); }}
-            >
-              Sign Up
-            </Button>
-          </>
-        )}
-      </Box>
-    </Box>
-  );
+  //           >
+  //             Post
+  //           </Button>
+  //           <Button 
+  //             fullWidth 
+  //             variant="outlined" 
+  //             sx={{ mb: 1 }}
+  //             onClick={() => { navigate('/settings'); setDrawerOpen(false); }}
+  //             startIcon={<FAIcon icon="fas fa-gear" />}
+  //           >
+  //             Settings
+  //           </Button>
+  //           <Button 
+  //             fullWidth 
+  //             variant="outlined" 
+  //             onClick={handleLogout}
+  //             color="error"
+  //             startIcon={<FAIcon icon="fas fa-sign-out-alt" />}
+  //           >
+  //             Logout
+  //           </Button>
+  //         </>
+  //       ) : (
+  //         <>
+  //           <Button 
+  //             fullWidth 
+  //             variant="outlined" 
+  //             sx={{ mb: 1 }}
+  //             onClick={() => { navigate('/login'); setDrawerOpen(false); }}
+  //             color="primary"
+  //             startIcon={<FAIcon icon="fas fa-sign-in-alt" />}
+  //           >
+  //             Log In
+  //           </Button>
+  //           <Button 
+  //             fullWidth 
+  //             variant="contained" 
+  //             onClick={() => { navigate('/register'); setDrawerOpen(false); }}
+  //           >
+  //             Sign Up
+  //           </Button>
+  //         </>
+  //       )}
+  //     </Box>
+  //   </Box>
+  // );
 
   return (
     <>

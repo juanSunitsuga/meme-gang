@@ -5,7 +5,6 @@ import CssBaseline from '@mui/material/CssBaseline';
 import Navbar from './View/Components/Navbar';
 import Settings from './View/Settings';
 import SearchForm from './View/SearchForm';
-import ViewComments from './View/Comments/ViewComments';
 import Home from './View/Home';
 import { AuthProvider } from './View/contexts/AuthContext';
 import { ModalProvider } from './View/contexts/ModalContext';
@@ -14,6 +13,8 @@ import RegisterModal from './View/Auth/RegisterModal';
 import ForgotPasswordModal from './View/Auth/ForgotPasswordModal';
 import ResetPasswordModal from './View/Auth/ResetPasswordModal';
 import CreatePostModal from './View/CreatePostModal';
+import PostDetailPage from './View/PostDetailPage';
+// import Comment from './View/Comments/CommentList';
 
 const darkTheme = createTheme({
     palette: {
@@ -72,8 +73,8 @@ function AppContent() {
                     <Route path="/" element={<Home />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/search" element={<SearchForm onSubmit={handleSearchSubmit} />} />
-                    <Route path="/comments/:id/replies" element={<ViewComments />} />
-                    {/* <Route path="/post/:id/comments" element={<ViewComments />} /> */}
+                    <Route path="/post/:postId" element={<PostDetailPage />} />
+                    {/* <Route path="/post/:id" element={<Comment />} /> */}
                     {/* Add other routes here */}
                 </Routes>
             </div>

@@ -17,11 +17,10 @@ import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import CommentList from './CommentList'; // make sure path ini sesuai
+// import CommentList from './CommentList'; // make sure path ini sesuai
 // import { useNavigate } from 'react-router-dom';
+import FetchComment from './FetchComments'; // make sure path ini sesuai
 import ErrorBoundary from '../ErrorBoundary';
-
-
 
 interface PostCardProps {
   postId: string;
@@ -183,7 +182,8 @@ const PostCard: React.FC<PostCardProps> = ({
       <Collapse in={showComments} timeout="auto" unmountOnExit>
       <Box id={`comments-${postId}`} px={2} pb={2}>
         <ErrorBoundary>
-        <CommentList key={postId} postId={postId} />
+          {/* <CommentList key={postId} postId={postId} /> */}
+          <FetchComment postId={postId} />
         </ErrorBoundary>
       </Box>
     </Collapse>
