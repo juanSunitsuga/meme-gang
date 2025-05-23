@@ -74,13 +74,19 @@ const PostCard: React.FC<PostCardProps> = ({
 
   const handleSaveClick = async () => {
     const token = localStorage.getItem('token')
+    
     try {
-      const response = await fetchEndpoint('/save/save-post', 'POST', token, postId);
+      // Send postId as part of the URL path, not as the body
+      const method = isSaved ? 'DELETE' : 'POST';
+      const endpoint = `/save/save-post/${postId}`;
+      
+      const response = await fetchEndpoint(endpoint, method, token);
+      
       if (response) {
-        console.log('Post saved successfully');
-        onSaveClick && onSaveClick(); // Call the parent callback if provided
+        console.log(`Post ${isSaved ? 'unsaved' : 'saved'} successfully`);
+        onSaveClick && onSaveClick();
       } else {
-        console.error('Failed to save post');
+        console.error(`Failed to ${isSaved ? 'unsave' : 'save'} post`);
       }
     } catch (error) {
       console.error('Error saving post:', error);
