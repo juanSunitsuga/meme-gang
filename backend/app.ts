@@ -50,7 +50,7 @@ app.use('/profile', profileRoutes);
 app.use('/api', searchRoutes);
 app.use('/post', postRouter);
 app.use('/post/:id/comments', commentsRoutes); 
-app.use('/comments/:id/replies', commentReplyRoutes); 
+app.use('/comments/:id', commentReplyRoutes); 
 app.use(error)
 
 app.use((req, res) => {

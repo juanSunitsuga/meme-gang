@@ -23,11 +23,19 @@ const FetchComment = ({ postId }: CommentListProps) => {
     fetchMainComments();
   }, [postId]);
 
+  // Fungsi untuk menghapus komentar dari state setelah berhasil dihapus di backend
+  const handleDelete = (commentId: string) => {
+    setComments(prev => prev.filter(comment => comment.id !== commentId));
+  };
+
   return (
     <div>
-      {/* <h3>Comments</h3> */}
       {comments.map(comment => (
-        <CommentItem key={comment.id} comment={comment} />
+        <CommentItem
+          key={comment.id}
+          comment={comment}
+          onDelete={handleDelete} // <-- ini penting supaya UI langsung update
+        />
       ))}
     </div>
   );

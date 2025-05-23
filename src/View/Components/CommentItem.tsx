@@ -18,6 +18,7 @@ import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ReplyIcon from "@mui/icons-material/Reply";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
 
 interface User {
   username: string;
@@ -36,7 +37,7 @@ export type Comment = {
 interface CommentItemProps {
   comment: Comment;
   onDelete?: (commentId: string) => void;
-  scrollToTargetUsername?: string; 
+  scrollToTargetUsername?: string;
 }
 
 const formatDate = (dateString: string) => {
@@ -61,20 +62,25 @@ const formatDate = (dateString: string) => {
   });
 };
 
-const CommentItem = ({ comment, onDelete, scrollToTargetUsername }: CommentItemProps) => {
+const CommentItem = ({
+  comment,
+  onDelete,
+  scrollToTargetUsername,
+}: CommentItemProps) => {
   const [replies, setReplies] = useState<Comment[]>([]);
   const [showReplies, setShowReplies] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [replyContent, setReplyContent] = useState("");
   const [sendingReply, setSendingReply] = useState(false);
-
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const openMenu = Boolean(anchorEl);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(comment.content);
+  const [savingEdit, setSavingEdit] = useState(false);
 
+  const openMenu = Boolean(anchorEl);
   const commentRef = useRef<HTMLDivElement>(null);
 
-  // Auto scroll to comment if mentioned
   useEffect(() => {
     if (
       scrollToTargetUsername &&
@@ -84,8 +90,6 @@ const CommentItem = ({ comment, onDelete, scrollToTargetUsername }: CommentItemP
       commentRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
       commentRef.current.style.outline = "2px solid #4fa3ff";
       commentRef.current.style.borderRadius = "12px";
-
-      // Optional: hilangkan highlight setelah beberapa detik
       setTimeout(() => {
         if (commentRef.current) {
           commentRef.current.style.outline = "none";
@@ -94,7 +98,8 @@ const CommentItem = ({ comment, onDelete, scrollToTargetUsername }: CommentItemP
     }
   }, [scrollToTargetUsername, comment.user?.username]);
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) =>
+    setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
 
   const handleShowReplies = async () => {
@@ -104,7 +109,7 @@ const CommentItem = ({ comment, onDelete, scrollToTargetUsername }: CommentItemP
     }
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/comments/${comment.id}/replies`);
+      const res = await fetch(`http://localhost:3000/comments/${comment.id}`);
       const data = await res.json();
       const repliesArray: Comment[] = Array.isArray(data) ? data : data.replies || [];
       setReplies(
@@ -141,7 +146,8 @@ const CommentItem = ({ comment, onDelete, scrollToTargetUsername }: CommentItemP
     try {
       const token = localStorage.getItem("token");
       const formattedReply = `@${comment.user?.username ?? "user"} ${replyContent}`;
-      const res = await fetch(`http://localhost:3000/comments/${comment.id}/replies`, {
+
+      const res = await fetch(`http://localhost:3000/comments/${comment.id}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -180,23 +186,51 @@ const CommentItem = ({ comment, onDelete, scrollToTargetUsername }: CommentItemP
     handleMenuClose();
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3000/comments/${comment.id}/replies`, {
+      const res = await fetch(`http://localhost:3000/comments/${comment.id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      if (!res.ok) {
-        throw new Error("Failed to delete comment");
-      }
+      if (!res.ok) throw new Error("Failed to delete comment");
       if (onDelete) onDelete(comment.id);
     } catch (err) {
       console.error("Gagal menghapus komentar", err);
       alert("Gagal menghapus komentar");
     }
   };
+
+  const handleDeleteReply = (commentId: string) => {
+    setReplies((prev) => prev.filter((c) => c.id !== commentId));
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editContent.trim()) return;
+    setSavingEdit(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:3000/comments/${comment.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ content: editContent }),
+      });
+      if (!res.ok) throw new Error("Failed to edit comment");
+      comment.content = editContent; // update local content
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Gagal mengedit komentar", err);
+      alert("Gagal mengedit komentar");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   return (
     <Paper
+      ref={commentRef}
       elevation={comment.parentId ? 0 : 2}
       sx={{
         bgcolor: "#18191c",
@@ -209,7 +243,6 @@ const CommentItem = ({ comment, onDelete, scrollToTargetUsername }: CommentItemP
         position: "relative",
       }}
     >
-      {/* Menu Button */}
       <IconButton
         size="small"
         sx={{ position: "absolute", top: 8, right: 8, color: "#b0b0b0" }}
@@ -224,6 +257,17 @@ const CommentItem = ({ comment, onDelete, scrollToTargetUsername }: CommentItemP
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
       >
+        <MenuItem
+          onClick={() => {
+            setIsEditing(true);
+            setEditContent(comment.content);
+            handleMenuClose();
+          }}
+        >
+          <EditIcon fontSize="small" sx={{ mr: 1 }} />
+
+          Edit
+        </MenuItem>
         <MenuItem onClick={handleDeleteClick} sx={{ color: "#ff5252" }}>
           <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
           Delete
@@ -238,39 +282,65 @@ const CommentItem = ({ comment, onDelete, scrollToTargetUsername }: CommentItemP
         />
         <Box flex={1}>
           <Stack direction="row" spacing={1} alignItems="center">
-            <Typography
-              variant="subtitle2"
-              sx={{
-                fontWeight: 700,
-                color: "#4fa3ff",
-                fontSize: "1rem",
-              }}
-            >
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#4fa3ff" }}>
               {comment.user?.username}
             </Typography>
-            <Typography
-              variant="caption"
-              sx={{ color: "#b0b0b0", fontSize: "0.85rem" }}
-            >
+            <Typography variant="caption" sx={{ color: "#b0b0b0" }}>
               {formatDate(comment.createdAt)}
             </Typography>
           </Stack>
 
-          <Typography
-            variant="body1"
-            sx={{
-              mt: 0.5,
-              wordBreak: "break-word",
-              color: "#f1f1f1",
-            }}
-          >
-            {comment.content}
-          </Typography>
+          {/* Edit Mode */}
+          {isEditing ? (
+            <Box sx={{ mt: 1, display: "flex", flexDirection: "column", gap: 1 }}>
+              <TextField
+                size="small"
+                variant="outlined"
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                sx={{
+                  bgcolor: "#23272f",
+                  input: { color: "#f1f1f1" },
+                }}
+                multiline
+                minRows={1}
+                maxRows={4}
+                autoFocus
+              />
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleSaveEdit}
+                  disabled={savingEdit || !editContent.trim()}
+                  sx={{ borderRadius: 2, minWidth: 0, px: 2 }}
+                >
+                  {savingEdit ? <CircularProgress size={18} /> : "Simpan"}
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setEditContent(comment.content);
+                  }}
+                  sx={{ borderRadius: 2, minWidth: 0, px: 2, color: "#b0b0b0" }}
+                >
+                  Batal
+                </Button>
+              </Box>
+            </Box>
+          ) : (
+            <Typography variant="body1" sx={{ mt: 0.5, wordBreak: "break-word" }}>
+              {comment.content}
+            </Typography>
+          )}
 
           <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
             <Button
               size="small"
               startIcon={<ReplyIcon sx={{ color: "#4fa3ff" }} />}
+              onClick={handleReply}
               sx={{
                 color: "#4fa3ff",
                 textTransform: "none",
@@ -280,7 +350,6 @@ const CommentItem = ({ comment, onDelete, scrollToTargetUsername }: CommentItemP
                 minWidth: 0,
                 "&:hover": { bgcolor: "#23272f" },
               }}
-              onClick={handleReply}
             >
               Reply
             </Button>
@@ -288,13 +357,7 @@ const CommentItem = ({ comment, onDelete, scrollToTargetUsername }: CommentItemP
             {!comment.parentId && (
               <Button
                 size="small"
-                startIcon={
-                  showReplies ? (
-                    <ExpandLessIcon sx={{ color: "#b0b0b0" }} />
-                  ) : (
-                    <ExpandMoreIcon sx={{ color: "#b0b0b0" }} />
-                  )
-                }
+                startIcon={showReplies ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                 onClick={handleShowReplies}
                 sx={{
                   color: "#b0b0b0",
@@ -349,7 +412,11 @@ const CommentItem = ({ comment, onDelete, scrollToTargetUsername }: CommentItemP
           <Collapse in={showReplies} timeout="auto" unmountOnExit>
             <Box sx={{ mt: 1 }}>
               {replies.map((reply) => (
-                <CommentItem key={reply.id} comment={reply} onDelete={onDelete} />
+                <CommentItem
+                  key={reply.id}
+                  comment={reply}
+                  onDelete={handleDeleteReply}
+                />
               ))}
             </Box>
           </Collapse>

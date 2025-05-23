@@ -70,7 +70,7 @@ router.post(
 );
 
 router.put(
-  '/:replyId',
+  '/', 
   authMiddleware,
   controllerWrapper(async (req: Request, res: Response) => {
     const { replyId } = req.params;
@@ -91,41 +91,46 @@ router.put(
     reply.content = content;
     await reply.save();
 
-    return { message: 'Reply updated', reply };
+    return res.json({
+      message: 'Reply updated',
+      reply,
+    });
   })
 );
+
+
+// router.delete(
+//   '/',
+//   authMiddleware,
+//   controllerWrapper(async (req: Request, res: Response) => {
+//     const { replyId } = req.params;
+//     const user_id = req.user!.id;
+
+//     const reply = await Comment.findByPk(replyId);
+//     if (!reply) {
+//       res.locals.errorCode = 404;
+//       throw new Error('Reply not found');
+//     }
+
+//     if (reply.user_id !== user_id) {
+//       res.locals.errorCode = 403;
+//       throw new Error('Not authorized to delete this reply');
+//     }
+
+//     await reply.destroy();
+//     return { message: 'Reply deleted' };
+//   })
+// );
 
 router.delete(
   '/',
   authMiddleware,
   controllerWrapper(async (req: Request, res: Response) => {
-    const { replyId } = req.params;
+    const { id } = req.params;
+    console.log('ID:', id);
     const user_id = req.user!.id;
 
-    const reply = await Comment.findByPk(replyId);
-    if (!reply) {
-      res.locals.errorCode = 404;
-      throw new Error('Reply not found');
-    }
-
-    if (reply.user_id !== user_id) {
-      res.locals.errorCode = 403;
-      throw new Error('Not authorized to delete this reply');
-    }
-
-    await reply.destroy();
-    return { message: 'Reply deleted' };
-  })
-);
-
-router.delete(
-  '/',
-  authMiddleware,
-  controllerWrapper(async (req: Request, res: Response) => {
-    const { replyId } = req.params;
-    const user_id = req.user!.id;
-
-    const comment = await Comment.findByPk(replyId);
+    const comment = await Comment.findByPk(id);
 
     if (!comment) {
       res.locals.errorCode = 404;
@@ -139,7 +144,7 @@ router.delete(
 
     // Hapus semua replies jika ini main comment
     if (comment.reply_to === null) {
-      await Comment.destroy({ where: { reply_to: replyId } });
+      await Comment.destroy({ where: { reply_to: id } });
     }
 
     await comment.destroy();
