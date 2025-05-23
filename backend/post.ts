@@ -117,6 +117,8 @@ router.post(
 router.get(
     '/', 
     controllerWrapper(async (req: Request, res: Response) => {
+        const user = req.user;
+
         const type = req.query.type as string;
 
         let order: [string, string][] = [];
@@ -218,14 +220,15 @@ router.get(
         if (popular) {
             postsWithVotes.sort((a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes));
         }
-
+        
         return postsWithVotes;
     })
 );
 
 router.get(
     '/:id',
-    controllerWrapper(async (req, res) => {
+    controllerWrapper(async (req: Request, res: Response) => {
+        const user = req.user;
         const postId = req.params.id;
         const post = await Post.findByPk(postId);
         if (!post) {
@@ -234,6 +237,18 @@ router.get(
         }
         const votesCount = await countVotes(postId);
         const commentCount = await countComments(postId);
+
+        if (user) {
+            const voteState = await UpvoteDownvote.findOne({
+                where: { post_id: postId, user_id: user.id },
+            });
+            return {
+                ...post.toJSON(),
+                ...votesCount,
+                commentsCount: commentCount,
+                is_upvote: voteState?.is_upvote,
+            };
+        }
         return {
             ...post.toJSON(),
             ...votesCount,

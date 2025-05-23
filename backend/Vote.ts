@@ -1,4 +1,4 @@
-import { Request, Response, Router } from 'express';
+import e, { Request, Response, Router } from 'express';
 import { Post } from '../models/Post';
 import { UpvoteDownvote } from '../models/Upvote_Downvote_Post';
 import authMiddleware from '../middleware/Auth';
@@ -12,15 +12,11 @@ router.post('/upvote:id', authMiddleware, controllerWrapper(async (req: Request,
     const post_id = req.params.id;
     const user_id = req.user;
     const post = await Post.findByPk(post_id);
-    if (!post) {
-        res.locals.errorCode = 404;
-        throw new Error('Post not found');
-    }
     await UpvoteDownvote.create({
-        id: v4(),
         post_id,
         user_id,
         is_upvote: true,
+        edited_at: new Date(),
     });
     const { upvotes, downvotes } = await countVotes(post_id);
     return {
@@ -34,15 +30,11 @@ router.post('/downvote:id', authMiddleware, controllerWrapper(async (req: Reques
     const post_id = req.params.id;
     const user_id = req.user;
     const post = await Post.findByPk(post_id);
-    if (!post) {
-        res.locals.errorCode = 404;
-        throw new Error('Post not found');
-    }
     await UpvoteDownvote.create({
-        id: v4(),
         post_id,
         user_id,
         is_upvote: false,
+        edited_at: new Date(),
     });
     const { upvotes, downvotes } = await countVotes(post_id);
     return {
@@ -52,14 +44,52 @@ router.post('/downvote:id', authMiddleware, controllerWrapper(async (req: Reques
     };
 }));
 
+router.put('/upvote:id', authMiddleware, controllerWrapper(async (req: Request, res: Response) => {
+    const post_id = req.params.id;
+    const user_id = req.user;
+    const post = await Post.findByPk(post_id);
+    const upvote = await UpvoteDownvote.update({
+        is_upvote: true,
+        edited_at: new Date(),
+    }, {
+        where: {
+            post_id,
+            user_id,
+        },
+    });
+    const { upvotes, downvotes } = await countVotes(post_id);
+    return {
+        message: 'Vote changed',
+        upvotes,
+        downvotes,
+    };
+}));
+
+router.put('/downvote:id', authMiddleware, controllerWrapper(async (req: Request, res: Response) => {
+    const post_id = req.params.id;
+    const user_id = req.user;
+    const post = await Post.findByPk(post_id);
+    const downvote = await UpvoteDownvote.update({
+        is_upvote: false,
+        edited_at: new Date(),
+    }, {
+        where: {
+            post_id,
+            user_id,
+        },
+    });
+    const { upvotes, downvotes } = await countVotes(post_id);
+    return {
+        message: 'Vote changed',
+        upvotes,
+        downvotes,
+    };
+}));
+
 router.delete('/upvote:id', authMiddleware, controllerWrapper(async (req: Request, res: Response) => {
     const post_id = req.params.id;
     const user_id = req.user;
     const post = await Post.findByPk(post_id);
-    if (!post) {
-        res.locals.errorCode = 404;
-        throw new Error('Post not found');
-    }
     await UpvoteDownvote.destroy({
         where: {
             post_id,
@@ -79,10 +109,6 @@ router.delete('/downvote:id', authMiddleware, controllerWrapper(async (req: Requ
     const post_id = req.params.id;
     const user_id = req.user;
     const post = await Post.findByPk(post_id);
-    if (!post) {
-        res.locals.errorCode = 404;
-        throw new Error('Post not found');
-    }
     await UpvoteDownvote.destroy({
         where: {
             post_id,

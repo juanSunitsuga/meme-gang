@@ -17,3 +17,12 @@ export const countComments = async (postId: string): Promise<number> => {
     });
     return comments;
 }
+
+export const fetchVotesState = async (postId: string, userId: string) => {
+    const is_upvote = await UpvoteDownvote.findOne({
+        where: { post_id: postId, user_id: userId},
+    });
+    return {
+        is_upvote: is_upvote?.is_upvote,
+    }
+}

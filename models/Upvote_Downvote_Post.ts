@@ -7,13 +7,6 @@ import { Post } from './Post';
   timestamps: true,
 })
 export class UpvoteDownvote extends Model {
-  @Column({
-    type: DataType.UUID,
-    defaultValue: DataType.UUIDV4,
-    primaryKey: true,
-  })
-  declare id: string;
-
   @ForeignKey(() => User)
   @Column({
     type: DataType.UUID,
@@ -39,4 +32,11 @@ export class UpvoteDownvote extends Model {
     allowNull: false,
   })
   declare is_upvote: boolean;
+
+  @Column({
+      type: DataType.DATE,
+      allowNull: false,
+      defaultValue: DataType.NOW,
+    })
+    declare edited_at: Date;
 }
