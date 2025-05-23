@@ -17,6 +17,7 @@ interface Post {
   upvotes: number;
   downvotes: number;
   tags: string[];
+  is_upvoted?: boolean;
 }
 
 const Home: React.FC = () => {
@@ -75,6 +76,7 @@ const Home: React.FC = () => {
               comments={post.commentsCount}
               onCommentClick={() => navigate(`/post/${post.id}`)} // ini handler navigasinya
               tags={post.tags}
+              is_upvoted={post.is_upvoted}
             />
           ))
         )}

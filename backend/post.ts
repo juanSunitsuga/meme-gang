@@ -203,17 +203,35 @@ router.get(
             tagIdToName[tag.id] = tag.tag_name;
         });
 
+        let userVotesMap: { [key: string]: boolean | null } = {};
+        if (user) {
+            const userVotes = await UpvoteDownvote.findAll({
+                where: {
+                    post_id: { [Op.in]: postIds },
+                    user_id: user.id,
+                },
+                attributes: ['post_id', 'is_upvote'],
+                raw: true,
+            });
+            userVotesMap = userVotes.reduce((acc, vote) => {
+                acc[vote.post_id] = vote.is_upvote; // true or false
+                return acc;
+            }, {} as { [key: string]: boolean });
+        }
+
         const postsWithVotes = posts.map(post => {
         const votes = voteMap[post.id] || { upvotes: 0, downvotes: 0 };
         const commentCount = commentMap[post.id] || 0;
         const tagIds = postIdToTagIds[post.id] || [];
-        const tagNames = tagIds.map(tagId => tagIdToName[tagId]).filter(Boolean); // get tag names
+        const tagNames = tagIds.map(tagId => tagIdToName[tagId]).filter(Boolean);
+        const is_upvoted = user ? (userVotesMap[post.id] ?? null) : null;
         return {
             ...post.toJSON(),
             upvotes: votes.upvotes,
             downvotes: votes.downvotes,
             commentsCount: commentCount,
             tags: tagNames,
+            is_upvoted: is_upvoted,
         };
     });
 

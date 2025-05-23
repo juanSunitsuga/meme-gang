@@ -32,8 +32,8 @@ interface PostCardProps {
   downvotes: number;
   comments: number;
   onCommentClick?: () => void;  // optional handler click comment
-
   tags: string[];
+  is_upvoted?: boolean;
 }
 
 const PostCard: React.FC<PostCardProps> = ({
@@ -50,6 +50,8 @@ const PostCard: React.FC<PostCardProps> = ({
   tags,
 }) => {
   const [showComments, setShowComments] = useState(false);
+  const [upvote, setUpvote] = useState(false);
+  const [downvote, setDownvote] = useState(false);
   // const navigate = useNavigate();
 
   // Ini fungsi baru untuk handle comment click
@@ -143,15 +145,31 @@ const PostCard: React.FC<PostCardProps> = ({
               <Typography variant="body2">{upvotes}</Typography>
             </Stack>
 
-            <Stack direction="row" spacing={0.5} alignItems="center">
-              <ThumbDownAltOutlinedIcon fontSize="small" />
-              <Typography variant="body2">{downvotes}</Typography>
-            </Stack>
+            <IconButton
+              sx={{ color: '#fff' }}
+              onClick={() => {
+                // handle upvote logic here
+                console.log('Upvote clicked');
+              }}
+            >
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                <ThumbUpAltOutlinedIcon fontSize="small" />
+                <Typography variant="body2">{upvotes}</Typography>
+              </Stack>
+            </IconButton>
 
-            <Stack direction="row" spacing={0.5} alignItems="center">
-              <EmojiEmotionsOutlinedIcon fontSize="small" />
-              <Typography variant="body2">Cheers</Typography>
-            </Stack>
+            <IconButton
+              sx={{ color: '#fff' }}
+              onClick={() => {
+                // handle downvote logic here
+                console.log('Downvote clicked');
+              }}
+            >
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                <ThumbDownAltOutlinedIcon fontSize="small" />
+                <Typography variant="body2">{downvotes}</Typography>
+              </Stack>
+            </IconButton>
 
             {/* Comment Button */}
             <Chip
