@@ -10,17 +10,16 @@ import {
   Chip,
   Collapse,
 } from '@mui/material';
-import ThumbUpAltOutlinedIcon from '@mui/icons-material/ThumbUpAltOutlined';
-import ThumbDownAltOutlinedIcon from '@mui/icons-material/ThumbDownAltOutlined';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-// import CommentList from './CommentList'; // make sure path ini sesuai
-// import { useNavigate } from 'react-router-dom';
-import FetchComment from './FetchComments'; // make sure path ini sesuai
+import FetchComment from './FetchComments';
 import ErrorBoundary from '../ErrorBoundary';
+import { fetchEndpoint } from '../FetchEndpoint';
 
 interface PostCardProps {
   postId: string;
@@ -52,6 +51,8 @@ const PostCard: React.FC<PostCardProps> = ({
   const [showComments, setShowComments] = useState(false);
   const [upvote, setUpvote] = useState(false);
   const [downvote, setDownvote] = useState(false);
+  const [upvotesCount, setUpvotesCount] = useState(upvotes);
+  const [downvotesCount, setDownvotesCount] = useState(downvotes);
   // const navigate = useNavigate();
 
   // Ini fungsi baru untuk handle comment click
@@ -140,34 +141,65 @@ const PostCard: React.FC<PostCardProps> = ({
           mt={2}
         >
           <Stack direction="row" spacing={3} alignItems="center">
-            <Stack direction="row" spacing={0.5} alignItems="center">
-              <ThumbUpAltOutlinedIcon fontSize="small" />
-              <Typography variant="body2">{upvotes}</Typography>
-            </Stack>
-
             <IconButton
-              sx={{ color: '#fff' }}
-              onClick={() => {
-                // handle upvote logic here
-                console.log('Upvote clicked');
+              sx={{
+                color: upvote ? '#4caf50' : '#fff', // green if upvoted
+                transition: 'color 0.2s',
+              }}
+              onClick={ async () => {
+                if (!upvote && !downvote) {
+                  setUpvote(true);
+                  setUpvotesCount(upvotesCount + 1);
+                  const data = await fetchEndpoint('/vote/upvote/'+postId, 'POST');
+                  return;
+                }
+                if (upvote) {
+                  setUpvote(false);
+                  setUpvotesCount(upvotesCount - 1);
+                  const data = await fetchEndpoint('/vote/upvote/'+postId, 'DELETE');
+                  return;
+                }
+                setUpvote(true);
+                setDownvote(false);
+                setUpvotesCount(upvotesCount + 1);
+                setDownvotesCount(downvotesCount > 0 ? downvotesCount - 1 : 0);
+                const data = await fetchEndpoint('/vote/upvote/'+postId, 'PUT');
               }}
             >
               <Stack direction="row" spacing={0.5} alignItems="center">
-                <ThumbUpAltOutlinedIcon fontSize="small" />
-                <Typography variant="body2">{upvotes}</Typography>
+                <ArrowUpwardIcon fontSize="small" />
+                <Typography variant="body2">{upvotesCount}</Typography>
               </Stack>
             </IconButton>
 
             <IconButton
-              sx={{ color: '#fff' }}
-              onClick={() => {
-                // handle downvote logic here
-                console.log('Downvote clicked');
+              sx={{
+                color: downvote ? '#f44336' : '#fff',
+                transition: 'color 0.2s',
+              }}
+              onClick={ async () => {
+                if (!upvote && !downvote) {
+                  setDownvote(true);
+                  setDownvotesCount(downvotesCount + 1);
+                  const data = await fetchEndpoint('vote/downvote/'+postId, 'POST');
+                  return;
+                }
+                else if (downvote) {
+                  setDownvote(false);
+                  setDownvotesCount(downvotesCount - 1);
+                  const data = await fetchEndpoint('vote/downvote/'+postId, 'DELETE');
+                  return;
+                }
+                setDownvote(true);
+                setUpvote(false);
+                setDownvotesCount(downvotesCount + 1);
+                setUpvotesCount(upvotesCount > 0 ? upvotesCount - 1 : 0);
+                const data = await fetchEndpoint('vote/downvote/'+postId, 'PUT');
               }}
             >
               <Stack direction="row" spacing={0.5} alignItems="center">
-                <ThumbDownAltOutlinedIcon fontSize="small" />
-                <Typography variant="body2">{downvotes}</Typography>
+                <ArrowDownwardIcon fontSize="small" />
+                <Typography variant="body2">{downvotesCount}</Typography>
               </Stack>
             </IconButton>
 

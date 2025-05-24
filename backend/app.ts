@@ -18,6 +18,7 @@ import config from '../config/config.json';
 import cors from 'cors';
 import error from '../middleware/errorHandler';
 import postRouter from './post';
+import voteRouter from './Vote';
 
 const app = express();
 
@@ -51,6 +52,7 @@ app.use('/api', searchRoutes);
 app.use('/post', postRouter);
 app.use('/post/:id/comments', commentsRoutes); 
 app.use('/comments/:id/replies', commentReplyRoutes); 
+app.use('/vote', voteRouter);
 app.use(error)
 
 app.use((req, res) => {

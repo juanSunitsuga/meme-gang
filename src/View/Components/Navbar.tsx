@@ -187,9 +187,6 @@ const MuiNavbar: React.FC = () => {
     return `/uploads/avatars/${filename}${cacheBuster}`;
   };
 
-  console.log('User Data:', userData);
-  console.log('Avatar URL:', getAvatarUrl(userData?.profilePicture));
-
   const menuId = 'primary-account-menu';
   const renderMenu = (
     <Menu

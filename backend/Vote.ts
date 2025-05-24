@@ -123,3 +123,5 @@ router.delete('/downvote:id', authMiddleware, controllerWrapper(async (req: Requ
         downvotes,
     };
 }));
+
+export default router;
