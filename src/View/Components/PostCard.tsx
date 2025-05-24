@@ -10,6 +10,7 @@ import {
   Chip,
   Collapse,
 } from '@mui/material';
+
 import ThumbUpAltOutlinedIcon from '@mui/icons-material/ThumbUpAltOutlined';
 import ThumbDownAltOutlinedIcon from '@mui/icons-material/ThumbDownAltOutlined';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
@@ -215,7 +216,7 @@ const PostCard: React.FC<PostCardProps> = ({
       <Collapse in={showComments} timeout="auto" unmountOnExit>
         <Box id={`comments-${postId}`} px={2} pb={2}>
           <ErrorBoundary>
-            <CommentList key={postId} postId={postId} />
+            <FetchComment postId={postId} />
           </ErrorBoundary>
         </Box>
       </Collapse>
