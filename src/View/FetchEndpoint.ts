@@ -1,67 +1,54 @@
 export const fetchEndpoint = async (
     endpoint: string,
-    method: string,
+    method = 'GET',
     token?: string | null,
     body?: any
 ) => {
-    console.log(`fetchEndpoint called for ${method} ${endpoint}`);
-    
-    const baseUrl = 'http://localhost:3000';
-    const url = `${baseUrl}${endpoint}`;
-    
     try {
-        const headers: Record<string, string> = {};
-        
+        const API_URL = 'http://localhost:3000';
+        const headers: HeadersInit = {
+            'Content-Type': 'application/json',
+        };
+
         if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
+            headers.Authorization = `Bearer ${token}`;
         }
-        
+
         const options: RequestInit = {
             method,
             headers,
             credentials: 'include',
         };
+
+        if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+            options.body = JSON.stringify(body);
+        }
+
+        const response = await fetch(`${API_URL}${endpoint}`, options);
         
-        if (body) {
-            if (body instanceof FormData) {
-                // For FormData, don't set Content-Type - browser will set it with boundary
-                options.body = body;
-                
-                // Log the FormData contents for debugging
-                console.log('Sending FormData with entries:');
-                for (const pair of body.entries()) {
-                    console.log(`${pair[0]}: ${pair[1]}`);
-                }
-            } else if (method !== 'GET') {
-                // For regular JSON data
-                headers['Content-Type'] = 'application/json';
-                options.body = JSON.stringify(body);
-                console.log(`Request body included for ${method} request`);
+        // Check if response is ok
+        if (!response.ok) {
+            // Try to parse error as JSON
+            try {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `HTTP error ${response.status}`);
+            } catch (jsonError) {
+                // If response isn't JSON, use status text
+                throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
             }
         }
-        
-        console.log(`Making ${method} request to ${url}`);
-        const response = await fetch(url, options);
-        
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => {
-                return { message: 'Unknown error' };
-            });
-            console.error('Error data from response:', errorData);
-            throw new Error(errorData.message || `Request failed with status ${response.status}`);
+
+        // For 204 No Content, don't try to parse JSON
+        if (response.status === 204) {
+            return null;
         }
-        
-        // Check if response is JSON
-        const contentType = response.headers.get('content-type');
-        
-        if (contentType && contentType.includes('application/json')) {
-            const jsonData = await response.json();
-            console.log('Parsed JSON response successfully');
-            return jsonData;
-        } else {
-            const textData = await response.text();
-            console.log('Received text response');
-            return textData;
+
+        // For all other successful responses, try to parse JSON
+        try {
+            return await response.json();
+        } catch (error) {
+            console.error('Error parsing JSON response:', error);
+            throw new Error('Invalid JSON response from server');
         }
     } catch (error) {
         console.error(`Error in fetchEndpoint for ${method} ${endpoint}:`, error);
