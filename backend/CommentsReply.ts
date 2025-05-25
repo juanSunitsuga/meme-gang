@@ -73,11 +73,11 @@ router.put(
   '/', 
   authMiddleware,
   controllerWrapper(async (req: Request, res: Response) => {
-    const { replyId } = req.params;
+    const { id } = req.params;
     const { content } = req.body;
     const user_id = req.user!.id;
 
-    const reply = await Comment.findByPk(replyId);
+    const reply = await Comment.findByPk(id);
     if (!reply) {
       res.locals.errorCode = 404;
       throw new Error('Reply not found');

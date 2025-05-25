@@ -37,6 +37,7 @@ export type Comment = {
 interface CommentItemProps {
   comment: Comment;
   onDelete?: (commentId: string) => void;
+  onEdit?: (commentId: string, newContent: string) => void;
   scrollToTargetUsername?: string;
 }
 
@@ -111,9 +112,23 @@ const CommentItem = ({
     try {
       const res = await fetch(`http://localhost:3000/comments/${comment.id}`);
       const data = await res.json();
-      const repliesArray: Comment[] = Array.isArray(data) ? data : data.replies || [];
+      type ReplyRaw = {
+        id: string;
+        user?: {
+          username?: string;
+          name?: string;
+          avatar?: string;
+          profilePicture?: string;
+        };
+        content?: string;
+        text?: string;
+        reply_to?: string;
+        parentId?: string;
+        createdAt: string;
+      };
+      const repliesArray: ReplyRaw[] = Array.isArray(data) ? data : data.replies || [];
       setReplies(
-        repliesArray.map((reply: any) => ({
+        repliesArray.map((reply: ReplyRaw) => ({
           id: reply.id,
           user: {
             username: reply.user?.username || reply.user?.name || "",
@@ -158,6 +173,7 @@ const CommentItem = ({
           reply_to: comment.id,
         }),
       });
+      if (!res.ok) throw new Error("Failed to send reply");
       const newReplyRaw = await res.json();
       const newReply: Comment = {
         id: newReplyRaw.id,
@@ -173,7 +189,6 @@ const CommentItem = ({
       setReplies((prev) => [...prev, newReply]);
       setReplyContent("");
       setShowReplyInput(false);
-      setShowReplies(true);
     } catch (err) {
       console.error("Failed to send reply", err);
       alert("Gagal mengirim reply");
@@ -265,7 +280,6 @@ const CommentItem = ({
           }}
         >
           <EditIcon fontSize="small" sx={{ mr: 1 }} />
-
           Edit
         </MenuItem>
         <MenuItem onClick={handleDeleteClick} sx={{ color: "#ff5252" }}>
@@ -411,13 +425,19 @@ const CommentItem = ({
 
           <Collapse in={showReplies} timeout="auto" unmountOnExit>
             <Box sx={{ mt: 1 }}>
-              {replies.map((reply) => (
-                <CommentItem
-                  key={reply.id}
-                  comment={reply}
-                  onDelete={handleDeleteReply}
-                />
-              ))}
+              {replies.length === 0 && !loading ? (
+                <Typography variant="body2" sx={{ color: "#b0b0b0", fontStyle: "italic", ml: 2 }}>
+                  Tidak ada reply untuk komentar ini
+                </Typography>
+              ) : (
+                replies.map((reply) => (
+                  <CommentItem
+                    key={reply.id}
+                    comment={reply}
+                    onDelete={handleDeleteReply}
+                  />
+                ))
+              )}
             </Box>
           </Collapse>
         </Box>
