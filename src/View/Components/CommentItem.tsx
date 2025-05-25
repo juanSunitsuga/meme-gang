@@ -23,6 +23,7 @@ import EditIcon from "@mui/icons-material/Edit";
 interface User {
   username: string;
   avatar: string | null;
+  profilePicture?: string | null;
 }
 
 export type Comment = {
@@ -30,8 +31,11 @@ export type Comment = {
   user?: User;
   content: string;
   parentId?: string | null;
+  reply_to?: string | null; // untuk backend yang pakai reply_to
   createdAt: string;
+  updatedAt?: string;
   profilePicture?: string;
+  post_id?: string;
 };
 
 interface CommentItemProps {
@@ -63,6 +67,28 @@ const formatDate = (dateString: string) => {
   });
 };
 
+// Membuat struktur pohon reply dari array flat
+type ReplyNode = Comment & { replies?: ReplyNode[] };
+
+function buildReplyTree(replies: Comment[], parentId: string): ReplyNode[] {
+  return replies
+    .filter(r => (r.parentId ?? r.reply_to) === parentId)
+    .map(r => ({
+      ...r,
+      replies: buildReplyTree(replies, r.id),
+    }));
+}
+
+function renderReplies(replyNodes: ReplyNode[], onDelete: (id: string) => void) {
+  return replyNodes.map((reply) => (
+    <CommentItem
+      key={reply.id}
+      comment={reply}
+      onDelete={onDelete}
+    />
+  ));
+}
+
 const CommentItem = ({
   comment,
   onDelete,
@@ -78,6 +104,12 @@ const CommentItem = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
   const [savingEdit, setSavingEdit] = useState(false);
+
+  // State untuk konten dan updatedAt
+  const [currentContent, setCurrentContent] = useState(comment.content);
+  const [currentUpdatedAt, setCurrentUpdatedAt] = useState<string | undefined>(
+    comment.updatedAt
+  );
 
   const openMenu = Boolean(anchorEl);
   const commentRef = useRef<HTMLDivElement>(null);
@@ -110,34 +142,30 @@ const CommentItem = ({
     }
     setLoading(true);
     try {
+      // Ambil semua reply (langsung & nested) dari backend
       const res = await fetch(`http://localhost:3000/comments/${comment.id}`);
       const data = await res.json();
-      type ReplyRaw = {
-        id: string;
-        user?: {
-          username?: string;
-          name?: string;
-          avatar?: string;
-          profilePicture?: string;
-        };
-        content?: string;
-        text?: string;
-        reply_to?: string;
-        parentId?: string;
-        createdAt: string;
-      };
-      const repliesArray: ReplyRaw[] = Array.isArray(data) ? data : data.replies || [];
+
+      // Jika backend mengirim { mainComment, replies }
+      const repliesArray: Comment[] = Array.isArray(data)
+        ? data
+        : data.replies || [];
+
       setReplies(
-        repliesArray.map((reply: ReplyRaw) => ({
+        repliesArray.map((reply: any) => ({
           id: reply.id,
           user: {
             username: reply.user?.username || reply.user?.name || "",
             avatar: reply.user?.avatar || reply.user?.profilePicture || "",
+            profilePicture: reply.user?.profilePicture || "",
           },
           content: reply.content || reply.text || "",
-          parentId: reply.reply_to || reply.parentId || comment.id,
+          parentId: reply.parentId ?? reply.reply_to ?? comment.id,
+          reply_to: reply.reply_to,
           createdAt: reply.createdAt,
+          updatedAt: reply.updatedAt,
           profilePicture: reply.user?.avatar || reply.user?.profilePicture || "",
+          post_id: reply.post_id,
         }))
       );
       setShowReplies(true);
@@ -180,11 +208,15 @@ const CommentItem = ({
         user: {
           username: newReplyRaw.user?.username || newReplyRaw.user?.name || "",
           avatar: newReplyRaw.user?.avatar || newReplyRaw.user?.profilePicture || "",
+          profilePicture: newReplyRaw.user?.profilePicture || "",
         },
         content: newReplyRaw.content || newReplyRaw.text || "",
         parentId: newReplyRaw.reply_to || newReplyRaw.parentId || comment.id,
+        reply_to: newReplyRaw.reply_to,
         createdAt: newReplyRaw.createdAt,
+        updatedAt: newReplyRaw.updatedAt,
         profilePicture: newReplyRaw.user?.avatar || newReplyRaw.user?.profilePicture || "",
+        post_id: newReplyRaw.post_id,
       };
       setReplies((prev) => [...prev, newReply]);
       setReplyContent("");
@@ -224,16 +256,18 @@ const CommentItem = ({
     setSavingEdit(true);
     try {
       const token = localStorage.getItem("token");
+      const now = new Date().toISOString();
       const res = await fetch(`http://localhost:3000/comments/${comment.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ content: editContent }),
+        body: JSON.stringify({ content: editContent, updatedAt: now }),
       });
       if (!res.ok) throw new Error("Failed to edit comment");
-      comment.content = editContent; // update local content
+      setCurrentContent(editContent);
+      setCurrentUpdatedAt(now);
       setIsEditing(false);
     } catch (err) {
       console.error("Gagal mengedit komentar", err);
@@ -243,18 +277,35 @@ const CommentItem = ({
     }
   };
 
+  // Menampilkan timestamp: pakai updatedAt jika ada, jika tidak pakai createdAt
+  const renderTimestamp = () => {
+    const updated = currentUpdatedAt || comment.updatedAt;
+    if (updated && updated !== comment.createdAt) {
+      return (
+        <Typography variant="caption" sx={{ color: "#b0b0b0" }}>
+          {formatDate(updated)} (edited)
+        </Typography>
+      );
+    }
+    return (
+      <Typography variant="caption" sx={{ color: "#b0b0b0" }}>
+        {formatDate(comment.createdAt)}
+      </Typography>
+    );
+  };
+
   return (
     <Paper
       ref={commentRef}
-      elevation={comment.parentId ? 0 : 2}
+      elevation={comment.parentId || comment.reply_to ? 0 : 2}
       sx={{
         bgcolor: "#18191c",
         color: "#f1f1f1",
         borderRadius: 3,
         p: 2,
-        mb: comment.parentId ? 1 : 2,
-        ml: comment.parentId ? 4 : 0,
-        boxShadow: comment.parentId ? "none" : "0 2px 8px rgba(0,0,0,0.18)",
+        mb: comment.parentId || comment.reply_to ? 1 : 2,
+        ml: comment.parentId || comment.reply_to ? 4 : 0,
+        boxShadow: comment.parentId || comment.reply_to ? "none" : "0 2px 8px rgba(0,0,0,0.18)",
         position: "relative",
       }}
     >
@@ -275,7 +326,7 @@ const CommentItem = ({
         <MenuItem
           onClick={() => {
             setIsEditing(true);
-            setEditContent(comment.content);
+            setEditContent(currentContent);
             handleMenuClose();
           }}
         >
@@ -290,7 +341,7 @@ const CommentItem = ({
 
       <Stack direction="row" spacing={2}>
         <Avatar
-          src={comment.profilePicture || comment.user?.avatar || undefined}
+          src={comment.profilePicture || comment.user?.avatar || comment.user?.profilePicture || undefined}
           alt={comment.user?.username || ""}
           sx={{ width: 36, height: 36, bgcolor: "#23272f", mt: 0.5 }}
         />
@@ -299,9 +350,7 @@ const CommentItem = ({
             <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#4fa3ff" }}>
               {comment.user?.username}
             </Typography>
-            <Typography variant="caption" sx={{ color: "#b0b0b0" }}>
-              {formatDate(comment.createdAt)}
-            </Typography>
+            {renderTimestamp()}
           </Stack>
 
           {/* Edit Mode */}
@@ -336,7 +385,7 @@ const CommentItem = ({
                   color="inherit"
                   onClick={() => {
                     setIsEditing(false);
-                    setEditContent(comment.content);
+                    setEditContent(currentContent);
                   }}
                   sx={{ borderRadius: 2, minWidth: 0, px: 2, color: "#b0b0b0" }}
                 >
@@ -346,7 +395,7 @@ const CommentItem = ({
             </Box>
           ) : (
             <Typography variant="body1" sx={{ mt: 0.5, wordBreak: "break-word" }}>
-              {comment.content}
+              {currentContent}
             </Typography>
           )}
 
@@ -368,7 +417,7 @@ const CommentItem = ({
               Reply
             </Button>
 
-            {!comment.parentId && (
+            {!comment.parentId && !comment.reply_to && (
               <Button
                 size="small"
                 startIcon={showReplies ? <ExpandLessIcon /> : <ExpandMoreIcon />}
@@ -430,13 +479,7 @@ const CommentItem = ({
                   Tidak ada reply untuk komentar ini
                 </Typography>
               ) : (
-                replies.map((reply) => (
-                  <CommentItem
-                    key={reply.id}
-                    comment={reply}
-                    onDelete={handleDeleteReply}
-                  />
-                ))
+                renderReplies(buildReplyTree(replies, comment.id), handleDeleteReply)
               )}
             </Box>
           </Collapse>

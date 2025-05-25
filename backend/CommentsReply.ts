@@ -3,7 +3,7 @@ import { Comment } from '../models/Comment';
 import { User } from '../models/User';
 import authMiddleware from '../middleware/Auth';
 import { controllerWrapper } from '../utils/controllerWrapper';
-// import { Op } from 'sequelize';
+import { Op } from 'sequelize';
 
 const router = express.Router({ mergeParams: true });
 
@@ -26,23 +26,27 @@ router.get(
       throw new Error('Comment not found');
     }
 
-    const replies = await Comment.findAll({
+    // Ambil SEMUA komentar yang punya post_id sama (termasuk nested)
+    const allComments = await Comment.findAll({
       where: {
-        reply_to: id,
+        post_id: mainComment.post_id,
       },
       include: [
         {
           model: User,
-          attributes: ['username', 'profilePicture', 'createdAt', ],
+          attributes: ['username', 'profilePicture'],
         },
       ],
-      order: [['createdAt', 'DESC']],
+      order: [['createdAt', 'ASC']],
     });
-    
-    return replies;
+
+    // Kirim mainComment dan seluruh komentar (biar frontend bisa bangun pohon reply)
+    return res.json({
+      mainComment,
+      comments: allComments,
+    });
   })
 );
-
 
 router.post(
   '/',

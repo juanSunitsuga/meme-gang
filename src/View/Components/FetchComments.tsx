@@ -8,8 +8,6 @@ interface CommentListProps {
 
 const FetchComment = ({ postId }: CommentListProps) => {
   const [comments, setComments] = useState<Comment[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editText, setEditText] = useState<string>("");
 
   useEffect(() => {
     const fetchMainComments = async () => {
@@ -30,38 +28,29 @@ const FetchComment = ({ postId }: CommentListProps) => {
     setComments(prev => prev.filter(comment => comment.id !== commentId));
   };
 
-  const handleEdit = (commentId: string, currentText: string) => {
-    setEditingId(commentId);
-    setEditText(currentText);
-  };
-
-  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEditText(e.target.value);
-  };
-
-  const handleEditSave = async (commentId: string) => {
+  const handleEdit = async (commentId: string, newContent: string) => {
     try {
+      const token = localStorage.getItem("token");
+      const now = new Date().toISOString();
       const res = await fetch(`http://localhost:3000/comments/${commentId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: editText }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ content: newContent, updatedAt: now }),
       });
       if (!res.ok) throw new Error("Failed to update comment");
       setComments(prev =>
         prev.map(comment =>
-          comment.id === commentId ? { ...comment, text: editText } : comment
+          comment.id === commentId
+            ? { ...comment, content: newContent, updatedAt: now }
+            : comment
         )
       );
-      setEditingId(null);
-      setEditText("");
     } catch (err) {
       console.error("Failed to update comment", err);
     }
-  };
-
-  const handleEditCancel = () => {
-    setEditingId(null);
-    setEditText("");
   };
 
   return (
@@ -74,37 +63,22 @@ const FetchComment = ({ postId }: CommentListProps) => {
             mt: 4,
             p: 2,
             borderRadius: 2,
-            backgroundColor: '#f0f2f5',
-            color: '#555',
+            color: 'white',
             fontStyle: 'italic',
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
           }}
         >
-          Tidak ada komentar untuk post ini 😢
+          Tidak ada komentar untuk post ini
         </Typography>
-      )   : (
-        comments.map(comment =>
-          editingId === comment.id ? (
-            <div key={comment.id} style={{ marginBottom: 8 }}>
-              <input
-                value={editText}
-                onChange={handleEditChange}
-                style={{ marginRight: 8 }}
-              />
-              <button onClick={() => handleEditSave(comment.id)}>Save</button>
-              <button onClick={handleEditCancel} style={{ marginLeft: 4 }}>
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <CommentItem
-              key={comment.id}
-              comment={comment}
-              onDelete={handleDelete}
-              onEdit={() => handleEdit(comment.id, comment.content)}
-            />
-          )
-        )
+      ) : (
+        comments.map(comment => (
+          <CommentItem
+            key={comment.id}
+            comment={comment}
+            onDelete={handleDelete}
+            onEdit={handleEdit}
+          />
+        ))
       )}
     </div>
   );
