@@ -116,7 +116,9 @@ router.post(
 router.get(
     '/', 
     controllerWrapper(async (req: Request, res: Response) => {
-        const userId = localStorage.getItem('userId') || null;
+        // const userId = localStorage.getItem('userId') || null;
+
+        const userId = req.user;
 
         const type = req.query.type as string;
 
