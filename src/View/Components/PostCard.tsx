@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -57,7 +57,13 @@ const PostCard: React.FC<PostCardProps> = ({
   tags,
 }) => {
   const [showComments, setShowComments] = useState(false);
-  // const navigate = useNavigate();
+  // Add a local state to track saved status for immediate UI updates
+  const [localSavedState, setLocalSavedState] = useState(isSaved);
+  
+  // Update local state when prop changes (e.g. when parent component refreshes data)
+  useEffect(() => {
+    setLocalSavedState(isSaved);
+  }, [isSaved]);
 
   // Ini fungsi baru untuk handle comment click
   const handleCommentClick = () => {
@@ -75,23 +81,30 @@ const PostCard: React.FC<PostCardProps> = ({
   const handleSaveClick = async () => {
     const token = localStorage.getItem('token')
     
+    // Optimistically update UI
+    setLocalSavedState(!localSavedState);
+    
     try {
       // Send postId as part of the URL path, not as the body
-      const method = isSaved ? 'DELETE' : 'POST';
+      const method = localSavedState ? 'DELETE' : 'POST';
       const endpoint = `/save/save-post/${postId}`;
       
       const response = await fetchEndpoint(endpoint, method, token);
       
       if (response) {
-        console.log(`Post ${isSaved ? 'unsaved' : 'saved'} successfully`);
+        console.log(`Post ${localSavedState ? 'unsaved' : 'saved'} successfully`);
+        // Still call parent's callback to update global state
         onSaveClick && onSaveClick();
       } else {
-        console.error(`Failed to ${isSaved ? 'unsave' : 'save'} post`);
+        console.error(`Failed to ${localSavedState ? 'unsave' : 'save'} post`);
+        // Revert optimistic update on failure
+        setLocalSavedState(localSavedState);
       }
     } catch (error) {
       console.error('Error saving post:', error);
+      // Revert optimistic update on error
+      setLocalSavedState(localSavedState);
     }
-
   }
 
   return (
@@ -200,11 +213,11 @@ const PostCard: React.FC<PostCardProps> = ({
           <Stack direction="row" spacing={2}>
             <IconButton
               sx={{
-                color: isSaved ? '#1976d2' : '#aaa' // Change color when saved
+                color: localSavedState ? '#1976d2' : '#aaa' // Change color when saved
               }}
               onClick={handleSaveClick}
             >
-              {isSaved ? <BookmarkIcon /> : <BookmarkBorderIcon />}
+              {localSavedState ? <BookmarkIcon /> : <BookmarkBorderIcon />}
             </IconButton>
             <IconButton sx={{ color: '#aaa' }}>
               <ShareOutlinedIcon />
