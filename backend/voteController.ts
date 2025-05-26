@@ -1,20 +1,18 @@
-import e, { Request, Response, Router } from 'express';
-import { Post } from '../models/Post';
-import { UpvoteDownvote } from '../models/Upvote_Downvote_Post';
+import { Request, Response, Router } from 'express';
+import { Votes } from '../models/Votes';
 import authMiddleware from '../middleware/Auth';
 import { controllerWrapper } from '../utils/controllerWrapper';
-import { v4 } from 'uuid';
 import { countVotes } from './FetchPostData';
 
 const router = Router();
 
-router.post('/upvote:id', authMiddleware, controllerWrapper(async (req: Request, res: Response) => {
+router.post('/upvote/:id', authMiddleware, controllerWrapper(async (req: Request, res: Response) => {
     const post_id = req.params.id;
-    const user_id = req.user;
-    const post = await Post.findByPk(post_id);
-    await UpvoteDownvote.create({
-        post_id,
-        user_id,
+    const user_id = req.user?.id;
+    console.log(`User ${user_id} is upvoting post ${post_id}`);
+    await Votes.create({
+        post_id: post_id,
+        user_id: user_id,
         is_upvote: true,
         edited_at: new Date(),
     });
@@ -26,13 +24,12 @@ router.post('/upvote:id', authMiddleware, controllerWrapper(async (req: Request,
     };
 }));
 
-router.post('/downvote:id', authMiddleware, controllerWrapper(async (req: Request, res: Response) => {
+router.post('/downvote/:id', authMiddleware, controllerWrapper(async (req: Request, res: Response) => {
     const post_id = req.params.id;
-    const user_id = req.user;
-    const post = await Post.findByPk(post_id);
-    await UpvoteDownvote.create({
-        post_id,
-        user_id,
+    const user_id = req.user?.id;
+    await Votes.create({
+        post_id: post_id,
+        user_id: user_id,
         is_upvote: false,
         edited_at: new Date(),
     });
@@ -44,17 +41,16 @@ router.post('/downvote:id', authMiddleware, controllerWrapper(async (req: Reques
     };
 }));
 
-router.put('/upvote:id', authMiddleware, controllerWrapper(async (req: Request, res: Response) => {
+router.put('/upvote/:id', authMiddleware, controllerWrapper(async (req: Request, res: Response) => {
     const post_id = req.params.id;
-    const user_id = req.user;
-    const post = await Post.findByPk(post_id);
-    const upvote = await UpvoteDownvote.update({
+    const user_id = req.user?.id;
+    const upvote = await Votes.update({
         is_upvote: true,
         edited_at: new Date(),
     }, {
         where: {
-            post_id,
-            user_id,
+            post_id: post_id,
+            user_id: user_id,
         },
     });
     const { upvotes, downvotes } = await countVotes(post_id);
@@ -65,17 +61,16 @@ router.put('/upvote:id', authMiddleware, controllerWrapper(async (req: Request, 
     };
 }));
 
-router.put('/downvote:id', authMiddleware, controllerWrapper(async (req: Request, res: Response) => {
+router.put('/downvote/:id', authMiddleware, controllerWrapper(async (req: Request, res: Response) => {
     const post_id = req.params.id;
-    const user_id = req.user;
-    const post = await Post.findByPk(post_id);
-    const downvote = await UpvoteDownvote.update({
+    const user_id = req.user?.id;
+    const downvote = await Votes.update({
         is_upvote: false,
         edited_at: new Date(),
     }, {
         where: {
-            post_id,
-            user_id,
+            post_id: post_id,
+            user_id: user_id,
         },
     });
     const { upvotes, downvotes } = await countVotes(post_id);
@@ -86,14 +81,13 @@ router.put('/downvote:id', authMiddleware, controllerWrapper(async (req: Request
     };
 }));
 
-router.delete('/upvote:id', authMiddleware, controllerWrapper(async (req: Request, res: Response) => {
+router.delete('/upvote/:id', authMiddleware, controllerWrapper(async (req: Request, res: Response) => {
     const post_id = req.params.id;
-    const user_id = req.user;
-    const post = await Post.findByPk(post_id);
-    await UpvoteDownvote.destroy({
+    const user_id = req.user?.id;
+    await Votes.destroy({
         where: {
-            post_id,
-            user_id,
+            post_id: post_id,
+            user_id: user_id,
             is_upvote: true,
         },
     });
@@ -105,14 +99,13 @@ router.delete('/upvote:id', authMiddleware, controllerWrapper(async (req: Reques
     };
 }));
 
-router.delete('/downvote:id', authMiddleware, controllerWrapper(async (req: Request, res: Response) => {
+router.delete('/downvote/:id', authMiddleware, controllerWrapper(async (req: Request, res: Response) => {
     const post_id = req.params.id;
-    const user_id = req.user;
-    const post = await Post.findByPk(post_id);
-    await UpvoteDownvote.destroy({
+    const user_id = req.user?.id;
+    await Votes.destroy({
         where: {
-            post_id,
-            user_id,
+            post_id: post_id,
+            user_id: user_id,
             is_upvote: false,
         },
     });

@@ -176,7 +176,9 @@ router.post('/login', controllerWrapper(async (req, res, next) => {
     appConfig.jwtSecret,
     { expiresIn: appConfig.jwtExpiration }
   );
-
+  
+  localStorage.setItem('userId', user.id);
+  
   return {
     token,
     user: {

@@ -1,9 +1,8 @@
-import express from 'express';
 import { Request, Response, Router } from 'express';
 import { Post } from '../models/Post';
 import { Comment } from '../models/Comment';
 import { Tag } from '../models/Tag';
-import { UpvoteDownvote } from '../models/Upvote_Downvote_Post';
+import { Votes } from '../models/Votes';
 import { PostTag } from '../models/PostTags';
 import multer from 'multer';
 import authMiddleware from '../middleware/Auth';
@@ -117,7 +116,7 @@ router.post(
 router.get(
     '/', 
     controllerWrapper(async (req: Request, res: Response) => {
-        const user = req.user;
+        const userId = localStorage.getItem('userId') || null;
 
         const type = req.query.type as string;
 
@@ -139,7 +138,7 @@ router.get(
         const postIds = posts.map(post => post.id);
 
         // Aggregate upvotes and downvotes for all posts
-        const votes = await UpvoteDownvote.findAll({
+        const votes = await Votes.findAll({
             where: { post_id: { [Op.in]: postIds } },
             attributes: [
                 'post_id',
@@ -204,11 +203,11 @@ router.get(
         });
 
         let userVotesMap: { [key: string]: boolean | null } = {};
-        if (user) {
-            const userVotes = await UpvoteDownvote.findAll({
+        if (userId) {
+            const userVotes = await Votes.findAll({
                 where: {
                     post_id: { [Op.in]: postIds },
-                    user_id: user.id,
+                    user_id: userId,
                 },
                 attributes: ['post_id', 'is_upvote'],
                 raw: true,
@@ -224,7 +223,7 @@ router.get(
         const commentCount = commentMap[post.id] || 0;
         const tagIds = postIdToTagIds[post.id] || [];
         const tagNames = tagIds.map(tagId => tagIdToName[tagId]).filter(Boolean);
-        const is_upvoted = user ? (userVotesMap[post.id] ?? null) : null;
+        const is_upvoted = userId ? (userVotesMap[post.id] ?? null) : null;
         return {
             ...post.toJSON(),
             upvotes: votes.upvotes,
@@ -257,7 +256,7 @@ router.get(
         const commentCount = await countComments(postId);
 
         if (user) {
-            const voteState = await UpvoteDownvote.findOne({
+            const voteState = await Votes.findOne({
                 where: { post_id: postId, user_id: user.id },
             });
             return {

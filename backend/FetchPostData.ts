@@ -1,11 +1,11 @@
-import { UpvoteDownvote } from '../models/Upvote_Downvote_Post';
+import { Votes } from '../models/Votes';
 import { Comment } from '../models/Comment';
 
 export const countVotes = async (postId: string): Promise<{ upvotes: number; downvotes: number }> => {
-    const upvotes = await UpvoteDownvote.count({
+    const upvotes = await Votes.count({
         where: { post_id: postId, is_upvote: true },
     });
-    const downvotes = await UpvoteDownvote.count({
+    const downvotes = await Votes.count({
         where: { post_id: postId, is_upvote: false },
     });
     return { upvotes, downvotes };
@@ -19,7 +19,7 @@ export const countComments = async (postId: string): Promise<number> => {
 }
 
 export const fetchVotesState = async (postId: string, userId: string) => {
-    const is_upvote = await UpvoteDownvote.findOne({
+    const is_upvote = await Votes.findOne({
         where: { post_id: postId, user_id: userId},
     });
     return {

@@ -10,8 +10,8 @@ import {
   Chip,
   Collapse,
 } from '@mui/material';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import ArrowDownwardOutlined from '@mui/icons-material/ArrowDownwardOutlined';
+import ArrowUpwardOutlined from '@mui/icons-material/ArrowUpwardOutlined';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
@@ -45,7 +45,7 @@ const PostCard: React.FC<PostCardProps> = ({
   downvotes,
   comments,
   onCommentClick,
-
+  is_upvoted,
   tags,
 }) => {
   const [showComments, setShowComments] = useState(false);
@@ -53,7 +53,6 @@ const PostCard: React.FC<PostCardProps> = ({
   const [downvote, setDownvote] = useState(false);
   const [upvotesCount, setUpvotesCount] = useState(upvotes);
   const [downvotesCount, setDownvotesCount] = useState(downvotes);
-  // const navigate = useNavigate();
 
   // Ini fungsi baru untuk handle comment click
   const handleCommentClick = () => {
@@ -67,6 +66,50 @@ const PostCard: React.FC<PostCardProps> = ({
       }, 200);
     }
   };
+
+  const handleVotesClick = async (type: 'upvote' | 'downvote') => {
+    const token = localStorage.getItem('token');
+    const endpoint = `/vote/${type}/${postId}`;
+    try {
+      if (type === 'upvote') {
+        if (!upvote && !downvote) {
+          setUpvote(true);
+          setUpvotesCount(upvotesCount + 1);
+          await fetchEndpoint(endpoint, 'POST', token);
+        } else if (upvote) {
+          setUpvote(false);
+          setUpvotesCount(upvotesCount - 1);
+          await fetchEndpoint(endpoint, 'DELETE', token);
+        } else {
+          setUpvote(true);
+          setDownvote(false);
+          setUpvotesCount(upvotesCount + 1);
+          setDownvotesCount(downvotesCount > 0 ? downvotesCount - 1 : 0);
+          await fetchEndpoint(endpoint, 'PUT', token);
+        }
+      } else {
+        if (!upvote && !downvote) {
+          setDownvote(true);
+          setDownvotesCount(downvotesCount + 1);
+          await fetchEndpoint(endpoint, 'POST', token);
+        } else if (downvote) {
+          setDownvote(false);
+          setDownvotesCount(downvotesCount - 1);
+          await fetchEndpoint(endpoint, 'DELETE', token);
+        } else {
+          setDownvote(true);
+          setUpvote(false);
+          setDownvotesCount(downvotesCount + 1);
+          setUpvotesCount(upvotesCount > 0 ? upvotesCount - 1 : 0);
+          await fetchEndpoint(endpoint, 'PUT', token);
+        }
+      }
+    }
+    catch (error) {
+      console.error('Error handling vote:', error);
+      // Handle error appropriately, e.g., show a notification
+    }
+  }
   
   return (
     <Card
@@ -146,28 +189,10 @@ const PostCard: React.FC<PostCardProps> = ({
                 color: upvote ? '#4caf50' : '#fff', // green if upvoted
                 transition: 'color 0.2s',
               }}
-              onClick={ async () => {
-                if (!upvote && !downvote) {
-                  setUpvote(true);
-                  setUpvotesCount(upvotesCount + 1);
-                  const data = await fetchEndpoint('/vote/upvote/'+postId, 'POST');
-                  return;
-                }
-                if (upvote) {
-                  setUpvote(false);
-                  setUpvotesCount(upvotesCount - 1);
-                  const data = await fetchEndpoint('/vote/upvote/'+postId, 'DELETE');
-                  return;
-                }
-                setUpvote(true);
-                setDownvote(false);
-                setUpvotesCount(upvotesCount + 1);
-                setDownvotesCount(downvotesCount > 0 ? downvotesCount - 1 : 0);
-                const data = await fetchEndpoint('/vote/upvote/'+postId, 'PUT');
-              }}
+              onClick={handleVotesClick.bind(null, 'upvote')}
             >
               <Stack direction="row" spacing={0.5} alignItems="center">
-                <ArrowUpwardIcon fontSize="small" />
+                <ArrowUpwardOutlined fontSize="small" />
                 <Typography variant="body2">{upvotesCount}</Typography>
               </Stack>
             </IconButton>
@@ -177,28 +202,10 @@ const PostCard: React.FC<PostCardProps> = ({
                 color: downvote ? '#f44336' : '#fff',
                 transition: 'color 0.2s',
               }}
-              onClick={ async () => {
-                if (!upvote && !downvote) {
-                  setDownvote(true);
-                  setDownvotesCount(downvotesCount + 1);
-                  const data = await fetchEndpoint('vote/downvote/'+postId, 'POST');
-                  return;
-                }
-                else if (downvote) {
-                  setDownvote(false);
-                  setDownvotesCount(downvotesCount - 1);
-                  const data = await fetchEndpoint('vote/downvote/'+postId, 'DELETE');
-                  return;
-                }
-                setDownvote(true);
-                setUpvote(false);
-                setDownvotesCount(downvotesCount + 1);
-                setUpvotesCount(upvotesCount > 0 ? upvotesCount - 1 : 0);
-                const data = await fetchEndpoint('vote/downvote/'+postId, 'PUT');
-              }}
+              onClick={handleVotesClick.bind(null, 'downvote')}
             >
               <Stack direction="row" spacing={0.5} alignItems="center">
-                <ArrowDownwardIcon fontSize="small" />
+                <ArrowDownwardOutlined fontSize="small" />
                 <Typography variant="body2">{downvotesCount}</Typography>
               </Stack>
             </IconButton>

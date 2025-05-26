@@ -34,8 +34,9 @@ const Home: React.FC = () => {
   const fetchPosts = async () => {
     try {
       setLoading(true);
+      const userId = localStorage.getItem('userId');
       const endpoint = `/post?type=${sortBy === 'recent' ? 'fresh' : 'popular'}`;
-      const data = await fetchEndpoint(endpoint, 'GET');
+      const data = await fetchEndpoint(endpoint, 'GET', userId);
       setPosts(data);
       setError(null);
     } catch (err) {
