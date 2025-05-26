@@ -29,7 +29,7 @@ const Home: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'recent' | 'popular'>('recent');
   const navigate = useNavigate();
-  const { isAuthenticated, token } = useAuth();
+  const { isAuthenticated, token, isLoading } = useAuth(); // <-- add isLoading
   const { openLoginModal } = useModal();
 
   useEffect(() => {
@@ -39,7 +39,6 @@ const Home: React.FC = () => {
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      const userId = localStorage.getItem('userId');
       const endpoint = `/post?type=${sortBy === 'recent' ? 'fresh' : 'popular'}`;
       const data = await fetchEndpoint(endpoint, 'GET', isAuthenticated ? token : undefined);
       
@@ -67,6 +66,7 @@ const Home: React.FC = () => {
       }
       
       setPosts(data);
+      console.log('Fetched posts:', data);
       setError(null);
     } catch (err) {
       console.error('Error fetching posts:', err);
@@ -106,6 +106,16 @@ const Home: React.FC = () => {
       console.error('Error saving post:', err);
     }
   };
+
+  // Show auth loading spinner before anything else
+  if (isLoading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading memes...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="home-container" style={{marginTop: '6%'}}>

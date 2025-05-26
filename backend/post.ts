@@ -10,6 +10,8 @@ import { controllerWrapper } from '../utils/controllerWrapper';
 import { v4 } from 'uuid';
 import sequelize, { Op } from 'sequelize';
 import { countVotes, countComments} from './FetchPostData';
+import jwt, { decode } from 'jsonwebtoken';
+import { appConfig } from '../config/app';
 
 
 const storage = multer.diskStorage({
@@ -116,9 +118,15 @@ router.post(
 router.get(
     '/', 
     controllerWrapper(async (req: Request, res: Response) => {
-        // const userId = localStorage.getItem('userId') || null;
+        const token = req.headers.authorization?.split(' ')[1];
 
-        const userId = req.user;
+        let userId = null;
+
+        if (token) {
+            const decoded = jwt.verify(token, appConfig.jwtSecret);
+            userId = decoded.id;
+        }
+
 
         const type = req.query.type as string;
 
@@ -221,25 +229,26 @@ router.get(
         }
 
         const postsWithVotes = posts.map(post => {
-        const votes = voteMap[post.id] || { upvotes: 0, downvotes: 0 };
-        const commentCount = commentMap[post.id] || 0;
-        const tagIds = postIdToTagIds[post.id] || [];
-        const tagNames = tagIds.map(tagId => tagIdToName[tagId]).filter(Boolean);
-        const is_upvoted = userId ? (userVotesMap[post.id] ?? null) : null;
-        return {
-            ...post.toJSON(),
-            upvotes: votes.upvotes,
-            downvotes: votes.downvotes,
-            commentsCount: commentCount,
-            tags: tagNames,
-            is_upvoted: is_upvoted,
-        };
-    });
+            const votes = voteMap[post.id] || { upvotes: 0, downvotes: 0 };
+            const commentCount = commentMap[post.id] || 0;
+            const tagIds = postIdToTagIds[post.id] || [];
+            const tagNames = tagIds.map(tagId => tagIdToName[tagId]).filter(Boolean);
+            const is_upvoted = userId ? (userVotesMap[post.id] ?? null) : null;
+            console.log('is_upvoted:', is_upvoted);
+            return {
+                ...post.toJSON(),
+                upvotes: votes.upvotes,
+                downvotes: votes.downvotes,
+                commentsCount: commentCount,
+                tags: tagNames,
+                is_upvoted: is_upvoted,
+            };
+        });
 
         if (popular) {
             postsWithVotes.sort((a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes));
         }
-        
+        console.log(postsWithVotes);
         return postsWithVotes;
     })
 );
@@ -265,7 +274,7 @@ router.get(
                 ...post.toJSON(),
                 ...votesCount,
                 commentsCount: commentCount,
-                is_upvote: voteState?.is_upvote,
+                is_upvoted: voteState?.is_upvote,
             };
         }
         return {

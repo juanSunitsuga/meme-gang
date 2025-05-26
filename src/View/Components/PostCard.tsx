@@ -23,7 +23,6 @@ import ErrorBoundary from '../ErrorBoundary';
 import { fetchEndpoint } from '../FetchEndpoint';
 import { PollTwoTone } from '@mui/icons-material';
 import { on } from 'nodemailer/lib/xoauth2';
-import { fetchEndpoint } from '../FetchEndpoint';
 
 interface PostCardProps {
   postId: string;
@@ -52,12 +51,13 @@ const PostCard: React.FC<PostCardProps> = ({
   comments,
   onCommentClick,
   onSaveClick,
-  isSaved = false,  is_upvoted,
+  isSaved = false,  
+  is_upvoted,
   tags,
 }) => {
   const [showComments, setShowComments] = useState(false);
-  const [upvote, setUpvote] = useState(false);
-  const [downvote, setDownvote] = useState(false);
+  const [upvote, setUpvote] = useState(is_upvoted);
+  const [downvote, setDownvote] = useState(!is_upvoted);
   const [upvotesCount, setUpvotesCount] = useState(upvotes);
   const [downvotesCount, setDownvotesCount] = useState(downvotes);
 
