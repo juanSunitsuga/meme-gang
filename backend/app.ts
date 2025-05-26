@@ -14,6 +14,7 @@ import uploadRoutes from './Uploads';
 import commentsRoutes from './Comments';
 import commentReplyRoutes from './CommentsReply';
 import searchRoutes from './Search';
+import saveRoutes from './Save';
 import config from '../config/config.json';
 import cors from 'cors';
 import error from '../middleware/errorHandler';
@@ -52,6 +53,7 @@ app.use('/api', searchRoutes);
 app.use('/post', postRouter);
 app.use('/post/:id/comments', commentsRoutes); 
 app.use('/comments/:id/replies', commentReplyRoutes); 
+app.use('/save', saveRoutes)
 app.use('/vote', voteRouter);
 
 app.use((req, res) => {

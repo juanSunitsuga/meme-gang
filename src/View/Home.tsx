@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchEndpoint } from './FetchEndpoint';
 import PostCard from './Components/PostCard';
+import { useAuth } from './contexts/AuthContext';
+import { useModal } from './contexts/ModalContext';
 
-
+// Update Post interface to include isSaved property
 interface Post {
   id: string;
   title: string;
@@ -18,6 +20,7 @@ interface Post {
   downvotes: number;
   tags: string[];
   is_upvoted?: boolean;
+  isSaved?: boolean; // Add this to track saved status
 }
 
 const Home: React.FC = () => {
@@ -26,17 +29,43 @@ const Home: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'recent' | 'popular'>('recent');
   const navigate = useNavigate();
+  const { isAuthenticated, token } = useAuth();
+  const { openLoginModal } = useModal();
 
   useEffect(() => {
     fetchPosts();
-  }, [sortBy]);
+  }, [sortBy, isAuthenticated]);
 
   const fetchPosts = async () => {
     try {
       setLoading(true);
       const userId = localStorage.getItem('userId');
       const endpoint = `/post?type=${sortBy === 'recent' ? 'fresh' : 'popular'}`;
-      const data = await fetchEndpoint(endpoint, 'GET', userId);
+      const data = await fetchEndpoint(endpoint, 'GET', isAuthenticated ? token : undefined);
+      
+      if (isAuthenticated && token) {
+        try {
+          const savedPostsResponse = await fetchEndpoint('/save/saved-posts', 'GET', token);
+          
+          // Check if the response has a data property that's an array
+          const savedPostsArray = savedPostsResponse.data || savedPostsResponse;
+          
+          // Check if we now have an array before mapping
+          if (Array.isArray(savedPostsArray)) {
+            // Note: use post_id instead of postId to match your backend field
+            const savedPostIds = new Set(savedPostsArray.map((item: any) => item.post_id));
+            
+            data.forEach((post: Post) => {
+              post.isSaved = savedPostIds.has(post.id);
+            });
+          } else {
+            console.error('Saved posts response is not in expected format:', savedPostsArray);
+          }
+        } catch (err) {
+          console.error('Error fetching saved posts:', err);
+        }
+      }
+      
       setPosts(data);
       setError(null);
     } catch (err) {
@@ -44,6 +73,37 @@ const Home: React.FC = () => {
       setError('Failed to load posts. Please try again later.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Add this function to handle saving posts
+  const handleSavePost = async (postId: string) => {
+    if (!isAuthenticated) {
+      // Show login modal if user is not authenticated
+      openLoginModal();
+      return;
+    }
+
+    try {
+      // Find the post to toggle its saved status
+      const postIndex = posts.findIndex(post => post.id === postId);
+      if (postIndex === -1) return;
+
+      const currentSaveStatus = posts[postIndex].isSaved || false;
+      const endpoint = `/save/save-post/${postId}`;
+      const method = currentSaveStatus ? 'DELETE' : 'POST';
+      
+      const response = await fetchEndpoint(endpoint, method, token);
+      console.log(`Post ${currentSaveStatus ? 'unsaved' : 'saved'} successfully`, response);
+      
+      const updatedPosts = [...posts];
+      updatedPosts[postIndex] = {
+        ...updatedPosts[postIndex],
+        isSaved: !currentSaveStatus
+      };
+      setPosts(updatedPosts);
+    } catch (err) {
+      console.error('Error saving post:', err);
     }
   };
 
@@ -67,15 +127,18 @@ const Home: React.FC = () => {
         ) : (
           posts.map(post => (
             <PostCard
+              key={post.id}
               postId={post.id} 
               imageUrl={post.image_url}
               title={post.title}
-              username='Juan'
+              username={post.user?.name || 'Anonymous'}
               timeAgo='Just now'
               upvotes={post.upvotes}
               downvotes={post.downvotes}
               comments={post.commentsCount}
-              onCommentClick={() => navigate(`/post/${post.id}`)} // ini handler navigasinya
+              onCommentClick={() => navigate(`/post/${post.id}`)}
+              onSaveClick={() => handleSavePost(post.id)}
+              isSaved={post.isSaved || false}
               tags={post.tags}
               is_upvoted={post.is_upvoted}
             />

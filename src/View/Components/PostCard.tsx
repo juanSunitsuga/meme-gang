@@ -14,11 +14,15 @@ import ArrowDownwardOutlined from '@mui/icons-material/ArrowDownwardOutlined';
 import ArrowUpwardOutlined from '@mui/icons-material/ArrowUpwardOutlined';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
-import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import BookmarkIcon from '@mui/icons-material/Bookmark'; // For filled bookmark
+import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder'; // For outline bookmark
 import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import FetchComment from './FetchComments';
 import ErrorBoundary from '../ErrorBoundary';
+import { fetchEndpoint } from '../FetchEndpoint';
+import { PollTwoTone } from '@mui/icons-material';
+import { on } from 'nodemailer/lib/xoauth2';
 import { fetchEndpoint } from '../FetchEndpoint';
 
 interface PostCardProps {
@@ -30,7 +34,9 @@ interface PostCardProps {
   upvotes: number;
   downvotes: number;
   comments: number;
-  onCommentClick?: () => void;  // optional handler click comment
+  isSaved: boolean;
+  onCommentClick?: () => void;
+  onSaveClick?: () => void;
   tags: string[];
   is_upvoted?: boolean;
 }
@@ -45,7 +51,8 @@ const PostCard: React.FC<PostCardProps> = ({
   downvotes,
   comments,
   onCommentClick,
-  is_upvoted,
+  onSaveClick,
+  isSaved = false,  is_upvoted,
   tags,
 }) => {
   const [showComments, setShowComments] = useState(false);
@@ -66,6 +73,28 @@ const PostCard: React.FC<PostCardProps> = ({
       }, 200);
     }
   };
+
+  const handleSaveClick = async () => {
+    const token = localStorage.getItem('token')
+    
+    try {
+      // Send postId as part of the URL path, not as the body
+      const method = isSaved ? 'DELETE' : 'POST';
+      const endpoint = `/save/save-post/${postId}`;
+      
+      const response = await fetchEndpoint(endpoint, method, token);
+      
+      if (response) {
+        console.log(`Post ${isSaved ? 'unsaved' : 'saved'} successfully`);
+        onSaveClick && onSaveClick();
+      } else {
+        console.error(`Failed to ${isSaved ? 'unsave' : 'save'} post`);
+      }
+    } catch (error) {
+      console.error('Error saving post:', error);
+    }
+
+  }
 
   const handleVotesClick = async (type: 'upvote' | 'downvote') => {
     const token = localStorage.getItem('token');
@@ -110,7 +139,7 @@ const PostCard: React.FC<PostCardProps> = ({
       // Handle error appropriately, e.g., show a notification
     }
   }
-  
+
   return (
     <Card
       sx={{
@@ -226,8 +255,13 @@ const PostCard: React.FC<PostCardProps> = ({
           </Stack>
 
           <Stack direction="row" spacing={2}>
-            <IconButton sx={{ color: '#aaa' }}>
-              <BookmarkBorderIcon />
+            <IconButton
+              sx={{
+                color: isSaved ? '#1976d2' : '#aaa' // Change color when saved
+              }}
+              onClick={handleSaveClick}
+            >
+              {isSaved ? <BookmarkIcon /> : <BookmarkBorderIcon />}
             </IconButton>
             <IconButton sx={{ color: '#aaa' }}>
               <ShareOutlinedIcon />
