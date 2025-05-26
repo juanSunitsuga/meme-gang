@@ -28,16 +28,27 @@ router.get(
 
     const replies = await Comment.findAll({
       where: {
-        reply_to: id,
+        reply_to: id, // balasan ke main comment
       },
       include: [
         {
           model: User,
-          attributes: ['username', 'profilePicture', 'createdAt', ],
+          attributes: ['username', 'profilePicture', 'createdAt'],
+        },
+        {
+          model: Comment, // nested replies
+          as: 'replies',
+          include: [
+            {
+              model: User,
+              attributes: ['username', 'profilePicture', 'createdAt'],
+            },
+          ],
         },
       ],
       order: [['createdAt', 'DESC']],
     });
+
     
     return replies;
   })

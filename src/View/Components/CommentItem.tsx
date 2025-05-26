@@ -19,6 +19,7 @@ import ReplyIcon from "@mui/icons-material/Reply";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import { Link } from "react-router-dom";
 
 interface User {
   username: string;
@@ -31,11 +32,12 @@ export type Comment = {
   user?: User;
   content: string;
   parentId?: string | null;
-  reply_to?: string | null; // untuk backend yang pakai reply_to
+  reply_to?: string | null;
   createdAt: string;
   updatedAt?: string;
   profilePicture?: string;
   post_id?: string;
+  replies?: Comment[]; // for nested replies
 };
 
 interface CommentItemProps {
@@ -67,25 +69,36 @@ const formatDate = (dateString: string) => {
   });
 };
 
-// Membuat struktur pohon reply dari array flat
-type ReplyNode = Comment & { replies?: ReplyNode[] };
-
-function buildReplyTree(replies: Comment[], parentId: string): ReplyNode[] {
-  return replies
-    .filter(r => (r.parentId ?? r.reply_to) === parentId)
-    .map(r => ({
-      ...r,
-      replies: buildReplyTree(replies, r.id),
-    }));
+// Helper untuk mewarnai mention dan link ke profile
+function renderContentWithMention(content: string) {
+  const parts = content.split(/(@\w+)/g);
+  return parts.map((part, idx) =>
+    /^@\w+/.test(part) ? (
+      <Link
+        key={idx}
+        to={`/profile/${part.slice(1)}`}
+        style={{ color: "#4fa3ff", fontWeight: 600, textDecoration: "none" }}
+      >
+        {part}
+      </Link>
+    ) : (
+      <span key={idx}>{part}</span>
+    )
+  );
 }
 
-function renderReplies(replyNodes: ReplyNode[], onDelete: (id: string) => void) {
+// Render semua reply rata kiri (tanpa indent)
+function renderRepliesFlat(replyNodes: Comment[], onDelete: (id: string) => void) {
   return replyNodes.map((reply) => (
-    <CommentItem
-      key={reply.id}
-      comment={reply}
-      onDelete={onDelete}
-    />
+    <Box key={reply.id} sx={{ mt: 1 }}>
+      <CommentItem
+        comment={reply}
+        onDelete={onDelete}
+      />
+      {reply.replies && reply.replies.length > 0 && (
+        renderRepliesFlat(reply.replies, onDelete)
+      )}
+    </Box>
   ));
 }
 
@@ -135,6 +148,26 @@ const CommentItem = ({
     setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
 
+  // Parse nested replies dari backend
+  function parseReplies(data: any[]): Comment[] {
+    return data.map((reply) => ({
+      id: reply.id,
+      user: {
+        username: reply.user?.username || reply.user?.name || "",
+        avatar: reply.user?.avatar || reply.user?.profilePicture || "",
+        profilePicture: reply.user?.profilePicture || "",
+      },
+      content: reply.content || reply.text || "",
+      parentId: reply.parentId ?? reply.reply_to,
+      reply_to: reply.reply_to,
+      createdAt: reply.createdAt,
+      updatedAt: reply.updatedAt,
+      profilePicture: reply.user?.avatar || reply.user?.profilePicture || "",
+      post_id: reply.post_id,
+      replies: reply.replies ? parseReplies(reply.replies) : [],
+    }));
+  }
+
   const handleShowReplies = async () => {
     if (showReplies) {
       setShowReplies(false);
@@ -142,32 +175,17 @@ const CommentItem = ({
     }
     setLoading(true);
     try {
-      // Ambil semua reply (langsung & nested) dari backend
       const res = await fetch(`http://localhost:3000/comments/${comment.id}`);
       const data = await res.json();
 
-      // Jika backend mengirim { mainComment, replies }
-      const repliesArray: Comment[] = Array.isArray(data)
-        ? data
-        : data.replies || [];
-
-      setReplies(
-        repliesArray.map((reply: any) => ({
-          id: reply.id,
-          user: {
-            username: reply.user?.username || reply.user?.name || "",
-            avatar: reply.user?.avatar || reply.user?.profilePicture || "",
-            profilePicture: reply.user?.profilePicture || "",
-          },
-          content: reply.content || reply.text || "",
-          parentId: reply.parentId ?? reply.reply_to ?? comment.id,
-          reply_to: reply.reply_to,
-          createdAt: reply.createdAt,
-          updatedAt: reply.updatedAt,
-          profilePicture: reply.user?.avatar || reply.user?.profilePicture || "",
-          post_id: reply.post_id,
-        }))
-      );
+      // Support nested replies dari backend
+      let repliesArray: Comment[] = [];
+      if (Array.isArray(data)) {
+        repliesArray = parseReplies(data);
+      } else if (Array.isArray(data.replies)) {
+        repliesArray = parseReplies(data.replies);
+      }
+      setReplies(repliesArray);
       setShowReplies(true);
     } catch (err) {
       console.error("Failed to fetch replies", err);
@@ -217,6 +235,7 @@ const CommentItem = ({
         updatedAt: newReplyRaw.updatedAt,
         profilePicture: newReplyRaw.user?.avatar || newReplyRaw.user?.profilePicture || "",
         post_id: newReplyRaw.post_id,
+        replies: [],
       };
       setReplies((prev) => [...prev, newReply]);
       setReplyContent("");
@@ -304,7 +323,7 @@ const CommentItem = ({
         borderRadius: 3,
         p: 2,
         mb: comment.parentId || comment.reply_to ? 1 : 2,
-        ml: comment.parentId || comment.reply_to ? 4 : 0,
+        ml: 0, // Tidak menjorok ke dalam
         boxShadow: comment.parentId || comment.reply_to ? "none" : "0 2px 8px rgba(0,0,0,0.18)",
         position: "relative",
       }}
@@ -395,7 +414,7 @@ const CommentItem = ({
             </Box>
           ) : (
             <Typography variant="body1" sx={{ mt: 0.5, wordBreak: "break-word" }}>
-              {currentContent}
+              {renderContentWithMention(currentContent)}
             </Typography>
           )}
 
@@ -479,7 +498,7 @@ const CommentItem = ({
                   Tidak ada reply untuk komentar ini
                 </Typography>
               ) : (
-                renderReplies(buildReplyTree(replies, comment.id), handleDeleteReply)
+                renderRepliesFlat(replies, handleDeleteReply)
               )}
             </Box>
           </Collapse>
