@@ -6,12 +6,15 @@ export const fetchEndpoint = async (
 ) => {
     try {
         const API_URL = 'http://localhost:3000';
-        const headers: HeadersInit = {
-            'Content-Type': 'application/json',
-        };
+        const headers: HeadersInit = {};
 
         if (token) {
             headers.Authorization = `Bearer ${token}`;
+        }
+
+        // Don't set Content-Type for FormData - browser will set it correctly with boundary
+        if (body && !(body instanceof FormData)) {
+            headers['Content-Type'] = 'application/json';
         }
 
         const options: RequestInit = {
@@ -20,12 +23,13 @@ export const fetchEndpoint = async (
             credentials: 'include',
         };
 
-        if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-            options.body = JSON.stringify(body);
+        if (body) {
+            // Don't stringify FormData objects
+            options.body = body instanceof FormData ? body : JSON.stringify(body);
         }
 
         const response = await fetch(`${API_URL}${endpoint}`, options);
-        
+
         // Check if response is ok
         if (!response.ok) {
             // Try to parse error as JSON

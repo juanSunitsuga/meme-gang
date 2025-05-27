@@ -57,7 +57,7 @@ const PostCard: React.FC<PostCardProps> = ({
 }) => {
   const [showComments, setShowComments] = useState(false);
   const [upvote, setUpvote] = useState(is_upvoted);
-  const [downvote, setDownvote] = useState(!is_upvoted);
+  const [downvote, setDownvote] = useState(!is_upvoted ? false : undefined);
   const [upvotesCount, setUpvotesCount] = useState(upvotes);
   const [downvotesCount, setDownvotesCount] = useState(downvotes);
 
