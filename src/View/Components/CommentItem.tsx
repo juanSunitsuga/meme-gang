@@ -11,6 +11,7 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  Fade,
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -45,6 +46,7 @@ interface CommentItemProps {
   onDelete?: (commentId: string) => void;
   onEdit?: (commentId: string, newContent: string) => void;
   scrollToTargetUsername?: string;
+  onDeleted?: (commentId: string) => void; // New prop to handle deletion
 }
 
 const formatDate = (dateString: string) => {
@@ -88,15 +90,25 @@ function renderContentWithMention(content: string) {
 }
 
 // Render semua reply rata kiri (tanpa indent)
-function renderRepliesFlat(replyNodes: Comment[], onDelete: (id: string) => void) {
-  return replyNodes.map((reply) => (
+function renderRepliesFlat(
+  replyNodes: Comment[],
+  onDelete: (id: string) => void,
+  onDeleted: (id: string) => void
+) {
+  // Sort replies by createdAt in descending order (newest first)
+  const sortedReplies = [...replyNodes].sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  return sortedReplies.map((reply) => (
     <Box key={reply.id} sx={{ mt: 1 }}>
       <CommentItem
         comment={reply}
         onDelete={onDelete}
+        onDeleted={onDeleted}
       />
       {reply.replies && reply.replies.length > 0 && (
-        renderRepliesFlat(reply.replies, onDelete)
+        renderRepliesFlat(reply.replies, onDelete, onDeleted)
       )}
     </Box>
   ));
@@ -106,6 +118,7 @@ const CommentItem = ({
   comment,
   onDelete,
   scrollToTargetUsername,
+  onDeleted,
 }: CommentItemProps) => {
   const [replies, setReplies] = useState<Comment[]>([]);
   const [showReplies, setShowReplies] = useState(false);
@@ -117,6 +130,7 @@ const CommentItem = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [isDeleted, setIsDeleted] = useState(false); // New state to track deletion
 
   // State untuk konten dan updatedAt
   const [currentContent, setCurrentContent] = useState(comment.content);
@@ -185,6 +199,12 @@ const CommentItem = ({
       } else if (Array.isArray(data.replies)) {
         repliesArray = parseReplies(data.replies);
       }
+      
+      // Sort replies by createdAt in descending order (newest first)
+      repliesArray.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
       setReplies(repliesArray);
       setShowReplies(true);
     } catch (err) {
@@ -237,7 +257,9 @@ const CommentItem = ({
         post_id: newReplyRaw.post_id,
         replies: [],
       };
-      setReplies((prev) => [...prev, newReply]);
+      
+      // Add new reply at the beginning of the array (top position)
+      setReplies((prev) => [newReply, ...prev]);
       setReplyContent("");
       setShowReplyInput(false);
     } catch (err) {
@@ -250,7 +272,6 @@ const CommentItem = ({
 
   const handleDeleteClick = async () => {
     handleMenuClose();
-    console.log("Menghapus komentar:", comment.id);
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`http://localhost:3000/comments/${comment.id}`, {
@@ -260,7 +281,15 @@ const CommentItem = ({
         },
       });
       if (!res.ok) throw new Error("Failed to delete comment");
-      if (onDelete) onDelete(comment.id);
+      
+      // Trigger deletion animation
+      setIsDeleted(true);
+      
+      // Wait for animation to complete before calling onDeleted
+      setTimeout(() => {
+        if (onDelete) onDelete(comment.id);
+        if (onDeleted) onDeleted(comment.id);
+      }, 300);
     } catch (err) {
       console.error("Gagal menghapus komentar", err);
       alert("Gagal menghapus komentar");
@@ -314,136 +343,126 @@ const CommentItem = ({
     );
   };
 
+  if (isDeleted) {
+    return null; // Or you can return a fade-out animation
+  }
+
   return (
-    <Paper
-      ref={commentRef}
-      elevation={comment.parentId || comment.reply_to ? 0 : 2}
-      sx={{
-        bgcolor: "#18191c",
-        color: "#f1f1f1",
-        borderRadius: 3,
-        p: 2,
-        mb: comment.parentId || comment.reply_to ? 1 : 2,
-        ml: 0, // Tidak menjorok ke dalam
-        boxShadow: comment.parentId || comment.reply_to ? "none" : "0 2px 8px rgba(0,0,0,0.18)",
-        position: "relative",
-      }}
-    >
-      <IconButton
-        size="small"
-        sx={{ position: "absolute", top: 8, right: 8, color: "#b0b0b0" }}
-        onClick={handleMenuOpen}
+    <Fade in={!isDeleted} timeout={300}>
+      <Paper
+        ref={commentRef}
+        elevation={comment.parentId || comment.reply_to ? 0 : 2}
+        sx={{
+          bgcolor: "#18191c",
+          color: "#f1f1f1",
+          borderRadius: 3,
+          p: 2,
+          mb: comment.parentId || comment.reply_to ? 1 : 2,
+          ml: 0, // Tidak menjorok ke dalam
+          boxShadow: comment.parentId || comment.reply_to ? "none" : "0 2px 8px rgba(0,0,0,0.18)",
+          position: "relative",
+          transition: "opacity 0.3s ease, transform 0.3s ease",
+          opacity: isDeleted ? 0 : 1,
+          transform: isDeleted ? "translateX(-100%)" : "translateX(0)",
+        }}
       >
-        <MoreVertIcon />
-      </IconButton>
-      <Menu
-        anchorEl={anchorEl}
-        open={openMenu}
-        onClose={handleMenuClose}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
-        transformOrigin={{ vertical: "top", horizontal: "right" }}
-      >
-        <MenuItem
-          onClick={() => {
-            setIsEditing(true);
-            setEditContent(currentContent);
-            handleMenuClose();
-          }}
+        <IconButton
+          size="small"
+          sx={{ position: "absolute", top: 8, right: 8, color: "#b0b0b0" }}
+          onClick={handleMenuOpen}
         >
-          <EditIcon fontSize="small" sx={{ mr: 1 }} />
-          Edit
-        </MenuItem>
-        <MenuItem onClick={handleDeleteClick} sx={{ color: "#ff5252" }}>
-          <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
-          Delete
-        </MenuItem>
-      </Menu>
+          <MoreVertIcon />
+        </IconButton>
+        <Menu
+          anchorEl={anchorEl}
+          open={openMenu}
+          onClose={handleMenuClose}
+          anchorOrigin={{ vertical: "top", horizontal: "right" }}
+          transformOrigin={{ vertical: "top", horizontal: "right" }}
+        >
+          <MenuItem
+            onClick={() => {
+              setIsEditing(true);
+              setEditContent(currentContent);
+              handleMenuClose();
+            }}
+          >
+            <EditIcon fontSize="small" sx={{ mr: 1 }} />
+            Edit
+          </MenuItem>
+          <MenuItem onClick={handleDeleteClick} sx={{ color: "#ff5252" }}>
+            <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+            Delete
+          </MenuItem>
+        </Menu>
 
-      <Stack direction="row" spacing={2}>
-        <Avatar
-          src={comment.profilePicture || comment.user?.avatar || comment.user?.profilePicture || undefined}
-          alt={comment.user?.username || ""}
-          sx={{ width: 36, height: 36, bgcolor: "#23272f", mt: 0.5 }}
-        />
-        <Box flex={1}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#4fa3ff" }}>
-              {comment.user?.username}
-            </Typography>
-            {renderTimestamp()}
-          </Stack>
+        <Stack direction="row" spacing={2}>
+          <Avatar
+            src={comment.profilePicture || comment.user?.avatar || comment.user?.profilePicture || undefined}
+            alt={comment.user?.username || ""}
+            sx={{ width: 36, height: 36, bgcolor: "#23272f", mt: 0.5 }}
+          />
+          <Box flex={1}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#4fa3ff" }}>
+                {comment.user?.username}
+              </Typography>
+              {renderTimestamp()}
+            </Stack>
 
-          {/* Edit Mode */}
-          {isEditing ? (
-            <Box sx={{ mt: 1, display: "flex", flexDirection: "column", gap: 1 }}>
-              <TextField
-                size="small"
-                variant="outlined"
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                sx={{
-                  bgcolor: "#23272f",
-                  input: { color: "#f1f1f1" },
-                }}
-                multiline
-                minRows={1}
-                maxRows={4}
-                autoFocus
-              />
-              <Box sx={{ display: "flex", gap: 1 }}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleSaveEdit}
-                  disabled={savingEdit || !editContent.trim()}
-                  sx={{ borderRadius: 2, minWidth: 0, px: 2 }}
-                >
-                  {savingEdit ? <CircularProgress size={18} /> : "Simpan"}
-                </Button>
-                <Button
+            {/* Edit Mode */}
+            {isEditing ? (
+              <Box sx={{ mt: 1, display: "flex", flexDirection: "column", gap: 1 }}>
+                <TextField
+                  size="small"
                   variant="outlined"
-                  color="inherit"
-                  onClick={() => {
-                    setIsEditing(false);
-                    setEditContent(currentContent);
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  sx={{
+                    bgcolor: "#23272f",
+                    input: { color: "#f1f1f1" },
                   }}
-                  sx={{ borderRadius: 2, minWidth: 0, px: 2, color: "#b0b0b0" }}
-                >
-                  Batal
-                </Button>
+                  multiline
+                  minRows={1}
+                  maxRows={4}
+                  autoFocus
+                />
+                <Box sx={{ display: "flex", gap: 1 }}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleSaveEdit}
+                    disabled={savingEdit || !editContent.trim()}
+                    sx={{ borderRadius: 2, minWidth: 0, px: 2 }}
+                  >
+                    {savingEdit ? <CircularProgress size={18} /> : "Simpan"}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="inherit"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setEditContent(currentContent);
+                    }}
+                    sx={{ borderRadius: 2, minWidth: 0, px: 2, color: "#b0b0b0" }}
+                  >
+                    Batal
+                  </Button>
+                </Box>
               </Box>
-            </Box>
-          ) : (
-            <Typography variant="body1" sx={{ mt: 0.5, wordBreak: "break-word" }}>
-              {renderContentWithMention(currentContent)}
-            </Typography>
-          )}
+            ) : (
+              <Typography variant="body1" sx={{ mt: 0.5, wordBreak: "break-word" }}>
+                {renderContentWithMention(currentContent)}
+              </Typography>
+            )}
 
-          <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
-            <Button
-              size="small"
-              startIcon={<ReplyIcon sx={{ color: "#4fa3ff" }} />}
-              onClick={handleReply}
-              sx={{
-                color: "#4fa3ff",
-                textTransform: "none",
-                fontWeight: 500,
-                borderRadius: 2,
-                px: 1.5,
-                minWidth: 0,
-                "&:hover": { bgcolor: "#23272f" },
-              }}
-            >
-              Reply
-            </Button>
-
-            {!comment.parentId && !comment.reply_to && (
+            <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
               <Button
                 size="small"
-                startIcon={showReplies ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                onClick={handleShowReplies}
+                startIcon={<ReplyIcon sx={{ color: "#4fa3ff" }} />}
+                onClick={handleReply}
                 sx={{
-                  color: "#b0b0b0",
+                  color: "#4fa3ff",
                   textTransform: "none",
                   fontWeight: 500,
                   borderRadius: 2,
@@ -452,60 +471,79 @@ const CommentItem = ({
                   "&:hover": { bgcolor: "#23272f" },
                 }}
               >
-                {showReplies ? "Hide Replies" : "Replies"}
+                Reply
               </Button>
-            )}
-          </Box>
 
-          {showReplyInput && (
-            <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
-              <TextField
-                size="small"
-                variant="outlined"
-                placeholder={`Reply ke ${comment.user?.username ?? "user"}...`}
-                value={replyContent}
-                onChange={(e) => setReplyContent(e.target.value)}
-                sx={{
-                  bgcolor: "#23272f",
-                  input: { color: "#f1f1f1" },
-                  flex: 1,
-                }}
-                multiline
-                minRows={1}
-                maxRows={4}
-              />
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleSendReply}
-                disabled={sendingReply || !replyContent.trim()}
-                sx={{ borderRadius: 2, minWidth: 0, px: 2 }}
-              >
-                {sendingReply ? <CircularProgress size={18} /> : "Kirim"}
-              </Button>
-            </Box>
-          )}
-
-          {loading && (
-            <Box sx={{ mt: 1 }}>
-              <CircularProgress size={20} sx={{ color: "#4fa3ff" }} />
-            </Box>
-          )}
-
-          <Collapse in={showReplies} timeout="auto" unmountOnExit>
-            <Box sx={{ mt: 1 }}>
-              {replies.length === 0 && !loading ? (
-                <Typography variant="body2" sx={{ color: "#b0b0b0", fontStyle: "italic", ml: 2 }}>
-                  Tidak ada reply untuk komentar ini
-                </Typography>
-              ) : (
-                renderRepliesFlat(replies, handleDeleteReply)
+              {!comment.parentId && !comment.reply_to && (
+                <Button
+                  size="small"
+                  startIcon={showReplies ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                  onClick={handleShowReplies}
+                  sx={{
+                    color: "#b0b0b0",
+                    textTransform: "none",
+                    fontWeight: 500,
+                    borderRadius: 2,
+                    px: 1.5,
+                    minWidth: 0,
+                    "&:hover": { bgcolor: "#23272f" },
+                  }}
+                >
+                  {showReplies ? "Hide Replies" : "Replies"}
+                </Button>
               )}
             </Box>
-          </Collapse>
-        </Box>
-      </Stack>
-    </Paper>
+
+            {showReplyInput && (
+              <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
+                <TextField
+                  size="small"
+                  variant="outlined"
+                  placeholder={`Reply ke ${comment.user?.username ?? "user"}...`}
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                  sx={{
+                    bgcolor: "#23272f",
+                    input: { color: "#f1f1f1" },
+                    flex: 1,
+                  }}
+                  multiline
+                  minRows={1}
+                  maxRows={4}
+                />
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleSendReply}
+                  disabled={sendingReply || !replyContent.trim()}
+                  sx={{ borderRadius: 2, minWidth: 0, px: 2 }}
+                >
+                  {sendingReply ? <CircularProgress size={18} /> : "Kirim"}
+                </Button>
+              </Box>
+            )}
+
+            {loading && (
+              <Box sx={{ mt: 1 }}>
+                <CircularProgress size={20} sx={{ color: "#4fa3ff" }} />
+              </Box>
+            )}
+
+            <Collapse in={showReplies} timeout="auto" unmountOnExit>
+              <Box sx={{ mt: 1 }}>
+                {replies.length === 0 && !loading ? (
+                  <Typography variant="body2" sx={{ color: "#b0b0b0", fontStyle: "italic", ml: 2 }}>
+                    Tidak ada reply untuk komentar ini
+                  </Typography>
+                ) : (
+                  renderRepliesFlat(replies, handleDeleteReply, handleDeleteReply)
+                )}
+              </Box>
+            </Collapse>
+          </Box>
+        </Stack>
+      </Paper>
+    </Fade>
   );
 };
 

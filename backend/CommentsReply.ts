@@ -36,7 +36,7 @@ router.get(
             attributes: ['username', 'profilePicture'],
           },
         ],
-        order: [['createdAt', 'DESC']],
+        order: [['createdAt', 'ASC']],
       });
 
       const repliesWithChildren = await Promise.all(
