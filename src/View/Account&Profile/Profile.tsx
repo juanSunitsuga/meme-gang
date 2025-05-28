@@ -91,16 +91,29 @@ const Profile: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log("Fetching profile for:", username);
-    if (!username) return;
+    // Ambil username user yang sedang login
+    const fetchCurrentUser = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return setCurrentUser(null);
+      try {
+        const data = await fetchEndpoint("/profile/me", "GET", token);
+        setCurrentUser(data.username);
+      } catch {
+        setCurrentUser(null);
+      }
+    };
+    fetchCurrentUser();
+  }, []);
 
+  useEffect(() => {
+    if (!username) return;
 
     const fetchUser = async () => {
       try {
         const endpoint = `/profile/${username}`;
-        console.log("\n\n\n\n\nFetching user profile from:", endpoint);
         const data = await fetchEndpoint(endpoint, 'GET');
         setUser(data);
       } catch (err) {
@@ -134,7 +147,6 @@ const Profile: React.FC = () => {
     );
   }, [username]);
 
-  // Handler untuk delete comment (dummy, ganti sesuai kebutuhan backend)
   const handleDeleteComment = async (commentId: string) => {
     const token = localStorage.getItem("token");
     if (!window.confirm("Hapus komentar ini?")) return;
@@ -273,7 +285,7 @@ const Profile: React.FC = () => {
                     <Box flex={1}>
                       <Stack direction="row" spacing={1} alignItems="center">
                         <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#4fa3ff" }}>
-                          {user.username}
+                          {comment.user?.username || user.username}
                         </Typography>
                         <Typography variant="caption" sx={{ color: "#b0b0b0" }}>
                           {formatDate(comment.createdAt)}
@@ -283,18 +295,20 @@ const Profile: React.FC = () => {
                         {renderContentWithMention(comment.content)}
                       </Typography>
                     </Box>
-                    {/* Tombol aksi */}
-                    <Stack direction="row" spacing={0.5} alignItems="center">
-                      <Tooltip title="Delete">
-                        <IconButton
-                          size="small"
-                          sx={{ color: "#ff5252" }}
-                          onClick={() => handleDeleteComment(comment.id)}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Stack>
+                    {/* Tombol aksi hanya jika user login adalah pemilik comment */}
+                    {comment.user?.username === currentUser && (
+                      <Stack direction="row" spacing={0.5} alignItems="center">
+                        <Tooltip title="Delete">
+                          <IconButton
+                            size="small"
+                            sx={{ color: "#ff5252" }}
+                            onClick={() => handleDeleteComment(comment.id)}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    )}
                   </Stack>
                 </Paper>
               ))}
