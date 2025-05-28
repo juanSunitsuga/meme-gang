@@ -18,7 +18,7 @@ import saveRoutes from './Save';
 import config from '../config/config.json';
 import cors from 'cors';
 import error from '../middleware/errorHandler';
-import postRouter from './post';
+import postRouter from './PostController';
 import voteRouter from './voteController';
 
 const app = express();

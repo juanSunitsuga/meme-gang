@@ -13,7 +13,6 @@ import {
 import ArrowDownwardOutlined from '@mui/icons-material/ArrowDownwardOutlined';
 import ArrowUpwardOutlined from '@mui/icons-material/ArrowUpwardOutlined';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
-import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
 import BookmarkIcon from '@mui/icons-material/Bookmark'; // For filled bookmark
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder'; // For outline bookmark
 import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
@@ -21,8 +20,6 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import FetchComment from './FetchComments';
 import ErrorBoundary from '../ErrorBoundary';
 import { fetchEndpoint } from '../FetchEndpoint';
-import { PollTwoTone } from '@mui/icons-material';
-import { on } from 'nodemailer/lib/xoauth2';
 
 interface PostCardProps {
   postId: string;

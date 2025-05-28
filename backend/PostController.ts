@@ -26,7 +26,6 @@ const upload = multer({ storage });
 
 const router = Router();
 
-
 router.post(
     '/submit',
     authMiddleware,
@@ -35,6 +34,11 @@ router.post(
         const { title } = req.body;
         const userId = req.user;
         const tags: string[] = Array.isArray(req.body.tag) ? req.body.tag : [req.body.tag];
+
+        if (!title) {
+            res.locals.errorCode = 400;
+            throw new Error('Title is required');
+        }
 
         if (!userId) {
             res.locals.errorCode = 401;
@@ -45,15 +49,6 @@ router.post(
             res.locals.errorCode = 400;
             throw new Error('Image file is required');
         }
-
-        // Check if the tag already exists in database
-        const existingTags = await Tag.findAll({
-            where: {
-                tag_name: {
-                    [Op.in]: tags,
-                },
-            },
-        });
 
         // Create the post first to get its ID
         const imageUrl = `/uploads/posts/${req.file.filename}`; // Public URL path
@@ -68,7 +63,16 @@ router.post(
         });
 
         // Execute if user added tags to the post
-        if (tags) {
+        if (tags.length > 0) {
+            //Fetch existing tags from the database
+            const existingTags = await Tag.findAll({
+                where: {
+                    tag_name: {
+                        [Op.in]: tags,
+                    },
+                },
+            });
+
             // Get the tag names that exist
             const existingTagNames = existingTags.map(tag => tag.tag_name);
     
@@ -107,14 +111,12 @@ router.post(
             upvotes: 0,
             downvotes: 0,
             commentsCount: 0,
-            ...tags,
-        }
-
+            tags: tags || [],
+        };
 
         return result;
     })
 );
-
 
 router.get(
     '/', 
@@ -127,7 +129,6 @@ router.get(
             const decoded = jwt.verify(token, appConfig.jwtSecret);
             userId = decoded.id;
         }
-
 
         const type = req.query.type as string;
 
@@ -283,6 +284,125 @@ router.get(
             ...votesCount,
             commentsCount: commentCount,
         };
+    })
+);
+
+router.put(
+    '/:id',
+    authMiddleware,
+    upload.single('image'),
+    controllerWrapper(async (req: Request, res: Response) => {
+        const postId = req.params.id;
+        const userId = req.user?.id;
+        if (!userId) {
+            res.locals.errorCode = 401;
+            throw new Error('Unauthorized');
+        }
+        const post = await Post.findByPk(postId);
+        if (!post) {
+            res.locals.errorCode = 404;
+            throw new Error('Post not found');
+        }
+        if (post.user_id !== userId) {
+            res.locals.errorCode = 403;
+            throw new Error('Forbidden: You can only edit your own posts');
+        }
+
+        const { title } = req.body;
+        const tags: string[] = Array.isArray(req.body.tag) ? req.body.tag : [req.body.tag];
+
+        if (!title || !tags) {
+            res.locals.errorCode = 400;
+            throw new Error('Title and tags are required');
+        }
+
+        let imageUrl = post.image_url;
+
+        if (req.file) {
+            imageUrl = `/uploads/posts/${req.file.filename}`;
+        }
+
+        post.title = title;
+        post.image_url = imageUrl;
+        await post.save();
+
+        // Update tags
+        await PostTag.destroy({ where: { post_id: postId } });
+
+        // Check if the tag already exists in database
+        const existingTags = await Tag.findAll({
+            where: {
+                tag_name: {
+                    [Op.in]: tags,
+                },
+            },
+        });
+
+        // Get the tag names that exist
+        const existingTagNames = existingTags.map(tag => tag.tag_name);
+
+        // Find tags that do not exist yet
+        const newTags = tags.filter(tag => !existingTagNames.includes(tag));
+
+        // Insert new tags into the Tags table
+        const createdTags = await Promise.all(
+            newTags.map(async (tagName) => {
+                return await Tag.create({
+                    id: v4(),
+                    tag_name: tagName,
+                });
+            })
+        );
+
+        // Combine existing and newly created tags
+        const allTagInstances = [
+            ...existingTags,
+            ...createdTags
+        ];
+
+        // Add entries to PostTags table using the PostTags model
+        await Promise.all(
+            allTagInstances.map(async (tag) => {
+                await PostTag.create({
+                    post_id: post.id,
+                    tag_id: tag.id,
+                });
+            })
+        );
+        const result = {
+            ...post.toJSON(),
+            upvotes: 0,
+            downvotes: 0,
+            commentsCount: 0,
+            tags: tags,
+        };
+        return result;
+    }
+));
+
+router.delete(
+    '/:id',
+    authMiddleware,
+    controllerWrapper(async (req: Request, res: Response) => {
+        const postId = req.params.id;
+        const userId = req.user?.id;
+        if (!userId) {
+            res.locals.errorCode = 401;
+            throw new Error('Unauthorized');
+        }
+        const post = await Post.findByPk(postId);
+        if (!post) {
+            res.locals.errorCode = 404;
+            throw new Error('Post not found');
+        }
+        if (post.user_id !== userId) {
+            res.locals.errorCode = 403;
+            throw new Error('Forbidden: You can only delete your own posts');
+        }
+        await Post.destroy({ where: { id: postId } });
+        await Votes.destroy({ where: { post_id: postId } });
+        await Comment.destroy({ where: { post_id: postId } });
+        return { message: 'Post deleted successfully' };
     })
 );
 
