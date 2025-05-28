@@ -7,6 +7,9 @@ import fs from 'fs';
 import bodyParser from 'body-parser';
 import authMiddleware from '../middleware/Auth';
 import { controllerWrapper } from '../utils/controllerWrapper';
+import { Post } from '../models/Post';
+import { Comment } from '../models/Comment';
+
 
 declare global {
     namespace Express {
@@ -183,5 +186,33 @@ router.post('/change-password', authMiddleware, controllerWrapper(async (req: Re
         message: 'Password changed successfully'
     };
 }));
+
+
+router.get('/post', authMiddleware, controllerWrapper(async (req, res) => {
+
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const posts = await Post.findAll({
+      where: { user_id: req.user.id },
+      order: [['createdAt', 'DESC']],
+    });
+    
+    return posts;
+  
+}));
+
+router.get('/comment', authMiddleware, controllerWrapper(async (req, res) => {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const comments = await Comment.findAll({
+      where: { user_id: req.user.id },
+      order: [['createdAt', 'DESC']],
+    });
+    return comments;
+}));
+
 
 export default router;

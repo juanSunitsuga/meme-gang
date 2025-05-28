@@ -73,20 +73,31 @@ const formatDate = (dateString: string) => {
 
 // Helper untuk mewarnai mention dan link ke profile
 function renderContentWithMention(content: string) {
-  const parts = content.split(/(@\w+)/g);
-  return parts.map((part, idx) =>
-    /^@\w+/.test(part) ? (
-      <Link
-        key={idx}
-        to={`/profile/${part.slice(1)}`}
-        style={{ color: "#4fa3ff", fontWeight: 600, textDecoration: "none" }}
-      >
-        {part}
-      </Link>
-    ) : (
-      <span key={idx}>{part}</span>
-    )
-  );
+  const parts = content.split(/(@\w+)/g); // Misah berdasarkan mention
+
+  return parts.map((part, idx) => {
+    const match = part.match(/^@(\w+)/); // Tangkap username tanpa '@'
+
+    if (match) {
+      const username = match[1]; // Ambil 'username' doang
+
+      return (
+        <Link
+          key={idx}
+          to={`/profile/${username}`}
+          style={{
+            color: "#4fa3ff",
+            fontWeight: 600,
+            textDecoration: "none",
+          }}
+        >
+          @{username}
+        </Link>
+      );
+    }
+
+    return <span key={idx}>{part}</span>;
+  });
 }
 
 // Render semua reply rata kiri (tanpa indent)
@@ -342,6 +353,22 @@ const CommentItem = ({
       </Typography>
     );
   };
+     const getAvatarUrl = (avatarPath: string | undefined) => {
+    if (!avatarPath) return undefined;
+
+    if (avatarPath.startsWith('http')) {
+      return avatarPath;
+    }
+
+    const filename = avatarPath.includes('/')
+      ? avatarPath.split('/').pop()
+      : avatarPath;
+
+    if (!filename) return undefined;
+
+    const cacheBuster = avatarPath.includes('?t=') ? '' : `?t=${new Date().getTime()}`;
+    return `/uploads/avatars/${filename}${cacheBuster}`;
+  };
 
   if (isDeleted) {
     return null; // Or you can return a fade-out animation
@@ -398,7 +425,9 @@ const CommentItem = ({
 
         <Stack direction="row" spacing={2}>
           <Avatar
-            src={comment.profilePicture || comment.user?.avatar || comment.user?.profilePicture || undefined}
+            src={getAvatarUrl(comment.profilePicture || comment.user?.avatar || comment.user?.profilePicture || undefined)} 
+
+            // src={comment.profilePicture || comment.user?.avatar || comment.user?.profilePicture || undefined}
             alt={comment.user?.username || ""}
             sx={{ width: 36, height: 36, bgcolor: "#23272f", mt: 0.5 }}
           />

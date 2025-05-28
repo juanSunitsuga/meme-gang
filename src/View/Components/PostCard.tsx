@@ -40,6 +40,7 @@ interface PostCardProps {
   onCommentClick?: () => void;
   onSaveClick?: () => void;
   tags: string[];
+  
 }
 
 const PostCard: React.FC<PostCardProps> = ({
@@ -55,6 +56,7 @@ const PostCard: React.FC<PostCardProps> = ({
   onSaveClick,
   isSaved = false,
   tags,
+  
 }) => {
   const [showComments, setShowComments] = useState(false);
   // const navigate = useNavigate();

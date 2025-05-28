@@ -18,7 +18,7 @@ router.get(
         post_id,
         reply_to: null, 
       },      
-      include: [{ model: User, attributes: ['username'] }],
+      include: [{ model: User, attributes: ['username', 'profilePicture'] }],
       order: [['createdAt', 'DESC']],
     });
 
@@ -55,6 +55,8 @@ router.post(
     return { message: 'Comment created', comment };
   })
 );
+
+
 
 // // ✅ Edit komentar
 // router.put(

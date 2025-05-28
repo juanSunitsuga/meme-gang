@@ -14,6 +14,7 @@ import ForgotPasswordModal from './View/Auth/ForgotPasswordModal';
 import ResetPasswordModal from './View/Auth/ResetPasswordModal';
 import CreatePostModal from './View/CreatePostModal';
 import PostDetailPage from './View/PostDetailPage';
+import Profile from './View/Account&Profile/Profile';
 // import Comment from './View/Comments/CommentList';
 
 const darkTheme = createTheme({
@@ -74,7 +75,7 @@ function AppContent() {
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/search" element={<SearchForm onSubmit={handleSearchSubmit} />} />
                     <Route path="/post/:postId" element={<PostDetailPage />} />
-                    {/* <Route path="/post/:id" element={<Comment />} /> */}
+                    <Route path="/profile/:username" element={<Profile />} />
                     {/* Add other routes here */}
                 </Routes>
             </div>
