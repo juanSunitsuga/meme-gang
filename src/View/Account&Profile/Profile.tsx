@@ -15,8 +15,7 @@ import {
 import PostCard from "../Components/PostCard"; // Adjust the import path as necessary
 import { Link } from "react-router-dom";
 import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
+import { fetchEndpoint } from "../FetchEndpoint";
 
 interface User {
   id: string;
@@ -98,13 +97,14 @@ const Profile: React.FC = () => {
 
     const fetchUser = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/profile/me`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await res.json();
+        const endpoint = `/profile/me`;
+        const data = await fetchEndpoint(endpoint, 'GET', token);
+        // const res = await fetch(`http://localhost:3000/profile/me`, {
+        //   headers: {
+        //     "Content-Type": "application/json",
+        //     Authorization: `Bearer ${token}`,
+        //   },
+        // });
         setUser(data);
       } catch (err) {
         console.error("Error fetching user profile", err);
@@ -113,12 +113,14 @@ const Profile: React.FC = () => {
 
     const fetchPosts = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/profile/post`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await res.json();
+        const endpoint = `/profile/post`;
+        const data = await fetchEndpoint(endpoint, 'GET', token);
+        // const res = await fetch(`http://localhost:3000/profile/post`, {
+        //   headers: {
+        //     Authorization: `Bearer ${token}`,
+        //   },
+        // });
+        // const data = await res.json();
         setPosts(data);
       } catch (err) {
         console.error("Error fetching posts", err);
@@ -127,12 +129,15 @@ const Profile: React.FC = () => {
 
     const fetchComments = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/profile/comment`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await res.json();
+        // const res = await fetch(`http://localhost:3000/profile/comment`, {
+        //   headers: {
+        //     Authorization: `Bearer ${token}`,
+        //   },
+        // });
+
+        // const data = await res.json();
+        const endpoint = `/profile/comment`;
+        const data = await fetchEndpoint(endpoint, 'GET', token);
         setComments(data);
       } catch (err) {
         console.error("Error fetching comments", err);
@@ -150,15 +155,19 @@ const Profile: React.FC = () => {
     const token = localStorage.getItem("token");
     if (!window.confirm("Hapus komentar ini?")) return;
     try {
-      await fetch(`http://localhost:3000/comments/${commentId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // await fetch(`http://localhost:3000/comments/${commentId}`, {
+      //   method: "DELETE",
+      //   headers: {
+      //     Authorization: `Bearer ${token}`,
+      //   },
+      // });
+      const endpoint = `/comments/${commentId}`;
+      await fetchEndpoint(endpoint, 'DELETE', token);
+      
       setComments((prev) => prev.filter((c) => c.id !== commentId));
     } catch (err) {
       alert("Gagal menghapus komentar");
+      console.error("Error deleting comment", err);
     }
   };
 
@@ -245,6 +254,8 @@ const Profile: React.FC = () => {
                   upvotes={post.upvotes || 0}
                   downvotes={post.downvotes || 0}
                   comments={post.commentsCount || 0}
+                  isSaved={false} // Assuming no saved posts for now
+                  tags={[]} // Assuming no tags for now
                 />
               ))}
             </Box>

@@ -21,6 +21,8 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import { Link } from "react-router-dom";
+import { fetchEndpoint } from "../FetchEndpoint";
+import { UpdatedAt } from "sequelize-typescript";
 
 interface User {
   username: string;
@@ -200,10 +202,7 @@ const CommentItem = ({
     }
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/comments/${comment.id}`);
-      const data = await res.json();
-
-      // Support nested replies dari backend
+      const data = await fetchEndpoint(`/comments/${comment.id}`, 'GET', localStorage.getItem("token"));
       let repliesArray: Comment[] = [];
       if (Array.isArray(data)) {
         repliesArray = parseReplies(data);
@@ -238,39 +237,35 @@ const CommentItem = ({
     try {
       const token = localStorage.getItem("token");
       const formattedReply = `@${comment.user?.username ?? "user"} ${replyContent}`;
-
-      const res = await fetch(`http://localhost:3000/comments/${comment.id}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          content: formattedReply,
-          reply_to: comment.id,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to send reply");
-      const newReplyRaw = await res.json();
+      console.log("Sending reply:", formattedReply);
+      
+      const endpoint = `/comments/${comment.id}`;
+      
+      const data = await fetchEndpoint(endpoint, 'POST', token, {content: formattedReply,
+          reply_to: comment.id,});
+      console.log("Reply data:", data);
+      if (!data) throw new Error("Failed to send reply");
+      const newReplyRaw = data;
       const newReply: Comment = {
-        id: newReplyRaw.id,
+        id: data.id,
         user: {
-          username: newReplyRaw.user?.username || newReplyRaw.user?.name || "",
-          avatar: newReplyRaw.user?.avatar || newReplyRaw.user?.profilePicture || "",
+          username: newReplyRaw.user?.username || "",
+          avatar: newReplyRaw.user?.profilePicture || "",
           profilePicture: newReplyRaw.user?.profilePicture || "",
         },
-        content: newReplyRaw.content || newReplyRaw.text || "",
-        parentId: newReplyRaw.reply_to || newReplyRaw.parentId || comment.id,
-        reply_to: newReplyRaw.reply_to,
-        createdAt: newReplyRaw.createdAt,
-        updatedAt: newReplyRaw.updatedAt,
-        profilePicture: newReplyRaw.user?.avatar || newReplyRaw.user?.profilePicture || "",
-        post_id: newReplyRaw.post_id,
+        content: data.content,
+        parentId: data.reply_to || data.parentId || comment.id,
+        reply_to: data.reply_to,
+        createdAt: data.createdAt,
+        profilePicture: data.user?.avatar || data.user?.profilePicture || "",
+        post_id: data.post_id,
         replies: [],
       };
+
+      console.log("New reply added:", newReply);
       
       // Add new reply at the beginning of the array (top position)
-      setReplies((prev) => [newReply, ...prev]);
+      setReplies((prev) => [...prev, newReply]);
       setReplyContent("");
       setShowReplyInput(false);
     } catch (err) {
@@ -285,13 +280,11 @@ const CommentItem = ({
     handleMenuClose();
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3000/comments/${comment.id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!res.ok) throw new Error("Failed to delete comment");
+
+      const endpoint = `/comments/${comment.id}`;
+      
+      const data = await fetchEndpoint(endpoint, 'DELETE', token);
+      if (!data) throw new Error("Failed to delete comment");
       
       // Trigger deletion animation
       setIsDeleted(true);
@@ -316,16 +309,15 @@ const CommentItem = ({
     setSavingEdit(true);
     try {
       const token = localStorage.getItem("token");
-      const now = new Date().toISOString();
-      const res = await fetch(`http://localhost:3000/comments/${comment.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ content: editContent, updatedAt: now }),
-      });
-      if (!res.ok) throw new Error("Failed to edit comment");
+      const now = new Date().toISOString();  
+      const endpoint = `/comments/${comment.id}`;
+      
+      const data = await fetchEndpoint(endpoint, 'PUT', token, {
+        content: editContent,
+        UpdatedAt: now,
+      }
+      );
+      if (!data) throw new Error("Failed to edit comment");
       setCurrentContent(editContent);
       setCurrentUpdatedAt(now);
       setIsEditing(false);
@@ -338,22 +330,22 @@ const CommentItem = ({
   };
 
   // Menampilkan timestamp: pakai updatedAt jika ada, jika tidak pakai createdAt
-  const renderTimestamp = () => {
-    const updated = currentUpdatedAt || comment.updatedAt;
-    if (updated && updated !== comment.createdAt) {
+    const renderTimestamp = () => {
+      const updated = currentUpdatedAt || comment.updatedAt;
+      if (updated && updated !== comment.createdAt) {
+        return (
+          <Typography variant="caption" sx={{ color: "#b0b0b0" }}>
+            {formatDate(updated)} (edited)
+          </Typography>
+        );
+      }
       return (
         <Typography variant="caption" sx={{ color: "#b0b0b0" }}>
-          {formatDate(updated)} (edited)
+          {formatDate(comment.createdAt)}
         </Typography>
       );
-    }
-    return (
-      <Typography variant="caption" sx={{ color: "#b0b0b0" }}>
-        {formatDate(comment.createdAt)}
-      </Typography>
-    );
-  };
-     const getAvatarUrl = (avatarPath: string | undefined) => {
+    };
+      const getAvatarUrl = (avatarPath: string | undefined) => {
     if (!avatarPath) return undefined;
 
     if (avatarPath.startsWith('http')) {
@@ -372,6 +364,7 @@ const CommentItem = ({
 
   if (isDeleted) {
     return null; // Or you can return a fade-out animation
+    
   }
 
   return (
@@ -380,8 +373,8 @@ const CommentItem = ({
         ref={commentRef}
         elevation={comment.parentId || comment.reply_to ? 0 : 2}
         sx={{
-          bgcolor: "#18191c",
-          color: "#f1f1f1",
+          bgcolor: "#1a1a1a",
+          color: "#fff",
           borderRadius: 3,
           p: 2,
           mb: comment.parentId || comment.reply_to ? 1 : 2,

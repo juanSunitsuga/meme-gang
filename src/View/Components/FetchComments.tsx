@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import CommentItem, { Comment } from "./CommentItem";
 import { Typography } from "@mui/material";
+import { fetchEndpoint } from "../FetchEndpoint";
 
 interface CommentListProps {
   postId: string;
@@ -12,9 +13,12 @@ const FetchComment = ({ postId }: CommentListProps) => {
   useEffect(() => {
     const fetchMainComments = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/post/${postId}/comments`);
-        if (!res.ok) throw new Error("Failed to fetch");
-        const data: Comment[] = await res.json();
+        const endpoint = `/post/${postId}/comments`;
+        const data = await fetchEndpoint(endpoint, 'GET');
+        if(!data){
+          console.error("No comments found for this post");
+          return;
+        }
         setComments(data);
       } catch (err) {
         console.error("Failed to fetch main comments", err);
@@ -32,22 +36,32 @@ const FetchComment = ({ postId }: CommentListProps) => {
     try {
       const token = localStorage.getItem("token");
       const now = new Date().toISOString();
-      const res = await fetch(`http://localhost:3000/comments/${commentId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ content: newContent, updatedAt: now }),
-      });
-      if (!res.ok) throw new Error("Failed to update comment");
-      setComments(prev =>
-        prev.map(comment =>
-          comment.id === commentId
-            ? { ...comment, content: newContent, updatedAt: now }
-            : comment
-        )
-      );
+      // const res = await fetch(`http://localhost:3000/comments/${commentId}`, {
+      //   method: "PUT",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //     Authorization: `Bearer ${token}`,
+      //   },
+      //   body: JSON.stringify({ content: newContent, updatedAt: now }),
+      // });
+        const endpoint = `/comments/${commentId}`;
+        const data = await fetchEndpoint(endpoint, 'PUT', token, {
+          content: newContent,
+          updatedAt: now,
+        });
+
+        if (!data){
+          console.error("Failed to update comment");
+          return;
+        }
+
+        setComments(prev =>
+          prev.map(comment =>
+            comment.id === commentId
+              ? { ...comment, content: newContent, updatedAt: now }
+              : comment
+          )
+        );
     } catch (err) {
       console.error("Failed to update comment", err);
     }

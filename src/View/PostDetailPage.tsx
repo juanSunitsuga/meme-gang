@@ -1,17 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import PostCard from './Components/PostCard';
-// import CommentList from './Components/CommentList';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Divider from '@mui/material/Divider';
+import ErrorBoundary from './ErrorBoundary';
+import FetchComment from './Components/FetchComments';
 import { fetchEndpoint } from './FetchEndpoint';
 
 interface PostDetail {
   id: string;
   title: string;
+  username: string | null;
   image_url: string | null;
   createdAt: string;
+  updatedAt: string;
   upvotes: number;
   downvotes: number;
   commentsCount: number;
+  isSaved?: boolean;
+  tags?: string[];
 }
 
 const PostDetailPage: React.FC = () => {
@@ -20,12 +28,12 @@ const PostDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [refresh, setRefresh] = useState(0); // Add refresh state
+  const [refresh, setRefresh] = useState(0);
 
   useEffect(() => {
     async function fetchPost() {
       try {
-        setLoading(true); // Ensure loading is set when fetching
+        setLoading(true);
         const endpoint = `/post/${postId}`;
         const data = await fetchEndpoint(endpoint, 'GET');
         setPost(data);
@@ -40,7 +48,7 @@ const PostDetailPage: React.FC = () => {
     if (postId) {
       fetchPost();
     }
-  }, [postId, refresh]); // Add refresh as dependency
+  }, [postId, refresh]);
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,26 +64,13 @@ const PostDetailPage: React.FC = () => {
 
     try {
       setSubmitting(true);
-
-      const response = await fetch(`http://localhost:3000/post/${postId}/comments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          content: trimmedComment,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Gagal menambahkan komentar:', errorData);
-        return;
-      }
+      const endpoint = `/post/${postId}/comments`;
+      
+      await fetchEndpoint(endpoint, 'POST', token, {content: trimmedComment});
 
       setCommentText('');
-      setRefresh((prev) => prev + 1); // Trigger refresh after comment
+      setRefresh((prev) => prev + 1);
+      
     } catch (error) {
       console.error('Terjadi kesalahan saat submit komentar:', error);
     } finally {
@@ -83,69 +78,102 @@ const PostDetailPage: React.FC = () => {
     }
   };
 
-
   if (loading) return <div>Loading...</div>;
   if (!post) return <div>Post not found</div>;
 
   return (
-    <div style={{ maxWidth: 640, margin: 'auto', padding: 16 }}>
-        <PostCard
+    <Box sx={{ maxWidth: 640, mx: 'auto', p: 2 }}>
+      <Paper 
+        sx={{ 
+          bgcolor: "#1a1a1a", 
+          color: "#fff", 
+          borderRadius: 4, 
+          overflow: "hidden",
+          border: "1px solid #333"
+        }}
+      >
+        {/* PostCard Section */}
+        <Box sx={{ p: 2, pb: 0 }}>
+          <PostCard
             postId={post.id}
             imageUrl={post.image_url || ''}
             title={post.title}
-            username="Unknown"
-            timeAgo="just now"
+            username={post.username || 'Unknown User'}
+            timeAgo={post.updatedAt}
             upvotes={post.upvotes}
             downvotes={post.downvotes}
             comments={post.commentsCount}
-        />
-
-      <div style={{ marginTop: 32 }}>
-        <form
+            isSaved={post.isSaved ?? false}
+            tags={post.tags ?? []}
+          />
+        </Box>
+        
+        {/* Subtle Divider */}
+        <Divider sx={{ borderColor: '#333', mx: 2, my: 1 }} />
+        
+        {/* Comments Section */}
+        <Box sx={{ p: 2, pt: 1 }}>
+          {/* Comments List */}
+          <Box sx={{ mb: 3 }}>
+            <ErrorBoundary>
+              <FetchComment postId={postId || ''} />
+            </ErrorBoundary>
+          </Box>
+          
+          {/* Add Comment Form - Moved to bottom */}
+          <form
             onSubmit={handleCommentSubmit}
             style={{
-            display: 'flex',
-            alignItems: 'center',
-            backgroundColor: '#1e1e1e',
-            padding: 8,
-            borderRadius: 8,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
             }}
-        >
+          >
             <input
-            type="text"
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            placeholder="Leave a comment..."
-            style={{
+              type="text"
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder="Leave a comment..."
+              style={{
                 flex: 1,
-                padding: '10px 14px',
-                borderRadius: 6,
+                padding: '12px 16px',
+                borderRadius: 8,
                 border: '1px solid #333',
-                backgroundColor: '#121212',
+                backgroundColor: '#23272f',
                 color: '#fff',
                 fontSize: 14,
-                marginRight: 8,
                 outline: 'none',
-            }}
+                transition: 'border-color 0.2s ease',
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#007bff';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#333';
+              }}
             />
             <button
-            type="submit"
-            disabled={submitting}
-            style={{
-                padding: '10px 16px',
-                backgroundColor: '#007bff',
+              type="submit"
+              disabled={submitting || !commentText.trim()}
+              style={{
+                padding: '12px 20px',
+                backgroundColor: submitting || !commentText.trim() ? '#555' : '#007bff',
                 color: '#fff',
                 border: 'none',
-                borderRadius: 6,
+                borderRadius: 8,
                 fontWeight: 600,
-                cursor: 'pointer',
-            }}
+                cursor: submitting || !commentText.trim() ? 'not-allowed' : 'pointer',
+                fontSize: 14,
+                transition: 'background-color 0.2s ease',
+                minWidth: 80,
+              }}
             >
-            {submitting ? 'Post' : 'Post'}
+              {submitting ? 'Posting...' : 'Post'}
             </button>
-        </form>
-        </div>
-    </div>
+          </form>
+        </Box>
+      </Paper>
+    </Box>
   );
 };
 

@@ -24,8 +24,6 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import FetchComment from './FetchComments'; // make sure path ini sesuai
 import ErrorBoundary from '../ErrorBoundary';
 import { fetchEndpoint } from '../FetchEndpoint';
-import { PollTwoTone } from '@mui/icons-material';
-import { on } from 'nodemailer/lib/xoauth2';
 
 interface PostCardProps {
   postId: string;
@@ -214,15 +212,6 @@ const PostCard: React.FC<PostCardProps> = ({
           </Stack>
         </Stack>
       </CardContent>
-
-      <Collapse in={showComments} timeout="auto" unmountOnExit>
-        <Box id={`comments-${postId}`} px={2} pb={2}>
-          <ErrorBoundary>
-            <FetchComment postId={postId} />
-          </ErrorBoundary>
-        </Box>
-      </Collapse>
-
     </Card>
   );
 };
