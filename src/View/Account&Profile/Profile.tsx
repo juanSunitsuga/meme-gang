@@ -12,8 +12,8 @@ import {
   IconButton,
   Tooltip,
 } from "@mui/material";
-import PostCard from "../Components/PostCard"; // Adjust the import path as necessary
-import { Link } from "react-router-dom";
+import PostCard from "../Components/PostCard";
+import { Link, useParams } from "react-router-dom";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { fetchEndpoint } from "../FetchEndpoint";
 
@@ -85,6 +85,7 @@ function formatDate(dateString: string) {
 }
 
 const Profile: React.FC = () => {
+  const { username } = useParams<{ username: string }>();
   const [user, setUser] = useState<User | null>(null);
   const [tab, setTab] = useState(0);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -92,19 +93,15 @@ const Profile: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
+    console.log("Fetching profile for:", username);
+    if (!username) return;
+
 
     const fetchUser = async () => {
       try {
-        const endpoint = `/profile/me`;
-        const data = await fetchEndpoint(endpoint, 'GET', token);
-        // const res = await fetch(`http://localhost:3000/profile/me`, {
-        //   headers: {
-        //     "Content-Type": "application/json",
-        //     Authorization: `Bearer ${token}`,
-        //   },
-        // });
+        const endpoint = `/profile/${username}`;
+        console.log("\n\n\n\n\nFetching user profile from:", endpoint);
+        const data = await fetchEndpoint(endpoint, 'GET');
         setUser(data);
       } catch (err) {
         console.error("Error fetching user profile", err);
@@ -113,14 +110,8 @@ const Profile: React.FC = () => {
 
     const fetchPosts = async () => {
       try {
-        const endpoint = `/profile/post`;
-        const data = await fetchEndpoint(endpoint, 'GET', token);
-        // const res = await fetch(`http://localhost:3000/profile/post`, {
-        //   headers: {
-        //     Authorization: `Bearer ${token}`,
-        //   },
-        // });
-        // const data = await res.json();
+        const endpoint = `/profile/${username}/post`;
+        const data = await fetchEndpoint(endpoint, 'GET');
         setPosts(data);
       } catch (err) {
         console.error("Error fetching posts", err);
@@ -129,15 +120,8 @@ const Profile: React.FC = () => {
 
     const fetchComments = async () => {
       try {
-        // const res = await fetch(`http://localhost:3000/profile/comment`, {
-        //   headers: {
-        //     Authorization: `Bearer ${token}`,
-        //   },
-        // });
-
-        // const data = await res.json();
-        const endpoint = `/profile/comment`;
-        const data = await fetchEndpoint(endpoint, 'GET', token);
+        const endpoint = `/profile/${username}/comment`;
+        const data = await fetchEndpoint(endpoint, 'GET');
         setComments(data);
       } catch (err) {
         console.error("Error fetching comments", err);
@@ -148,22 +132,16 @@ const Profile: React.FC = () => {
     Promise.all([fetchUser(), fetchPosts(), fetchComments()]).finally(() =>
       setLoading(false)
     );
-  }, []);
+  }, [username]);
 
   // Handler untuk delete comment (dummy, ganti sesuai kebutuhan backend)
   const handleDeleteComment = async (commentId: string) => {
     const token = localStorage.getItem("token");
     if (!window.confirm("Hapus komentar ini?")) return;
     try {
-      // await fetch(`http://localhost:3000/comments/${commentId}`, {
-      //   method: "DELETE",
-      //   headers: {
-      //     Authorization: `Bearer ${token}`,
-      //   },
-      // });
       const endpoint = `/comments/${commentId}`;
       await fetchEndpoint(endpoint, 'DELETE', token);
-      
+
       setComments((prev) => prev.filter((c) => c.id !== commentId));
     } catch (err) {
       alert("Gagal menghapus komentar");
@@ -174,7 +152,7 @@ const Profile: React.FC = () => {
   if (loading || !user)
     return <Typography p={3}>Loading profile...</Typography>;
 
-    const getAvatarUrl = (avatarPath: string | undefined) => {
+  const getAvatarUrl = (avatarPath: string | undefined) => {
     if (!avatarPath) return undefined;
 
     if (avatarPath.startsWith('http')) {
@@ -196,7 +174,7 @@ const Profile: React.FC = () => {
       {/* Header */}
       <Box display="flex" alignItems="center" mb={3}>
         <Avatar
-          src={getAvatarUrl(user.profilePicture)} 
+          src={getAvatarUrl(user.profilePicture)}
           alt={user.username}
           sx={{ width: 80, height: 80, mr: 2 }}
         />
@@ -254,8 +232,8 @@ const Profile: React.FC = () => {
                   upvotes={post.upvotes || 0}
                   downvotes={post.downvotes || 0}
                   comments={post.commentsCount || 0}
-                  isSaved={false} // Assuming no saved posts for now
-                  tags={[]} // Assuming no tags for now
+                  isSaved={false}
+                  tags={[]}
                 />
               ))}
             </Box>
@@ -288,7 +266,6 @@ const Profile: React.FC = () => {
                 >
                   <Stack direction="row" spacing={2}>
                     <Avatar
-
                       src={getAvatarUrl(user.profilePicture || undefined)}
                       alt={user.username}
                       sx={{ width: 36, height: 36, bgcolor: "#23272f", mt: 0.5 }}
@@ -306,7 +283,6 @@ const Profile: React.FC = () => {
                         {renderContentWithMention(comment.content)}
                       </Typography>
                     </Box>
-
                     {/* Tombol aksi */}
                     <Stack direction="row" spacing={0.5} alignItems="center">
                       <Tooltip title="Delete">

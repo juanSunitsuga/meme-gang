@@ -187,32 +187,57 @@ router.post('/change-password', authMiddleware, controllerWrapper(async (req: Re
     };
 }));
 
-
-router.get('/post', authMiddleware, controllerWrapper(async (req, res) => {
-
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ error: 'Unauthorized' });
+router.get('/:username/post', controllerWrapper(async (req, res) => {
+    const { username } = req.params;
+    const user = await User.findOne({ where: { username } });
+    if (!user) {
+        res.status(404).json({ error: 'User not found' });
+        return;
     }
     const posts = await Post.findAll({
-      where: { user_id: req.user.id },
-      order: [['createdAt', 'DESC']],
+        where: { user_id: user.id },
+        order: [['createdAt', 'DESC']],
     });
-    
     return posts;
-  
 }));
 
-router.get('/comment', authMiddleware, controllerWrapper(async (req, res) => {
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ error: 'Unauthorized' });
+router.get('/:username/comment', controllerWrapper(async (req, res) => {
+    const { username } = req.params;
+    const user = await User.findOne({ where: { username } });
+    if (!user) {
+        res.status(404).json({ error: 'User not found' });
+        return
     }
-
     const comments = await Comment.findAll({
-      where: { user_id: req.user.id },
-      order: [['createdAt', 'DESC']],
+        where: { user_id: user.id },
+        order: [['createdAt', 'DESC']],
     });
     return comments;
 }));
 
+router.get('/:username', controllerWrapper(async (req, res) => {
+    const { username } = req.params;
+    const user = await
+    User.findOne({
+            where: { username },
+            attributes: ['id', 'username', 'name', 'bio', 'profilePicture'],
+        });
+    if (!user) {
+        res.locals.errorCode = 404;
+        throw new Error('User not found');
+    }
+    const baseUrl = '../../';
+    const profilePictureUrl = user.profilePicture
+        ? `${baseUrl}${user.profilePicture}`
+        : null;
+    return {
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        bio: user.bio,
+        profilePicture: profilePictureUrl,
+    };
+}
+));
 
 export default router;
