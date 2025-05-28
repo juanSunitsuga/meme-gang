@@ -26,33 +26,38 @@ router.get(
       throw new Error('Comment not found');
     }
 
-    const replies = await Comment.findAll({
-      where: {
-        reply_to: id, // balasan ke main comment
-      },
-      include: [
-        {
-          model: User,
-          attributes: ['username', 'profilePicture', 'createdAt'],
-        },
-        {
-          model: Comment, // nested replies
-          as: 'replies',
-          include: [
-            {
-              model: User,
-              attributes: ['username', 'profilePicture', 'createdAt'],
-            },
-          ],
-        },
-      ],
-      order: [['createdAt', 'DESC']],
-    });
+    // Recursive function to get replies and their replies
+    const getReplies = async (parentId: string | number): Promise<any[]> => {
+      const replies = await Comment.findAll({
+        where: { reply_to: parentId },
+        include: [
+          {
+            model: User,
+            attributes: ['username', 'profilePicture'],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
 
-    
-    return replies;
+      const repliesWithChildren = await Promise.all(
+        replies.map(async (reply) => {
+          const nestedReplies = await getReplies(reply.id); // recursive call
+          return {
+            ...reply.toJSON(),
+            replies: nestedReplies,
+          };
+        })
+      );
+
+      return repliesWithChildren;
+    };
+
+    const allReplies = await getReplies(id);
+
+    return res.json(allReplies);
   })
 );
+
 
 router.post(
   '/',
@@ -131,17 +136,22 @@ router.put(
 //     return { message: 'Reply deleted' };
 //   })
 // );
-
 router.delete(
   '/',
   authMiddleware,
   controllerWrapper(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    console.log('ID:', id);
+    const { id } = req.params; // pastikan ID dikirim via body (bukan params)
+
+    console.log('Deleting comment with ID:', id);
+
+    if (!id || typeof id !== 'string') {
+      res.locals.errorCode = 400;
+      throw new Error(`Invalid or missing Comment ID: ${id}`);
+    }
+
     const user_id = req.user!.id;
 
     const comment = await Comment.findByPk(id);
-
     if (!comment) {
       res.locals.errorCode = 404;
       throw new Error('Comment not found');
@@ -152,16 +162,33 @@ router.delete(
       throw new Error('Not authorized to delete this comment');
     }
 
-    // Hapus semua replies jika ini main comment
-    if (comment.reply_to === null) {
-      await Comment.destroy({ where: { reply_to: id } });
+    // 🔁 Rekursif: kumpulkan semua ID balasan nested
+    const collectAllReplyIds = async (parentId: string): Promise<string[]> => {
+      const replies = await Comment.findAll({ where: { reply_to: parentId } });
+
+      const nestedIdsPromises = replies.map(async (reply) => {
+        const childIds = await collectAllReplyIds(reply.id);
+        return [reply.id, ...childIds];
+      });
+
+      const nestedIds = await Promise.all(nestedIdsPromises);
+      return nestedIds.flat();
+    };
+
+    const allReplyIds = await collectAllReplyIds(comment.id);
+
+    // 🧹 Hapus semua balasan terlebih dahulu
+    if (allReplyIds.length > 0) {
+      await Comment.destroy({ where: { id: allReplyIds } });
     }
 
+    // 🔥 Hapus komentar utama
     await comment.destroy();
 
-    return { message: 'Comment and its replies deleted successfully' };
+    return res.json({ message: 'Comment and all nested replies deleted successfully' });
   })
 );
+
 
 
 export default router;

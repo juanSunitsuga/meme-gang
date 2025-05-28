@@ -250,6 +250,7 @@ const CommentItem = ({
 
   const handleDeleteClick = async () => {
     handleMenuClose();
+    console.log("Menghapus komentar:", comment.id);
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`http://localhost:3000/comments/${comment.id}`, {
