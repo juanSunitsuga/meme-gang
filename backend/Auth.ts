@@ -96,7 +96,7 @@ router.post('/reset-password', controllerWrapper(async (req, res) => {
     where: {
       userId: user.id,
       token: resetCode,
-      expiresAt: { [Op.gt]: new Date() } 
+      expiresAt: { [Op.gt]: new Date() }
     }
   });
 
@@ -219,6 +219,14 @@ router.get('/session', controllerWrapper(async (req, res, next) => {
 }));
 
 router.post('/logout', controllerWrapper(async (req, res) => {
+  // Get the authorization header
+  const authHeader = req.headers['authorization'];
+  const token = authHeader?.split(' ')[1];
+
+  if (token) {
+    await addToBlacklist(token, appConfig.jwtExpiration);
+  }
+
   return {
     message: 'Logged out successfully'
   };
@@ -227,21 +235,21 @@ router.post('/logout', controllerWrapper(async (req, res) => {
 if (process.env.NODE_ENV !== 'production') {
   router.get('/dev/reset-code', controllerWrapper(async (req, res) => {
     const { email } = req.query;
-    
+
     if (!email || typeof email !== 'string') {
       throw new Error('Email parameter is required');
     }
-    
+
     const user = await User.findOne({ where: { email } });
     if (!user) {
       return { code: null };
     }
-    
-    const token = await ResetToken.findOne({ 
+
+    const token = await ResetToken.findOne({
       where: { userId: user.id },
       order: [['createdAt', 'DESC']]
     });
-    
+
     return {
       code: token?.token || null
     };
@@ -285,6 +293,34 @@ async function sendResetEmail(email: string, resetCode: string) {
   }
 
   return info;
+}
+
+// Store for blacklisted tokens
+// In production, this should be replaced with Redis or another persistent store
+const tokenBlacklist = new Map<string, number>();
+
+// Cleanup expired tokens from the blacklist periodically
+setInterval(() => {
+  const now = Math.floor(Date.now() / 1000);
+  for (const [token, expiryTime] of tokenBlacklist.entries()) {
+    if (now >= expiryTime) {
+      tokenBlacklist.delete(token);
+    }
+  }
+}, 60 * 60 * 1000); // Clean up every hour
+
+/**
+ * Add a token to the blacklist until it expires
+ * @param token The JWT token to blacklist
+ * @param jwtExpiration Expiration time in seconds
+ */
+async function addToBlacklist(token: string, jwtExpiration: string | number) {
+  const decoded = jwt.decode(token) as { exp?: number };
+  const expiryTime = decoded?.exp || Math.floor(Date.now() / 1000) + 
+    (typeof jwtExpiration === 'number' ? jwtExpiration : parseInt(jwtExpiration, 10));
+  
+  tokenBlacklist.set(token, expiryTime);
+  return true;
 }
 
 export default router;

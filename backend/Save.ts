@@ -116,7 +116,7 @@ router.get('/saved-posts-with-details', authMiddleware, controllerWrapper(async 
                         model: Tag,
                         as: 'tags',
                         attributes: ['name'],
-                        through: { attributes: [] } // Don't include join table
+                        through: { attributes: [] }
                     }
                 ]
             }

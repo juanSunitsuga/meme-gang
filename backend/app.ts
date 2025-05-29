@@ -45,7 +45,6 @@ app.use('/uploads', uploadRoutes);
 app.use('/uploads/posts', express.static('uploads/post'));
 
 
-app.use(error)
 app.use('/auth', registerLoginRoutes);
 app.use('/profile', profileRoutes);
 

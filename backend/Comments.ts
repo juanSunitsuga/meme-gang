@@ -59,52 +59,52 @@ router.post(
 
 
 // // ✅ Edit komentar
-// router.put(
-//   '/:commentId',
-//   authMiddleware,
-//   controllerWrapper(async (req: Request, res: Response) => {
-//     const { commentId } = req.params;
-//     const { content } = req.body;
-//     const user_id = req.user!.id;
+router.put(
+  '/:commentId',
+  authMiddleware,
+  controllerWrapper(async (req: Request, res: Response) => {
+    const { commentId } = req.params;
+    const { content } = req.body;
+    const user_id = req.user!.id;
 
-//     const comment = await Comment.findByPk(commentId);
-//     if (!comment) {
-//       res.locals.errorCode = 404;
-//       throw new Error('Comment not found');
-//     }
+    const comment = await Comment.findByPk(commentId);
+    if (!comment) {
+      res.locals.errorCode = 404;
+      throw new Error('Comment not found');
+    }
 
-//     if (comment.user_id !== user_id) {
-//       res.locals.errorCode = 403;
-//       throw new Error('Not authorized to edit this comment');
-//     }
+    if (comment.user_id !== user_id) {
+      res.locals.errorCode = 403;
+      throw new Error('Not authorized to edit this comment');
+    }
 
-//     await comment.update({ content });
+    await comment.update({ content });
 
-//     return { message: 'Comment updated', comment };
-//   })
-// );
+    return { message: 'Comment updated', comment };
+  })
+);
 
-// router.delete(
-//   '/',
-//   authMiddleware,
-//   controllerWrapper(async (req: Request, res: Response) => {
-//     const { commentId } = req.params;
-//     const user_id = req.user!.id;
+router.delete(
+  '/',
+  authMiddleware,
+  controllerWrapper(async (req: Request, res: Response) => {
+    const { commentId } = req.params;
+    const user_id = req.user!.id;
 
-//     const comment = await Comment.findByPk(commentId);
-//     if (!comment) {
-//       res.locals.errorCode = 404;
-//       throw new Error('Comment not found');
-//     }
+    const comment = await Comment.findByPk(commentId);
+    if (!comment) {
+      res.locals.errorCode = 404;
+      throw new Error('Comment not found');
+    }
 
-//     if (comment.user_id !== user_id) {
-//       res.locals.errorCode = 403;
-//       throw new Error('Not authorized to delete this comment');
-//     }
+    if (comment.user_id !== user_id) {
+      res.locals.errorCode = 403;
+      throw new Error('Not authorized to delete this comment');
+    }
 
-//     await comment.destroy();
-//     return { message: 'Comment deleted' };
-//   })
-// );
+    await comment.destroy();
+    return { message: 'Comment deleted' };
+  })
+);
 
 export default router;

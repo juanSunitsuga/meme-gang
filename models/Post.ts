@@ -1,5 +1,6 @@
-import { Table, Column, Model, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
+import { Table, Column, Model, DataType, ForeignKey, BelongsTo, BelongsToMany } from 'sequelize-typescript';
 import { User } from './User';
+import { Tag } from './Tag';
 
 @Table({
   tableName: 'Posts',
@@ -34,6 +35,14 @@ export class Post extends Model {
     allowNull: true,
   })
   declare image_url?: string;
+
+  @BelongsToMany(() => Tag, {
+    through: 'PostTags', // This should be your junction table name
+    foreignKey: 'post_id',
+    otherKey: 'tag_id',
+    as: 'tags'
+  })
+  declare tags?: Tag[];
 
   @Column({
     type: DataType.DATE,
