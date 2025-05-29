@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { User } from '../models/User';
 import { v4 } from 'uuid';
 import bcrypt from 'bcrypt';
@@ -10,6 +10,8 @@ import nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
 import { ResetToken } from '../models/ResetToken';
 import { Op } from 'sequelize';
+import { middlewareWrapper } from '../utils/middlewareWrapper';
+import verifySession, { addToBlacklist } from '../middleware/Verify';
 
 const router = Router();
 
@@ -96,7 +98,7 @@ router.post('/reset-password', controllerWrapper(async (req, res) => {
     where: {
       userId: user.id,
       token: resetCode,
-      expiresAt: { [Op.gt]: new Date() } 
+      expiresAt: { [Op.gt]: new Date() }
     }
   });
 
@@ -171,10 +173,10 @@ router.post('/login', controllerWrapper(async (req, res, next) => {
     {
       id: user.id,
       email: user.email,
-      name: user.name || user.username
+      name: user.name
     },
     appConfig.jwtSecret,
-    { expiresIn: appConfig.jwtExpiration }
+    { expiresIn: '1h' }
   );
   
   return {
@@ -188,8 +190,8 @@ router.post('/login', controllerWrapper(async (req, res, next) => {
   };
 }));
 
-router.get('/session', controllerWrapper(async (req, res, next) => {
-  const authHeader = req.headers['authorization'];
+router.get('/session', verifySession, controllerWrapper(async (req, res, next) => {
+  const authHeader = req.headers.authorization;
   const token = authHeader?.split(' ')[1];
 
   if (!token) {
@@ -219,6 +221,14 @@ router.get('/session', controllerWrapper(async (req, res, next) => {
 }));
 
 router.post('/logout', controllerWrapper(async (req, res) => {
+  // Get the authorization header
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.split(' ')[1];
+
+  if (token) {
+    await addToBlacklist(token, '1h');
+  }
+
   return {
     message: 'Logged out successfully'
   };
@@ -227,21 +237,21 @@ router.post('/logout', controllerWrapper(async (req, res) => {
 if (process.env.NODE_ENV !== 'production') {
   router.get('/dev/reset-code', controllerWrapper(async (req, res) => {
     const { email } = req.query;
-    
+
     if (!email || typeof email !== 'string') {
       throw new Error('Email parameter is required');
     }
-    
+
     const user = await User.findOne({ where: { email } });
     if (!user) {
       return { code: null };
     }
-    
-    const token = await ResetToken.findOne({ 
+
+    const token = await ResetToken.findOne({
       where: { userId: user.id },
       order: [['createdAt', 'DESC']]
     });
-    
+
     return {
       code: token?.token || null
     };

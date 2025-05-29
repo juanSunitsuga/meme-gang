@@ -90,7 +90,7 @@ router.post('/avatar', authMiddleware, controllerWrapper(async (req, res) => {
 
     const { id } = req.user!;
     const user = await User.findByPk(id);
-    
+
     if (!user) {
         res.locals.errorCode = 404;
         throw new Error('User not found');
@@ -99,7 +99,7 @@ router.post('/avatar', authMiddleware, controllerWrapper(async (req, res) => {
     const profilePicturePath = req.file.filename;
     user.profilePicture = profilePicturePath;
     await user.save();
-    
+
     return {
         message: 'Profile picture uploaded successfully',
         data: { profilePicture: profilePicturePath }
@@ -110,40 +110,40 @@ router.post('/avatar', authMiddleware, controllerWrapper(async (req, res) => {
 router.delete('/delete-avatar', authMiddleware, controllerWrapper(async (req, res) => {
     const { id } = req.user!;
     const user = await User.findByPk(id);
-    
+
     if (!user) {
         res.locals.errorCode = 404;
         throw new Error('User not found');
     }
-    
+
     if (!user.profilePicture) {
         res.locals.errorCode = 400;
         throw new Error('No profile picture to delete');
     }
-    
-    const filename = user.profilePicture.includes('/') 
-        ? user.profilePicture.split('/').pop() 
+
+    const filename = user.profilePicture.includes('/')
+        ? user.profilePicture.split('/').pop()
         : user.profilePicture;
-        
+
     if (!filename) {
         res.locals.errorCode = 400;
         throw new Error('Invalid profile picture path');
     }
-    
+
     const filePath = path.join(process.cwd(), 'uploads', 'avatars', filename);
-    
+
     console.log(`Attempting to delete profile picture at: ${filePath}`);
-    
+
     if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
         console.log('File deleted successfully');
     } else {
         console.log('File not found, only removing database reference');
     }
-    
+
     user.profilePicture = undefined;
     await user.save();
-    
+
     return {
         message: 'Profile picture deleted successfully'
     };
@@ -166,7 +166,7 @@ router.post('/post-image', authMiddleware, controllerWrapper(async (req, res) =>
     }
 
     const postImagePath = `/uploads/posts/${req.file.filename}`;
-    
+
     return {
         message: 'Post image uploaded successfully',
         postImage: postImagePath
@@ -188,27 +188,17 @@ router.get('/avatars/:filename', controllerWrapper(async (req, res) => {
     const imagePath = path.join(process.cwd(), 'uploads', 'avatars', filename);
 
     if (!fs.existsSync(imagePath)) {
-        return {
-            status: 404,
-            message: 'Avatar not found'
-        };
+        throw new Error('Avatar image not found');
     }
 
-    try {
-        const buffer = fs.readFileSync(imagePath);
-        const contentType = getContentType(filename);
+    const buffer = fs.readFileSync(imagePath);
+    const contentType = getContentType(filename);
 
-        res.setHeader('Content-Type', contentType);
-        res.setHeader('Cache-Control', 'public, max-age=86400');
-        res.status(200).send(buffer);
-        return null;
-    } catch (error) {
-        console.error('Error serving avatar image:', error);
-        return {
-            status: 500,
-            message: 'Error serving image'
-        };
-    }
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.status(200).send(buffer);
+    return null;
+
 }));
 
 // Serve post images
@@ -217,27 +207,16 @@ router.get('/posts/:filename', controllerWrapper(async (req, res) => {
     const imagePath = path.join(process.cwd(), 'uploads', 'posts', filename);
 
     if (!fs.existsSync(imagePath)) {
-        return {
-            status: 404,
-            message: 'Post image not found'
-        };
+        throw new Error('Post image not found');
     }
 
-    try {
-        const buffer = fs.readFileSync(imagePath);
-        const contentType = getContentType(filename);
+    const buffer = fs.readFileSync(imagePath);
+    const contentType = getContentType(filename);
 
-        res.setHeader('Content-Type', contentType);
-        res.setHeader('Cache-Control', 'public, max-age=86400');
-        res.status(200).send(buffer);
-        return null;
-    } catch (error) {
-        console.error('Error serving post image:', error);
-        return {
-            status: 500,
-            message: 'Error serving image'
-        };
-    }
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.status(200).send(buffer);
+    return null;
 }));
 
 export default router;
