@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 import { Votes } from '../models/Votes';
 import authMiddleware from '../middleware/Auth';
 import { controllerWrapper } from '../utils/controllerWrapper';
-import { countVotes } from './FetchPostData';
+import { countVotes } from './FetchDataForSinglePost';
 
 const router = Router();
 

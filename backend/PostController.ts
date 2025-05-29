@@ -9,10 +9,11 @@ import authMiddleware from '../middleware/Auth';
 import { controllerWrapper } from '../utils/controllerWrapper';
 import { v4 } from 'uuid';
 import sequelize, { Op } from 'sequelize';
-import { countVotes, countComments} from './FetchPostData';
-import jwt, { decode } from 'jsonwebtoken';
+import { countVotes, countComments, fetchTagName, fetchUserData} from './FetchDataForSinglePost';
+import jwt from 'jsonwebtoken';
 import { appConfig } from '../config/app';
 import { User } from '../models/User';
+import { SavedPost } from '../models/Saved_Post'
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -22,6 +23,111 @@ const storage = multer.diskStorage({
         cb(null, `${Date.now()}-${file.originalname}`);
     },
 });
+
+async function buildPostsWithVotes(posts: any[], userId: string) {
+    const postIds = posts.map(post => post.id);
+
+    const votes = await Votes.findAll({
+        where: { post_id: { [Op.in]: postIds } },
+        attributes: [
+            'post_id',
+            [sequelize.fn('SUM', sequelize.literal('CASE WHEN is_upvote THEN 1 ELSE 0 END')), 'upvotes'],
+            [sequelize.fn('SUM', sequelize.literal('CASE WHEN is_upvote THEN 0 ELSE 1 END')), 'downvotes'],
+        ],
+        group: ['post_id'],
+        raw: true,
+    }) as unknown as Array<{ post_id: string; upvotes: number; downvotes: number }>;
+
+    const comments = await Comment.findAll({
+        where: { post_id: { [Op.in]: postIds } },
+        attributes: [
+            'post_id',
+            [sequelize.fn('COUNT', sequelize.col('id')), 'commentCount'],
+        ],
+        group: ['post_id'],
+        raw: true,
+    }) as unknown as Array<{ post_id: string; commentCount: string }>;
+
+    const voteMap: { [key: string]: { upvotes: number; downvotes: number } } = {};
+    for (const vote of votes) {
+        voteMap[vote.post_id] = {
+            upvotes: Number(vote.upvotes),
+            downvotes: Number(vote.downvotes),
+        };
+    }
+
+    const commentMap: { [key: string]: number } = {};
+    for (const c of comments) {
+        commentMap[c.post_id] = Number(c.commentCount);
+    }
+
+    const postTags = await PostTag.findAll({
+        where: { post_id: { [Op.in]: postIds } },
+        raw: true,
+    });
+
+    const postIdToTagIds: { [key: string]: string[] } = {};
+    postTags.forEach(pt => {
+        if (!postIdToTagIds[pt.post_id]) postIdToTagIds[pt.post_id] = [];
+        postIdToTagIds[pt.post_id].push(pt.tag_id);
+    });
+
+    const allTagIds = Array.from(new Set(postTags.map(pt => pt.tag_id)));
+    const tags = await Tag.findAll({
+        where: { id: { [Op.in]: allTagIds } },
+        raw: true,
+    });
+
+    const tagIdToName: { [key: string]: string } = {};
+    tags.forEach(tag => {
+        tagIdToName[tag.id] = tag.tag_name;
+    });
+
+    let userVotesMap: { [key: string]: boolean | null } = {};
+    if (userId) {
+        const userVotes = await Votes.findAll({
+            where: {
+                post_id: { [Op.in]: postIds },
+                user_id: userId,
+            },
+            attributes: ['post_id', 'is_upvote'],
+            raw: true,
+        });
+        userVotesMap = userVotes.reduce((acc, vote) => {
+            acc[vote.post_id] = vote.is_upvote; // true or false
+            return acc;
+        }, {} as { [key: string]: boolean });
+    }
+
+    const userIds = Array.from(new Set(posts.map(post => post.user_id)));
+    const users = await User.findAll({
+        where: { id: userIds },
+        attributes: ['id', 'username', 'profilePicture'],
+        raw: true,
+    });
+    const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+
+    return posts.map(post => {
+        const votes = voteMap[post.id] || { upvotes: 0, downvotes: 0 };
+        const commentCount = commentMap[post.id] || 0;
+        const tagIds = postIdToTagIds[post.id] || [];
+        const tagNames = tagIds.map(tagId => tagIdToName[tagId]).filter(Boolean);
+        const is_upvoted = userId ? (userVotesMap[post.id] ?? null) : null;
+        const user = userMap[post.user_id];
+        return {
+            ...post.toJSON(),
+            upvotes: votes.upvotes,
+            downvotes: votes.downvotes,
+            commentsCount: commentCount,
+            tags: tagNames,
+            is_upvoted: is_upvoted,
+            userIdOwnerPost: user.id,
+            name: user.username,
+            profilePicture: user?.profilePicture,
+        };
+    });
+}
+
 const upload = multer({ storage });
 
 const router = Router();
@@ -131,135 +237,99 @@ router.get(
         }
 
         const type = req.query.type as string;
-
-        let order: [string, string][] = [];
-
-        if (type === 'fresh') {
-            order = [['createdAt', 'DESC']];
-        }
+        let posts;
 
         // Fetch all posts
-        const posts = await Post.findAll({ order, limit: 10 });
-
-        // Get all post IDs
-        const postIds = posts.map(post => post.id);
-
-        // Aggregate upvotes and downvotes for all posts
-        const votes = await Votes.findAll({
-            where: { post_id: { [Op.in]: postIds } },
-            attributes: [
-                'post_id',
-                [sequelize.fn('SUM', sequelize.literal('CASE WHEN is_upvote THEN 1 ELSE 0 END')), 'upvotes'],
-                [sequelize.fn('SUM', sequelize.literal('CASE WHEN is_upvote THEN 0 ELSE 1 END')), 'downvotes'],
-            ],
-            group: ['post_id'],
-            raw: true,
-        }) as unknown as Array<{ post_id: string; upvotes: number; downvotes: number }>;
-        
-        const comments = await Comment.findAll({
-            where: { post_id: { [Op.in]: postIds } },
-            attributes: [
-                'post_id',
-                [sequelize.fn('COUNT', sequelize.col('id')), 'commentCount'],
-            ],
-            group: ['post_id'],
-            raw: true,
-        }) as unknown as Array<{ post_id: string; commentCount: string }>;
-       
-        // Create a map: post_id -> { upvotes, downvotes }
-        const voteMap: { [key: string]: { upvotes: number; downvotes: number } } = {};
-        for (const vote of votes) {
-            voteMap[vote.post_id] = {
-                upvotes: Number(vote.upvotes),
-                downvotes: Number(vote.downvotes),
-            };
-        }
-
-        // Create a map: post_id -> commentCount
-        const commentMap: { [key: string]: number } = {};
-        for (const c of comments) {
-            commentMap[c.post_id] = Number(c.commentCount);
-        }
-
-        // Fetch all PostTags for these posts
-        const postTags = await PostTag.findAll({
-            where: { post_id: { [Op.in]: postIds } },
-            raw: true,
-        });
-
-        // Map post_id to array of tag_ids
-        const postIdToTagIds: { [key: string]: string[] } = {};
-        postTags.forEach(pt => {
-            if (!postIdToTagIds[pt.post_id]) postIdToTagIds[pt.post_id] = [];
-            postIdToTagIds[pt.post_id].push(pt.tag_id);
-        });
-
-        // Collect all unique tag IDs used in these posts
-        const allTagIds = Array.from(new Set(postTags.map(pt => pt.tag_id)));
-
-        // Query tag names for all unique tag IDs
-        const tags = await Tag.findAll({
-            where: { id: { [Op.in]: allTagIds } },
-            raw: true,
-        });
-
-        // Map tag_id to tag_name for easy lookup
-        const tagIdToName: { [key: string]: string } = {};
-        tags.forEach(tag => {
-            tagIdToName[tag.id] = tag.tag_name;
-        });
-
-        let userVotesMap: { [key: string]: boolean | null } = {};
-        if (userId) {
-            const userVotes = await Votes.findAll({
-                where: {
-                    post_id: { [Op.in]: postIds },
-                    user_id: userId,
-                },
-                attributes: ['post_id', 'is_upvote'],
-                raw: true,
+        if (type === 'trending') {
+            // TRENDING: posts from last 24h, most upvotes+downvotes
+            const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            posts = await Post.findAll({
+                where: { createdAt: { [Op.gte]: since } }
             });
-            userVotesMap = userVotes.reduce((acc, vote) => {
-                acc[vote.post_id] = vote.is_upvote; // true or false
-                return acc;
-            }, {} as { [key: string]: boolean });
+        } else {
+            // FRESH and POPULAR: fetch all
+            posts = await Post.findAll({ order: [['createdAt', 'DESC']] });
         }
 
-        const userIds = Array.from(new Set(posts.map(post => post.user_id)));
-        const users = await User.findAll({
-            where: { id: userIds },
-            attributes: ['id', 'username', 'profilePicture'],
+        let postsWithVotes = await buildPostsWithVotes(posts, userId)
+
+        if (type === 'trending' || type === 'popular') {
+            postsWithVotes = postsWithVotes.sort((a, b) =>
+                (b.upvotes + b.downvotes) - (a.upvotes + a.downvotes)
+            );
+        }
+
+        return postsWithVotes;
+    })
+);
+
+router.get(
+    '/upvoted',
+    authMiddleware,
+    controllerWrapper(async (req: Request, res: Response) => {
+        const userId = req.user?.id;
+        if (!userId) {
+            res.locals.errorCode = 401;
+            throw new Error('Unauthorized');
+        }
+        const upvotes = await Votes.findAll({
+            where: { user_id: userId, is_upvote: true },
+            attributes: ['post_id'],
             raw: true,
         });
-        const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+        const postIds = upvotes.map(v => v.post_id);
+        if (postIds.length === 0) return [];
+        const posts = await Post.findAll({ where: { id: postIds } });
+        return await buildPostsWithVotes(posts, userId);
+    })
+);
 
-        const postsWithVotes = posts.map(post => {
-            const votes = voteMap[post.id] || { upvotes: 0, downvotes: 0 };
-            const commentCount = commentMap[post.id] || 0;
-            const tagIds = postIdToTagIds[post.id] || [];
-            const tagNames = tagIds.map(tagId => tagIdToName[tagId]).filter(Boolean);
-            const is_upvoted = userId ? (userVotesMap[post.id] ?? null) : null;
-            const user = userMap[post.user_id];
-            return {
-                ...post.toJSON(),
-                upvotes: votes.upvotes,
-                downvotes: votes.downvotes,
-                commentsCount: commentCount,
-                tags: tagNames,
-                is_upvoted: is_upvoted,
-                userIdOwnerPost: user.id,
-                name: user.username,
-                profilePicture: user?.profilePicture,
-            };
+router.get(
+    '/downvoted',
+    authMiddleware,
+    controllerWrapper(async (req: Request, res: Response) => {
+        const userId = req.user?.id;
+        if (!userId) {
+            res.locals.errorCode = 401;
+            throw new Error('Unauthorized');
+        }
+        const downvotes = await Votes.findAll({
+            where: { user_id: userId, is_upvote: false },
+            attributes: ['post_id'],
+            raw: true,
         });
-        return postsWithVotes;
+        const postIds = downvotes.map(v => v.post_id);
+        if (postIds.length === 0) return [];
+        const posts = await Post.findAll({ where: { id: postIds } });
+        return await buildPostsWithVotes(posts, userId);
+    })
+);
+
+router.get(
+    '/saved',
+    authMiddleware,
+    controllerWrapper(async (req: Request, res: Response) => {
+        const userId = req.user?.id;
+        if (!userId) {
+            res.locals.errorCode = 401;
+            throw new Error('Unauthorized');
+        }
+        const saved = await SavedPost.findAll({
+            where: { user_id: userId },
+            attributes: ['post_id'],
+            raw: true,
+        });
+        const postIds = saved.map(v => v.post_id);
+        if (postIds.length === 0) return [];
+        const posts = await Post.findAll({ where: { id: postIds } });
+        return await buildPostsWithVotes(posts, userId);
     })
 );
 
 router.get(
     '/:id',
     controllerWrapper(async (req: Request, res: Response) => {
-        const user = req.user;
+        const user = req.user
         const postId = req.params.id;
         const post = await Post.findByPk(postId);
         if (!post) {
@@ -268,6 +338,17 @@ router.get(
         }
         const votesCount = await countVotes(postId);
         const commentCount = await countComments(postId);
+        const tagsName = await fetchTagName(postId)
+        const postOwner = await fetchUserData(post.user_id);
+        const userData = postOwner ? {
+            userIdOwnerPost: postOwner.id,
+            name: postOwner.username,
+            profilePicture: postOwner.profilePicture,
+        } : {
+            userIdOwnerPost: null,
+            name: null,
+            profilePicture: null,
+        };
 
         if (user) {
             const voteState = await Votes.findOne({
@@ -277,13 +358,17 @@ router.get(
                 ...post.toJSON(),
                 ...votesCount,
                 commentsCount: commentCount,
+                tags: tagsName,
                 is_upvoted: voteState?.is_upvote,
+                ...userData,
             };
         }
         return {
             ...post.toJSON(),
             ...votesCount,
             commentsCount: commentCount,
+            tags: tagsName,
+            ...userData,
         };
     })
 );
