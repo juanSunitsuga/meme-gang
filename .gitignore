@@ -1,5 +1,7 @@
 # Sequelize Config
 config/config.json
+package-lock.json
+package.json
 
 # Local uploads
 uploads
