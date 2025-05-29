@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { appConfig } from "../config/app";
 import { middlewareWrapper } from "../utils/middlewareWrapper";
-import { tokenBlacklist } from "../backend/Auth";
+import { tokenBlacklist } from "./Verify";
 
 const authMiddleware = middlewareWrapper(
   async (req: Request, res: Response, next: NextFunction) => {
