@@ -5,7 +5,7 @@ import { Post } from '../models/Post';
 import { User } from '../models/User';
 import { SavedPost } from '../models/Saved_Post';
 import { Tag } from '../models/Tag';
-import { UpvoteDownvote } from '../models/Upvote_Downvote_Post';
+import { Votes } from '../models/Votes';
 import { ResetToken } from '../models/ResetToken';
 import { PostTag } from '../models/PostTags';
 import profileRoutes from './Profile';
@@ -17,7 +17,8 @@ import saveRoutes from './Save';
 import config from '../config/config.json';
 import cors from 'cors';
 import error from '../middleware/errorHandler';
-import postRouter from './post';
+import postRouter from './PostController';
+import voteRouter from './voteController';
 import searchRoutes from './Search';
 
 
@@ -36,7 +37,7 @@ import { Dialect } from 'sequelize'; // Add this import if not already present
 const sequelize = new Sequelize({
     ...config.development,
     dialect: config.development.dialect as Dialect, // Cast dialect to Dialect type
-    models: [Comment, Post, User, SavedPost, Tag, UpvoteDownvote, ResetToken, PostTag],
+    models: [Comment, Post, User, SavedPost, Tag, Votes, ResetToken, PostTag],
 });
 
 
@@ -51,6 +52,9 @@ app.use('/profile', profileRoutes);
 
 app.use('/post', postRouter);
 app.use('/post/:id/comments', commentsRoutes); 
+app.use('/comments/:id/replies', commentReplyRoutes); 
+app.use('/save', saveRoutes)
+app.use('/vote', voteRouter);
 app.use('/comments/:id', commentReplyRoutes); 
 app.use('/save', saveRoutes);
 app.use('/search', searchRoutes);

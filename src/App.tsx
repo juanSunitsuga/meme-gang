@@ -12,6 +12,7 @@ import ForgotPasswordModal from './View/Auth/ForgotPasswordModal';
 import ResetPasswordModal from './View/Auth/ResetPasswordModal';
 import CreatePostModal from './View/CreatePostModal';
 import PostDetailPage from './View/PostDetailPage';
+import EditPostModal from './View/EditPostModal';
 import Profile from './View/Account&Profile/Profile';
 // import ErrorBoundary from './View/ErrorBoundary';
 // import Comment from './View/Comments/CommentList';
@@ -86,6 +87,7 @@ function App() {
                         <ForgotPasswordModal />
                         <ResetPasswordModal />
                         <CreatePostModal />
+                        <EditPostModal />
                     </ThemeProvider>
                 </Router>
             </ModalProvider>

@@ -176,7 +176,7 @@ router.post('/login', controllerWrapper(async (req, res, next) => {
     appConfig.jwtSecret,
     { expiresIn: appConfig.jwtExpiration }
   );
-
+  
   return {
     token,
     user: {

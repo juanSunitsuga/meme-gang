@@ -9,16 +9,17 @@ interface Post {
   id: string;
   title: string;
   image_url: string;
-  user: {
-    name: string;
-    profilePicture?: string;
-  };
+  userIdOwnerPost: string;
+  name: string;
+  profilePicture?: string;
   createdAt: string;
   commentsCount: number;
   upvotes: number;
   downvotes: number;
   tags: string[];
+  is_upvoted?: boolean;
   isSaved?: boolean;
+  loggedInUserId?: string;
 }
 
 interface HomeProps {
@@ -33,7 +34,7 @@ const Home: React.FC<HomeProps> = ({ searchResults, searchQuery }) => {
   const [sortBy, setSortBy] = useState<'recent' | 'popular'>('recent');
   const [searchNotFound, setSearchNotFound] = useState(false);
   const navigate = useNavigate();
-  const { isAuthenticated, token } = useAuth();
+  const { isAuthenticated, token, isLoading, userData} = useAuth(); // <-- add isLoading
   const { openLoginModal } = useModal();
 
   useEffect(() => {
@@ -85,6 +86,7 @@ const Home: React.FC<HomeProps> = ({ searchResults, searchQuery }) => {
       }
 
       setPosts(data);
+      console.log('Fetched posts:', data);
       setError(null);
     } catch (err) {
       console.error('Error fetching posts:', err);
@@ -121,8 +123,28 @@ const Home: React.FC<HomeProps> = ({ searchResults, searchQuery }) => {
     }
   };
 
+  const handleEditPost = (updatedPost: Post) => {
+    setPosts((prev) =>
+      prev.map((post) => (post.id === updatedPost.id ? { ...post, ...updatedPost } : post))
+    );
+  };
+
+  const handleDeletePost = (postId: string) => {
+    setPosts((prev) => prev.filter((post) => post.id !== postId));
+  };
+
+  // Show auth loading spinner before anything else
+  if (isLoading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading memes...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="home-container" style={{ marginTop: '1%' }}>
+    <div className="home-container" style={{marginTop: '6%'}}>
       {loading && (
         <div className="loading-container">
           <div className="loading-spinner"></div>
@@ -153,8 +175,8 @@ const Home: React.FC<HomeProps> = ({ searchResults, searchQuery }) => {
                 postId={post.id}
                 imageUrl={post.image_url}
                 title={post.title}
-                username={post.user?.name || 'Anonymous'}
-                timeAgo="Just now"
+                username={post.name}
+                timeAgo={post.createdAt}
                 upvotes={post.upvotes}
                 downvotes={post.downvotes}
                 comments={post.commentsCount}
@@ -162,6 +184,11 @@ const Home: React.FC<HomeProps> = ({ searchResults, searchQuery }) => {
                 onSaveClick={() => handleSavePost(post.id)}
                 isSaved={post.isSaved || false}
                 tags={post.tags}
+                is_upvoted={post.is_upvoted}
+                userIdOwnerPost={post.userIdOwnerPost}
+                loggedInUserId = {userData?.id}
+                onEdit={handleEditPost}
+                onDelete={handleDeletePost}
               />
             ))
           )}
