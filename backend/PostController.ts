@@ -12,7 +12,7 @@ import sequelize, { Op } from 'sequelize';
 import { countVotes, countComments} from './FetchPostData';
 import jwt, { decode } from 'jsonwebtoken';
 import { appConfig } from '../config/app';
-
+import { User } from '../models/User';
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -134,13 +134,8 @@ router.get(
 
         let order: [string, string][] = [];
 
-        let popular = false;
-
         if (type === 'fresh') {
             order = [['createdAt', 'DESC']];
-        }
-        else if (type === 'popular') {
-            popular = true;
         }
 
         // Fetch all posts
@@ -230,13 +225,21 @@ router.get(
             }, {} as { [key: string]: boolean });
         }
 
+        const userIds = Array.from(new Set(posts.map(post => post.user_id)));
+        const users = await User.findAll({
+            where: { id: userIds },
+            attributes: ['id', 'username', 'profilePicture'],
+            raw: true,
+        });
+        const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+
         const postsWithVotes = posts.map(post => {
             const votes = voteMap[post.id] || { upvotes: 0, downvotes: 0 };
             const commentCount = commentMap[post.id] || 0;
             const tagIds = postIdToTagIds[post.id] || [];
             const tagNames = tagIds.map(tagId => tagIdToName[tagId]).filter(Boolean);
             const is_upvoted = userId ? (userVotesMap[post.id] ?? null) : null;
-            console.log('is_upvoted:', is_upvoted);
+            const user = userMap[post.user_id];
             return {
                 ...post.toJSON(),
                 upvotes: votes.upvotes,
@@ -244,13 +247,11 @@ router.get(
                 commentsCount: commentCount,
                 tags: tagNames,
                 is_upvoted: is_upvoted,
+                userIdOwnerPost: user.id,
+                name: user.username,
+                profilePicture: user?.profilePicture,
             };
         });
-
-        if (popular) {
-            postsWithVotes.sort((a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes));
-        }
-        console.log(postsWithVotes);
         return postsWithVotes;
     })
 );

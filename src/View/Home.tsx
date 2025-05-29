@@ -10,17 +10,17 @@ interface Post {
   id: string;
   title: string;
   image_url: string;
-  user: {
-    name: string;
-    profilePicture?: string;
-  };
+  userIdOwnerPost: string;
+  name: string;
+  profilePicture?: string;
   createdAt: string;
   commentsCount: number;
   upvotes: number;
   downvotes: number;
   tags: string[];
   is_upvoted?: boolean;
-  isSaved?: boolean; // Add this to track saved status
+  isSaved?: boolean;
+  loggedInUserId?: string;
 }
 
 const Home: React.FC = () => {
@@ -29,7 +29,7 @@ const Home: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'recent' | 'popular'>('recent');
   const navigate = useNavigate();
-  const { isAuthenticated, token, isLoading } = useAuth(); // <-- add isLoading
+  const { isAuthenticated, token, isLoading, userData} = useAuth(); // <-- add isLoading
   const { openLoginModal } = useModal();
 
   useEffect(() => {
@@ -107,6 +107,16 @@ const Home: React.FC = () => {
     }
   };
 
+  const handleEditPost = (updatedPost: Post) => {
+    setPosts((prev) =>
+      prev.map((post) => (post.id === updatedPost.id ? { ...post, ...updatedPost } : post))
+    );
+  };
+
+  const handleDeletePost = (postId: string) => {
+    setPosts((prev) => prev.filter((post) => post.id !== postId));
+  };
+
   // Show auth loading spinner before anything else
   if (isLoading) {
     return (
@@ -141,8 +151,8 @@ const Home: React.FC = () => {
               postId={post.id} 
               imageUrl={post.image_url}
               title={post.title}
-              username={post.user?.name || 'Anonymous'}
-              timeAgo='Just now'
+              username={post.name}
+              timeAgo={post.createdAt}
               upvotes={post.upvotes}
               downvotes={post.downvotes}
               comments={post.commentsCount}
@@ -151,6 +161,10 @@ const Home: React.FC = () => {
               isSaved={post.isSaved || false}
               tags={post.tags}
               is_upvoted={post.is_upvoted}
+              userIdOwnerPost={post.userIdOwnerPost}
+              loggedInUserId = {userData?.id}
+              onEdit={handleEditPost}
+              onDelete={handleDeletePost}
             />
           ))
         )}

@@ -14,6 +14,7 @@ import ForgotPasswordModal from './View/Auth/ForgotPasswordModal';
 import ResetPasswordModal from './View/Auth/ResetPasswordModal';
 import CreatePostModal from './View/CreatePostModal';
 import PostDetailPage from './View/PostDetailPage';
+import EditPostModal from './View/EditPostModal';
 // import Comment from './View/Comments/CommentList';
 
 const darkTheme = createTheme({
@@ -97,6 +98,7 @@ function App() {
                         <ForgotPasswordModal />
                         <ResetPasswordModal />
                         <CreatePostModal />
+                        <EditPostModal />
                     </ThemeProvider>
                 </Router>
             </ModalProvider>

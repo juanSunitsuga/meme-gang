@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useModal } from '../contexts/ModalContext';
 import {
   Card,
   CardContent,
@@ -20,6 +21,10 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import FetchComment from './FetchComments';
 import ErrorBoundary from '../ErrorBoundary';
 import { fetchEndpoint } from '../FetchEndpoint';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import { useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 interface PostCardProps {
   postId: string;
@@ -35,6 +40,10 @@ interface PostCardProps {
   onSaveClick?: () => void;
   tags: string[];
   is_upvoted?: boolean;
+  userIdOwnerPost: string;
+  loggedInUserId?: string;
+  onEdit?: (updatedPost: any) => void;
+  onDelete?: (postId: string) => void;
 }
 
 const PostCard: React.FC<PostCardProps> = ({
@@ -51,12 +60,20 @@ const PostCard: React.FC<PostCardProps> = ({
   isSaved = false,  
   is_upvoted,
   tags,
+  userIdOwnerPost,
+  loggedInUserId,
+  onEdit,
+  onDelete,
 }) => {
   const [showComments, setShowComments] = useState(false);
   const [upvote, setUpvote] = useState(is_upvoted);
   const [downvote, setDownvote] = useState(!is_upvoted ? false : undefined);
   const [upvotesCount, setUpvotesCount] = useState(upvotes);
   const [downvotesCount, setDownvotesCount] = useState(downvotes);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const menuOpen = Boolean(anchorEl);
+  const { openEditPostModal } = useModal();
+  const { token } = useAuth();
 
   // Ini fungsi baru untuk handle comment click
   const handleCommentClick = () => {
@@ -137,6 +154,43 @@ const PostCard: React.FC<PostCardProps> = ({
     }
   }
 
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+  setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleEdit = async () => {
+    handleMenuClose();
+    openEditPostModal({
+      postId,
+      imageUrlEdit: imageUrl,
+      titleEdit: title,
+      tagsEdit: tags,
+    });
+  };
+
+  const handleDelete = async () => {
+    handleMenuClose();
+    const endpoint = `/post/${postId}`;
+    const data = await fetchEndpoint(endpoint, 'DELETE', token);
+    if (data && typeof onDelete === 'function') {
+      onDelete(postId);
+    }
+  };
+
+  useEffect(() => {
+    if (menuOpen) {
+      const handleScroll = () => {
+        setTimeout(() => handleMenuClose(), 10);
+      };
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      return () => window.removeEventListener('scroll', handleScroll);
+    }
+  }, [menuOpen]);
+
   return (
     <Card
       sx={{
@@ -164,9 +218,32 @@ const PostCard: React.FC<PostCardProps> = ({
               </Typography>
             </Box>
           </Stack>
-          <IconButton sx={{ color: 'gray' }}>
-            <MoreVertIcon />
-          </IconButton>
+          {loggedInUserId === userIdOwnerPost && (
+            <>
+              <IconButton sx={{ color: 'gray' }} onClick={handleMenuOpen}>
+                <MoreVertIcon />
+              </IconButton>
+              {anchorEl && (
+                <Menu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={handleMenuClose}
+                  disableScrollLock={true}
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'right',
+                  }}
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                  }}
+                >
+                  <MenuItem onClick={handleEdit}>Edit</MenuItem>
+                  <MenuItem onClick={handleDelete}>Delete</MenuItem>
+                </Menu>
+              )}
+            </>
+          )}
         </Stack>
 
         {/* Title */}

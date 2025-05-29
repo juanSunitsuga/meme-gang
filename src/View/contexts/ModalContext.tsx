@@ -6,16 +6,20 @@ interface ModalContextType {
   isForgotPasswordModalOpen: boolean;
   isResetPasswordModalOpen: boolean;
   isCreatePostModalOpen: boolean;
+  isEditPostModalOpen: boolean;
   openLoginModal: () => void;
   openRegisterModal: () => void;
   openForgotPasswordModal: () => void;
   openResetPasswordModal: () => void;
   openCreatePostModal: () => void; 
+  openEditPostModal: (postData?: { postId: string; imageUrlEdit: string; titleEdit: string; tagsEdit: string[] }) => void;
+  editPostData?: { postId: string; imageUrlEdit: string; titleEdit: string; tagsEdit: string[] } | null;
   closeLoginModal: () => void;
   closeRegisterModal: () => void;
   closeForgotPasswordModal: () => void;
   closeResetPasswordModal: () => void;
   closeCreatePostModal: () => void;
+  closeEditPostModal: () => void;
   switchToRegister: () => void;
   switchToLogin: () => void;
   switchToForgotPassword: () => void;
@@ -38,6 +42,8 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
   const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false);
   const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false); 
+  const [isEditPostModalOpen, setIsEditPostModalOpen] = useState(false)
+  const [editPostData, setEditPostData] = useState<ModalContextType['editPostData']>(null);
 
   // Open modals
   const openLoginModal = () => {
@@ -45,7 +51,8 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsRegisterModalOpen(false);
     setIsForgotPasswordModalOpen(false);
     setIsResetPasswordModalOpen(false);
-    setIsCreatePostModalOpen(false); 
+    setIsCreatePostModalOpen(false);
+    setIsEditPostModalOpen(false) 
   };
 
   const openRegisterModal = () => {
@@ -54,6 +61,7 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsForgotPasswordModalOpen(false);
     setIsResetPasswordModalOpen(false);
     setIsCreatePostModalOpen(false);
+    setIsEditPostModalOpen(false)
   };
 
   const openForgotPasswordModal = () => {
@@ -62,6 +70,7 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsRegisterModalOpen(false);
     setIsResetPasswordModalOpen(false);
     setIsCreatePostModalOpen(false);
+    setIsEditPostModalOpen(false)
   };
 
   const openResetPasswordModal = () => {
@@ -70,6 +79,7 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsRegisterModalOpen(false);
     setIsForgotPasswordModalOpen(false);
     setIsCreatePostModalOpen(false);
+    setIsEditPostModalOpen(false)
   };
 
   const openCreatePostModal = () => {
@@ -78,6 +88,17 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsRegisterModalOpen(false);
     setIsForgotPasswordModalOpen(false);
     setIsResetPasswordModalOpen(false);
+    setIsEditPostModalOpen(false)
+  };
+
+  const openEditPostModal = (postData?: { postId: string; imageUrlEdit: string; titleEdit: string; tagsEdit: string[] }) => {
+    setIsCreatePostModalOpen(false);
+    setIsLoginModalOpen(false);
+    setIsRegisterModalOpen(false);
+    setIsForgotPasswordModalOpen(false);
+    setIsResetPasswordModalOpen(false);
+    setIsEditPostModalOpen(true);
+    setEditPostData(postData || null);
   };
 
   // Close modals
@@ -101,6 +122,11 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsCreatePostModalOpen(false);
   };
 
+  const closeEditPostModal = () => {
+    setIsEditPostModalOpen(false);
+    setEditPostData(null);
+  };
+
   // Switch between modals
   const switchToRegister = () => {
     setIsLoginModalOpen(false);
@@ -108,6 +134,7 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsForgotPasswordModalOpen(false);
     setIsResetPasswordModalOpen(false);
     setIsCreatePostModalOpen(false);
+    setIsEditPostModalOpen(false)
   };
 
   const switchToLogin = () => {
@@ -116,6 +143,7 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsForgotPasswordModalOpen(false);
     setIsResetPasswordModalOpen(false);
     setIsCreatePostModalOpen(false);
+    setIsEditPostModalOpen(false)
   };
 
   const switchToForgotPassword = () => {
@@ -124,6 +152,7 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsForgotPasswordModalOpen(true);
     setIsResetPasswordModalOpen(false);
     setIsCreatePostModalOpen(false);
+    setIsEditPostModalOpen(false)
   };
 
   const switchToResetPassword = () => {
@@ -132,6 +161,7 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsForgotPasswordModalOpen(false);
     setIsResetPasswordModalOpen(true);
     setIsCreatePostModalOpen(false);
+    setIsEditPostModalOpen(false)
   };
 
   return (
@@ -142,6 +172,7 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isForgotPasswordModalOpen,
         isResetPasswordModalOpen,
         isCreatePostModalOpen,
+        isEditPostModalOpen,
         openLoginModal,
         openRegisterModal,
         openForgotPasswordModal,
@@ -155,7 +186,10 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         switchToRegister,
         switchToLogin,
         switchToForgotPassword,
-        switchToResetPassword
+        switchToResetPassword,
+        editPostData,
+        openEditPostModal,
+        closeEditPostModal,
       }}
     >
       {children}
