@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useModal } from '../contexts/ModalContext';
@@ -21,11 +21,11 @@ import {
   alpha,
   styled,
   useMediaQuery,
-  // useTheme,
   Avatar,
 } from '@mui/material';
 
 import FAIcon from './FAIcon';
+import { fetchEndpoint } from '../FetchEndpoint';
 
 const LogoTypography = styled(Typography)(({ theme }) => ({
   fontWeight: 'bold',
@@ -35,7 +35,6 @@ const LogoTypography = styled(Typography)(({ theme }) => ({
   fontFamily: '"Poppins", sans-serif', 
 }));
 
-// Add font styling to your buttons
 const NavButton = styled(Button)(({ theme }) => ({
   margin: theme.spacing(0, 0.5),
   color: 'white',
@@ -59,7 +58,6 @@ const SignUpButton = styled(Button)(({ theme }) => ({
   },
 }));
 
-// Style the input text
 const StyledInputBase = styled(InputBase)(({ theme }) => ({
   color: 'inherit',
   width: '100%',
@@ -87,7 +85,6 @@ const IconWrapper = styled('div')({
   color: '#aaa'
 });
 
-// Define the Search styled component
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
   borderRadius: 20,
@@ -114,7 +111,6 @@ const SearchIconWrapper = styled('div')(({ theme }) => ({
   justifyContent: 'center',
 }));
 
-// Add styled AppBar
 const StyledAppBar = styled(AppBar)(() => ({
   backgroundColor: '#1a1a1a',
   boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
@@ -125,13 +121,34 @@ const MuiNavbar: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
   const isMobile = useMediaQuery('(max-width:600px)');
-  // const theme = useTheme();
   const navigate = useNavigate();
-  
-  // Use auth context instead of local state
+  // const location = useLocation();
+
   const { isAuthenticated, logout, userData } = useAuth();
   const { openLoginModal, openRegisterModal, openCreatePostModal } = useModal();
+
+  // Debounced search handler
+  useEffect(() => {
+    if (searchTimeout) clearTimeout(searchTimeout);
+    if (searchQuery.trim() === '') {
+      // Jika kosong, bisa reset hasil pencarian di home jika mau
+      navigate('/', { state: { searchResults: null, searchQuery: '' } });
+      return;
+    }
+    const timeout = setTimeout(async () => {
+      try {
+        const data = await fetchEndpoint(`/search?query=${searchQuery}`, 'GET');
+        navigate('/', { state: { searchResults: data, searchQuery } });
+      } catch {
+        navigate('/', { state: { searchResults: [], searchQuery } });
+      }
+    }, 500);
+    setSearchTimeout(timeout);
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line
+  }, [searchQuery]);
 
   const handleMenuClose = () => {
     setAnchorEl(null);
@@ -147,48 +164,40 @@ const MuiNavbar: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    
     handleMenuClose();
     navigate('/');
-    
     console.log('User logged out successfully');
   };
 
-  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSearchSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log('Search:', searchQuery);
+    if (searchTimeout) clearTimeout(searchTimeout);
+    if (searchQuery.trim() === '') {
+      navigate('/', { state: { searchResults: null, searchQuery: '' } });
+      return;
+    }
+    try {
+      const endpoint = `/search?query=${searchQuery}`;
+      const data = await fetchEndpoint(endpoint, 'GET');
+      console.log('Searching for:', searchQuery);
+      navigate('/', { state: { searchResults: data, searchQuery } });
+    } catch {
+      navigate('/', { state: { searchResults: [], searchQuery } });
+    }
   };
 
-  // const getProfilePictureUrl = () => {
-  //   if (!userData || !userData.profilePicture) return undefined;
-    
-  //   if (userData.profilePicture.startsWith('http')) {
-  //     return userData.profilePicture;
-  //   }
-    
-  //   return `/uploads/avatars/${userData.profilePicture}`;
-  // };
-
-  // Replace your current getAvatarUrl function with this one:
   const getAvatarUrl = (avatarPath: string | undefined) => {
     if (!avatarPath) return undefined;
-
     if (avatarPath.startsWith('http')) {
       return avatarPath;
     }
-
     const filename = avatarPath.includes('/')
       ? avatarPath.split('/').pop()
       : avatarPath;
-
     if (!filename) return undefined;
-
     const cacheBuster = avatarPath.includes('?t=') ? '' : `?t=${new Date().getTime()}`;
     return `/uploads/avatars/${filename}${cacheBuster}`;
   };
-
-  console.log('User Data:', userData);
-  console.log('Avatar URL:', getAvatarUrl(userData?.profilePicture));
 
   const menuId = 'primary-account-menu';
   const renderMenu = (
@@ -198,22 +207,21 @@ const MuiNavbar: React.FC = () => {
       keepMounted
       open={Boolean(anchorEl)}
       onClose={handleMenuClose}
-      PaperProps={{
-        elevation: 3,
-        sx: { 
-          backgroundColor: '#222', 
-          color: 'white',
-          minWidth: '200px'
-        }
-      }}
-      disableScrollLock={true}
       slotProps={{
+        paper: {
+          elevation: 3,
+          sx: { 
+            backgroundColor: '#222', 
+            color: 'white',
+            minWidth: '200px'
+          }
+        },
         backdrop: {
           sx: { backdropFilter: 'none' }
         }
       }}
+      disableScrollLock={true}
     >
-      {/* Add user profile header */}
       {userData && (
         <Box sx={{ 
           p: 2, 
@@ -281,107 +289,6 @@ const MuiNavbar: React.FC = () => {
         ]}
     </Menu>
   );
-
-  // const drawer = (
-  //   <Box sx={{ width: 250, backgroundColor: '#222', height: '100%', color: 'white' }}>
-  //     <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-  //       <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-  //         MEME GANG
-  //       </Typography>
-  //     </Box>
-  //     <Divider sx={{ backgroundColor: '#444' }} />
-  //     <Box sx={{ p: 2 }}>
-  //       <Search sx={{ width: '100%', maxWidth: '400px' }}>
-  //         <SearchIconWrapper>
-  //           <FAIcon icon="fas fa-search" />
-  //         </SearchIconWrapper>
-  //         <StyledInputBase
-  //           placeholder="Search..."
-  //           value={searchQuery}
-  //           onChange={(e) => setSearchQuery(e.target.value)}
-  //           inputProps={{ 'aria-label': 'search' }}
-  //           fullWidth
-  //         />
-  //       </Search>
-  //     </Box>
-  //     <Divider sx={{ backgroundColor: '#444' }} />
-  //     <List>
-  //       <ListItem component={RouterLink} to="/trending" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
-  //         <ListItemIcon sx={{ color: '#aaa' }}>
-  //           <FAIcon icon="fas fa-fire-flame-curved" />
-  //         </ListItemIcon>
-  //         <ListItemText primary="Trending" />
-  //       </ListItem>
-  //       <ListItem component={RouterLink} to="/fresh" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
-  //         <ListItemIcon sx={{ color: '#aaa' }}>
-  //           <FAIcon icon="fas fa-clock" />
-  //         </ListItemIcon>
-  //         <ListItemText primary="Fresh" />
-  //       </ListItem>
-  //       <ListItem component={RouterLink} to="/top" onClick={() => setDrawerOpen(false)} sx={{ cursor: 'pointer' }}>
-  //         <ListItemIcon sx={{ color: '#aaa' }}>
-  //           <FAIcon icon="fas fa-chart-line" />
-  //         </ListItemIcon>
-  //         <ListItemText primary="Top" />
-  //       </ListItem>
-  //     </List>
-  //     <Divider sx={{ backgroundColor: '#444' }} />
-  //     <Box sx={{ p: 2 }}>
-  //       {isAuthenticated ? (
-  //         <>
-  //           <Button 
-  //             fullWidth 
-  //             variant="contained" 
-  //             sx={{ mb: 1 }}
-  //             onClick={() => { navigate('/create-post'); setDrawerOpen(false); }}
-  //             startIcon={<FAIcon icon="fas fa-plus" />}
-
-  //           >
-  //             Post
-  //           </Button>
-  //           <Button 
-  //             fullWidth 
-  //             variant="outlined" 
-  //             sx={{ mb: 1 }}
-  //             onClick={() => { navigate('/settings'); setDrawerOpen(false); }}
-  //             startIcon={<FAIcon icon="fas fa-gear" />}
-  //           >
-  //             Settings
-  //           </Button>
-  //           <Button 
-  //             fullWidth 
-  //             variant="outlined" 
-  //             onClick={handleLogout}
-  //             color="error"
-  //             startIcon={<FAIcon icon="fas fa-sign-out-alt" />}
-  //           >
-  //             Logout
-  //           </Button>
-  //         </>
-  //       ) : (
-  //         <>
-  //           <Button 
-  //             fullWidth 
-  //             variant="outlined" 
-  //             sx={{ mb: 1 }}
-  //             onClick={() => { navigate('/login'); setDrawerOpen(false); }}
-  //             color="primary"
-  //             startIcon={<FAIcon icon="fas fa-sign-in-alt" />}
-  //           >
-  //             Log In
-  //           </Button>
-  //           <Button 
-  //             fullWidth 
-  //             variant="contained" 
-  //             onClick={() => { navigate('/register'); setDrawerOpen(false); }}
-  //           >
-  //             Sign Up
-  //           </Button>
-  //         </>
-  //       )}
-  //     </Box>
-  //   </Box>
-  // );
 
   return (
     <>
@@ -468,7 +375,7 @@ const MuiNavbar: React.FC = () => {
                     aria-haspopup="true"
                     onClick={handleProfileMenuOpen}
                     color="inherit"
-                    sx={{ p: 0.5 }} // Add padding for better appearance
+                    sx={{ p: 0.5 }}
                   >
                     {userData?.profilePicture ? (
                       <Avatar 
@@ -566,7 +473,6 @@ const MuiNavbar: React.FC = () => {
             </Box>
           )}
           
-          {/* Rest of drawer content */}
           <Box sx={{ p: 2 }}>
             <Search sx={{ width: '100%', maxWidth: '400px' }}>
               <SearchIconWrapper>

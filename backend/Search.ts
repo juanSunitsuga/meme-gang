@@ -1,59 +1,50 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { Op } from 'sequelize';
-import { User } from '../models/User';
 import { Post } from '../models/Post';
-import { Tag } from '../models/Tag';
 import express from 'express';
 import bodyParser from 'body-parser';
 import { controllerWrapper } from '../utils/controllerWrapper';
 
 const router = express.Router();
 router.use(bodyParser.json());
-
-// Endpoint to get user profile
-router.get('/search', controllerWrapper(async (req: Request, res: Response) => {
+// Endpoint to search users, posts, and tags
+router.get('/', controllerWrapper(async (req: Request, res: Response) => {
     const { query } = req.query;
 
-    if (!query) {
-        return {
-            status: 400,
-            message: 'Query parameter is required'
-        }
+    if (!query || typeof query !== 'string') {
+        res.status(400).json({ message: 'Query parameter is required' });
+        return;
     }
 
-    try {
-        const userResults = await User.findAll({
-            where: {
-                username: { [Op.iLike]: `%${query}%` }, // Case-insensitive search for usernames
-            },
-        });
+    console.log("query", query);
 
+    try {
+
+        // Search posts by title (case-insensitive)
         const postResults = await Post.findAll({
             where: {
-                title: { [Op.iLike]: `%${query}%` }, // Case-insensitive search for post titles
+                title: { [Op.iLike]: `%${query}%` },
             },
+            limit: 20,
         });
 
-        const tagResults = await Tag.findAll({
-            where: {
-                name: { [Op.iLike]: `%${query}%` }, // Case-insensitive search for tags
-            },
-        });
 
-        return {
-            status: 200,
-            data: {
-                users: userResults,
-                posts: postResults,
-                tags: tagResults,
-            }
+        console.log("post", postResults);
+
+
+        if (postResults.length === 0) {
+            res.status(404).json({
+                message: `No results found for "${query}".`,
+                posts: [],
+            });
+            return;
         }
+
+        res.status(200).json(postResults);
+
     } catch (error) {
         console.error('Error in search API:', error);
-        return{
-            status: 500,
-            message: 'Internal Server Error'
-        }
+        res.status(500).json({ message: 'Internal Server Error' });
     }
 }));
 

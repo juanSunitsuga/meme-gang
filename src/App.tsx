@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Navbar from './View/Components/Navbar';
 import Settings from './View/Settings';
-import SearchForm from './View/SearchForm';
 import Home from './View/Home';
 import { AuthProvider } from './View/contexts/AuthContext';
 import { ModalProvider } from './View/contexts/ModalContext';
@@ -15,6 +13,7 @@ import ResetPasswordModal from './View/Auth/ResetPasswordModal';
 import CreatePostModal from './View/CreatePostModal';
 import PostDetailPage from './View/PostDetailPage';
 import Profile from './View/Account&Profile/Profile';
+// import ErrorBoundary from './View/ErrorBoundary';
 // import Comment from './View/Comments/CommentList';
 
 const darkTheme = createTheme({
@@ -45,35 +44,25 @@ const darkTheme = createTheme({
     },
 });
 
-const theme = createTheme({
-    typography: {
-        fontFamily: '"Poppins", "Roboto", "Helvetica", "Arial", sans-serif',
-        h6: {
-            fontWeight: 600,
-        },
-        button: {
-            fontWeight: 500,
-        }
-    },
-});
+// Removed unused theme variable
+
+// Home wrapper agar bisa menerima hasil pencarian dari Navbar
+function HomeWithSearch() {
+    const location = useLocation();
+    // searchResults dan searchQuery dikirim dari Navbar via navigate('/', { state: ... })
+    const searchResults = location.state?.searchResults ?? null;
+    const searchQuery = location.state?.searchQuery ?? '';
+    return <Home searchResults={searchResults} searchQuery={searchQuery} />;
+}
 
 function AppContent() {
-    const navigate = useNavigate();
-    const [searchQuery, setSearchQuery] = useState('');
-
-    const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        navigate(`/search?query=${encodeURIComponent(searchQuery)}`);
-    };
-
     return (
         <div className="App">
             <Navbar />
             <div className="content-container">
                 <Routes>
-                    <Route path="/" element={<Home />} />
+                    <Route path="/" element={<HomeWithSearch />} />
                     <Route path="/settings" element={<Settings />} />
-                    <Route path="/search" element={<SearchForm onSubmit={handleSearchSubmit} />} />
                     <Route path="/post/:postId" element={<PostDetailPage />} />
                     <Route path="/profile/:username" element={<Profile />} />
                     {/* Add other routes here */}
@@ -91,7 +80,6 @@ function App() {
                     <ThemeProvider theme={darkTheme}>
                         <CssBaseline />
                         <AppContent />
-                        
                         {/* Add all modals so they're available throughout the app */}
                         <LoginModal />
                         <RegisterModal />

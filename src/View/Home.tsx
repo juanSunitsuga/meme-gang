@@ -5,7 +5,6 @@ import PostCard from './Components/PostCard';
 import { useAuth } from './contexts/AuthContext';
 import { useModal } from './contexts/ModalContext';
 
-// Update Post interface to include isSaved property
 interface Post {
   id: string;
   title: string;
@@ -19,51 +18,72 @@ interface Post {
   upvotes: number;
   downvotes: number;
   tags: string[];
-  isSaved?: boolean; // Add this to track saved status
+  isSaved?: boolean;
 }
 
-const Home: React.FC = () => {
+interface HomeProps {
+  searchResults?: Post[] | null;
+  searchQuery?: string;
+}
+
+const Home: React.FC<HomeProps> = ({ searchResults, searchQuery }) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'recent' | 'popular'>('recent');
+  const [searchNotFound, setSearchNotFound] = useState(false);
   const navigate = useNavigate();
   const { isAuthenticated, token } = useAuth();
   const { openLoginModal } = useModal();
 
   useEffect(() => {
-    fetchPosts();
-  }, [sortBy, isAuthenticated]);
+    if (searchResults) {
+      // Jika hasil pencarian ada, gunakan hasil pencarian
+      if (Array.isArray(searchResults) && searchResults.length === 0) {
+        setPosts([]);
+        setSearchNotFound(true);
+        setLoading(false);
+        return;
+      }
+      setSearchNotFound(false);
+      const mappedResults = searchResults.map(post => ({
+        ...post,
+        user: post.user ?? { name: 'Anonymous' },
+        commentsCount: post.commentsCount ?? 0,
+        upvotes: post.upvotes ?? 0,
+        downvotes: post.downvotes ?? 0,
+        tags: post.tags ?? [],
+      }));
+      setPosts(mappedResults);
+      setLoading(false);
+    } else {
+      setSearchNotFound(false);
+      fetchPosts();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchResults, sortBy, isAuthenticated]);
 
   const fetchPosts = async () => {
     try {
       setLoading(true);
       const endpoint = `/post?type=${sortBy === 'recent' ? 'fresh' : 'popular'}`;
       const data = await fetchEndpoint(endpoint, 'GET', isAuthenticated ? token : undefined);
-      
+
       if (isAuthenticated && token) {
         try {
           const savedPostsResponse = await fetchEndpoint('/save/saved-posts', 'GET', token);
-          
-          // Check if the response has a data property that's an array
           const savedPostsArray = savedPostsResponse.data || savedPostsResponse;
-          
-          // Check if we now have an array before mapping
           if (Array.isArray(savedPostsArray)) {
-            // Note: use post_id instead of postId to match your backend field
             const savedPostIds = new Set(savedPostsArray.map((item: any) => item.post_id));
-            
             data.forEach((post: Post) => {
               post.isSaved = savedPostIds.has(post.id);
             });
-          } else {
-            console.error('Saved posts response is not in expected format:', savedPostsArray);
           }
         } catch (err) {
           console.error('Error fetching saved posts:', err);
         }
       }
-      
+
       setPosts(data);
       setError(null);
     } catch (err) {
@@ -74,30 +94,26 @@ const Home: React.FC = () => {
     }
   };
 
-  // Add this function to handle saving posts
   const handleSavePost = async (postId: string) => {
     if (!isAuthenticated) {
-      // Show login modal if user is not authenticated
       openLoginModal();
       return;
     }
 
     try {
-      // Find the post to toggle its saved status
       const postIndex = posts.findIndex(post => post.id === postId);
       if (postIndex === -1) return;
 
       const currentSaveStatus = posts[postIndex].isSaved || false;
       const endpoint = `/save/save-post/${postId}`;
       const method = currentSaveStatus ? 'DELETE' : 'POST';
-      
-      const response = await fetchEndpoint(endpoint, method, token);
-      console.log(`Post ${currentSaveStatus ? 'unsaved' : 'saved'} successfully`, response);
-      
+
+      await fetchEndpoint(endpoint, method, token);
+
       const updatedPosts = [...posts];
       updatedPosts[postIndex] = {
         ...updatedPosts[postIndex],
-        isSaved: !currentSaveStatus
+        isSaved: !currentSaveStatus,
       };
       setPosts(updatedPosts);
     } catch (err) {
@@ -106,7 +122,7 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="home-container" style={{marginTop: '1%'}}>
+    <div className="home-container" style={{ marginTop: '1%' }}>
       {loading && (
         <div className="loading-container">
           <div className="loading-spinner"></div>
@@ -116,32 +132,41 @@ const Home: React.FC = () => {
 
       {error && <div className="error-message">{error}</div>}
 
-      <div className="posts-container">
-        {posts.length === 0 && !loading ? (
-          <div className="no-posts">
-            <h2>No memes found</h2>
-            <p>Be the first to share a meme!</p>
-          </div>
-        ) : (
-          posts.map(post => (
-            <PostCard
-              key={post.id}
-              postId={post.id} 
-              imageUrl={post.image_url}
-              title={post.title}
-              username={post.user?.name || 'Anonymous'}
-              timeAgo='Just now'
-              upvotes={post.upvotes}
-              downvotes={post.downvotes}
-              comments={post.commentsCount}
-              onCommentClick={() => navigate(`/post/${post.id}`)}
-              onSaveClick={() => handleSavePost(post.id)}
-              isSaved={post.isSaved || false}
-              tags={post.tags}
-            />
-          ))
-        )}
-      </div>
+      {searchNotFound && searchQuery && (
+        <div className="no-posts">
+          <h2>No memes found for "{searchQuery}"</h2>
+          <p>Try searching with different keywords or be the first to share a meme!</p>
+        </div>
+      )}
+
+      {!searchNotFound && (
+        <div className="posts-container">
+          {posts.length === 0 && !loading ? (
+            <div className="no-posts">
+              <h2>No memes found</h2>
+              <p>Be the first to share a meme!</p>
+            </div>
+          ) : (
+            posts.map(post => (
+              <PostCard
+                key={post.id}
+                postId={post.id}
+                imageUrl={post.image_url}
+                title={post.title}
+                username={post.user?.name || 'Anonymous'}
+                timeAgo="Just now"
+                upvotes={post.upvotes}
+                downvotes={post.downvotes}
+                comments={post.commentsCount}
+                onCommentClick={() => navigate(`/post/${post.id}`)}
+                onSaveClick={() => handleSavePost(post.id)}
+                isSaved={post.isSaved || false}
+                tags={post.tags}
+              />
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 };
