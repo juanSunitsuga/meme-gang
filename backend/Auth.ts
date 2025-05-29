@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { User } from '../models/User';
 import { v4 } from 'uuid';
 import bcrypt from 'bcrypt';
@@ -10,6 +10,7 @@ import nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
 import { ResetToken } from '../models/ResetToken';
 import { Op } from 'sequelize';
+import { middlewareWrapper } from '../utils/middlewareWrapper';
 
 const router = Router();
 
@@ -171,10 +172,10 @@ router.post('/login', controllerWrapper(async (req, res, next) => {
     {
       id: user.id,
       email: user.email,
-      name: user.name || user.username
+      name: user.name
     },
     appConfig.jwtSecret,
-    { expiresIn: appConfig.jwtExpiration }
+    { expiresIn: '1h' }
   );
 
   return {
@@ -188,8 +189,34 @@ router.post('/login', controllerWrapper(async (req, res, next) => {
   };
 }));
 
-router.get('/session', controllerWrapper(async (req, res, next) => {
-  const authHeader = req.headers['authorization'];
+// Define a local middleware function
+const verifySession = middlewareWrapper(async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+
+    if( tokenBlacklist.has(token)) {
+      return res.status(401).json({ message: 'Token is blacklisted' });
+    }
+    
+    const decoded = jwt.verify(token, appConfig.jwtSecret) as {
+      id: string;
+      email: string;
+      name?: string;
+    };
+    
+    req.user = { id: decoded.id, username: decoded.name || '', email: decoded.email };
+  } catch (error) {
+    return res.status(401).json({ message: 'Invalid token' });
+  }
+});
+
+router.get('/session', verifySession, controllerWrapper(async (req, res, next) => {
+  const authHeader = req.headers.authorization;
   const token = authHeader?.split(' ')[1];
 
   if (!token) {
@@ -220,11 +247,11 @@ router.get('/session', controllerWrapper(async (req, res, next) => {
 
 router.post('/logout', controllerWrapper(async (req, res) => {
   // Get the authorization header
-  const authHeader = req.headers['authorization'];
+  const authHeader = req.headers.authorization;
   const token = authHeader?.split(' ')[1];
 
   if (token) {
-    await addToBlacklist(token, appConfig.jwtExpiration);
+    await addToBlacklist(token, '1h');
   }
 
   return {
@@ -295,9 +322,7 @@ async function sendResetEmail(email: string, resetCode: string) {
   return info;
 }
 
-// Store for blacklisted tokens
-// In production, this should be replaced with Redis or another persistent store
-const tokenBlacklist = new Map<string, number>();
+export const tokenBlacklist = new Map<string, number>();
 
 // Cleanup expired tokens from the blacklist periodically
 setInterval(() => {
@@ -307,7 +332,7 @@ setInterval(() => {
       tokenBlacklist.delete(token);
     }
   }
-}, 60 * 60 * 1000); // Clean up every hour
+}, 60 * 60 * 1000);
 
 /**
  * Add a token to the blacklist until it expires
@@ -320,6 +345,8 @@ async function addToBlacklist(token: string, jwtExpiration: string | number) {
     (typeof jwtExpiration === 'number' ? jwtExpiration : parseInt(jwtExpiration, 10));
   
   tokenBlacklist.set(token, expiryTime);
+
+  console.log(`Token blacklisted: ${token}, expires at: ${new Date(expiryTime * 1000).toISOString()}`);
   return true;
 }
 
