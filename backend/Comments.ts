@@ -40,11 +40,6 @@ router.post(
       throw new Error('Post not found');
     }
 
-    if (post.user_id !== user_id) {
-      res.locals.errorCode = 403;
-      throw new Error('Unauthorized');
-    }
-
     const comment = await Comment.create({
       id: uuidv4(),
       user_id,
