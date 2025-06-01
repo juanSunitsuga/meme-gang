@@ -5,6 +5,12 @@ import PostCard from './Components/PostCard';
 import { useAuth } from './contexts/AuthContext';
 import { useModal } from './contexts/ModalContext';
 
+interface UserData {
+  id: string;
+  name: string;
+  profilePicture?: string;
+}
+
 interface Post {
   id: string;
   title: string;
@@ -20,6 +26,7 @@ interface Post {
   is_upvoted?: boolean;
   isSaved?: boolean;
   loggedInUserId?: string;
+  user?: UserData;
 }
 
 interface HomeProps {
@@ -34,27 +41,32 @@ const Home: React.FC<HomeProps> = ({ searchResults, searchQuery }) => {
   const [sortBy, setSortBy] = useState<'recent' | 'popular'>('recent');
   const [searchNotFound, setSearchNotFound] = useState(false);
   const navigate = useNavigate();
-  const { isAuthenticated, token, isLoading, userData} = useAuth(); // <-- add isLoading
+  const { isAuthenticated, token, isLoading, userData } = useAuth();
   const { openLoginModal } = useModal();
 
   useEffect(() => {
     if (searchResults) {
-      // Jika hasil pencarian ada, gunakan hasil pencarian
       if (Array.isArray(searchResults) && searchResults.length === 0) {
         setPosts([]);
         setSearchNotFound(true);
         setLoading(false);
         return;
       }
+
       setSearchNotFound(false);
+
       const mappedResults = searchResults.map(post => ({
         ...post,
-        user: post.user ?? { name: 'Anonymous' },
+        name: post.user?.name ?? 'Anonymous' ?? post.name,
+        profilePicture: post.user?.profilePicture ?? '',
+        userIdOwnerPost: post.user?.id ?? '',
+        createdAt: post.createdAt,
         commentsCount: post.commentsCount ?? 0,
         upvotes: post.upvotes ?? 0,
         downvotes: post.downvotes ?? 0,
         tags: post.tags ?? [],
       }));
+
       setPosts(mappedResults);
       setLoading(false);
     } else {
@@ -74,6 +86,7 @@ const Home: React.FC<HomeProps> = ({ searchResults, searchQuery }) => {
         try {
           const savedPostsResponse = await fetchEndpoint('/save/saved-posts', 'GET', token);
           const savedPostsArray = savedPostsResponse.data || savedPostsResponse;
+
           if (Array.isArray(savedPostsArray)) {
             const savedPostIds = new Set(savedPostsArray.map((item: any) => item.post_id));
             data.forEach((post: Post) => {
@@ -85,8 +98,21 @@ const Home: React.FC<HomeProps> = ({ searchResults, searchQuery }) => {
         }
       }
 
-      setPosts(data);
-      console.log('Fetched posts:', data);
+      console.log(data)
+
+      const mappedResults = data.map((post: Post) => ({
+        ...post,
+        name: post.user?.name ?? post.name,
+        profilePicture: post.user?.profilePicture ?? '',
+        userIdOwnerPost: post.user?.id ?? '',
+        createdAt: post.createdAt,
+        commentsCount: post.commentsCount ?? 0,
+        upvotes: post.upvotes ?? 0,
+        downvotes: post.downvotes ?? 0,
+        tags: post.tags ?? [],
+      }));
+
+      setPosts(mappedResults);
       setError(null);
     } catch (err) {
       console.error('Error fetching posts:', err);
@@ -124,16 +150,15 @@ const Home: React.FC<HomeProps> = ({ searchResults, searchQuery }) => {
   };
 
   const handleEditPost = (updatedPost: Post) => {
-    setPosts((prev) =>
-      prev.map((post) => (post.id === updatedPost.id ? { ...post, ...updatedPost } : post))
+    setPosts(prev =>
+      prev.map(post => (post.id === updatedPost.id ? { ...post, ...updatedPost } : post))
     );
   };
 
   const handleDeletePost = (postId: string) => {
-    setPosts((prev) => prev.filter((post) => post.id !== postId));
+    setPosts(prev => prev.filter(post => post.id !== postId));
   };
 
-  // Show auth loading spinner before anything else
   if (isLoading) {
     return (
       <div className="loading-container">
@@ -144,7 +169,7 @@ const Home: React.FC<HomeProps> = ({ searchResults, searchQuery }) => {
   }
 
   return (
-    <div className="home-container" style={{marginTop: '6%'}}>
+    <div className="home-container" style={{ marginTop: '6%' }}>
       {loading && (
         <div className="loading-container">
           <div className="loading-spinner"></div>
@@ -186,7 +211,7 @@ const Home: React.FC<HomeProps> = ({ searchResults, searchQuery }) => {
                 tags={post.tags}
                 is_upvoted={post.is_upvoted}
                 userIdOwnerPost={post.userIdOwnerPost}
-                loggedInUserId = {userData?.id}
+                loggedInUserId={userData?.id}
                 onEdit={handleEditPost}
                 onDelete={handleDeletePost}
               />

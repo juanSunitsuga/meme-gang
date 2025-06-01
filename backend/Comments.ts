@@ -5,6 +5,9 @@ import { User } from '../models/User';
 import authMiddleware from '../middleware/Auth';
 import { controllerWrapper } from '../utils/controllerWrapper';
 import { v4 as uuidv4 } from 'uuid';
+import jwt from 'jsonwebtoken';
+import { appConfig } from '../config/app';
+
 
 const router = express.Router({ mergeParams: true });
 
@@ -13,18 +16,41 @@ router.get(
   controllerWrapper(async (req: Request) => {
     const { id: post_id } = req.params;
 
+    const token = req.headers.authorization?.split(' ')[1];
+    let idUser = null;
+
+    // 💡 Cek dan verifikasi token
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, appConfig.jwtSecret) as { id: string };
+        idUser = decoded.id;
+        console.log("✅ Logged in user ID:", idUser);
+      } catch (err) {
+        console.error("❌ Token verification failed:", err);
+      }
+    } else {
+      console.log("ℹ️ No token found in Authorization header");
+    }
+
+    // 🧲 Ambil semua komentar utama
     const comments = await Comment.findAll({
       where: {
         post_id,
-        reply_to: null, 
-      },      
-      include: [{ model: User, attributes: ['username', 'profilePicture'] }],
+        reply_to: null,
+      },
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'username', 'profilePicture'],
+        },
+      ],
       order: [['createdAt', 'DESC']],
     });
 
-    return comments;
+    return { comments, idUser };
   })
 );
+
 
 router.post(
   '/',
@@ -50,7 +76,6 @@ router.post(
     return { message: 'Comment created', comment };
   })
 );
-
 
 
 // // ✅ Edit komentar

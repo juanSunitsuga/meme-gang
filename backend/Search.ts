@@ -1,13 +1,14 @@
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
 import { Post } from '../models/Post';
+import { User } from '../models/User'; // pastikan ini di-import
 import express from 'express';
 import bodyParser from 'body-parser';
 import { controllerWrapper } from '../utils/controllerWrapper';
 
 const router = express.Router();
 router.use(bodyParser.json());
-// Endpoint to search users, posts, and tags
+
 router.get('/', controllerWrapper(async (req: Request, res: Response) => {
     const { query } = req.query;
 
@@ -19,18 +20,20 @@ router.get('/', controllerWrapper(async (req: Request, res: Response) => {
     console.log("query", query);
 
     try {
-
-        // Search posts by title (case-insensitive)
         const postResults = await Post.findAll({
             where: {
                 title: { [Op.iLike]: `%${query}%` },
             },
+            include: [
+                {
+                    model: User,
+                    attributes: ['id', 'name', 'email'], // kamu bisa ubah sesuai field yang ingin ditampilkan
+                }
+            ],
             limit: 20,
         });
 
-
         console.log("post", postResults);
-
 
         if (postResults.length === 0) {
             res.status(404).json({

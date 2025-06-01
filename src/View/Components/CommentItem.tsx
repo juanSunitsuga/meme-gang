@@ -247,18 +247,18 @@ const CommentItem = ({
       if (!data) throw new Error("Failed to send reply");
       const newReplyRaw = data;
       const newReply: Comment = {
-        id: data.id,
+        id: newReplyRaw.id,
         user: {
           username: newReplyRaw.user?.username || "",
           avatar: newReplyRaw.user?.profilePicture || "",
           profilePicture: newReplyRaw.user?.profilePicture || "",
         },
-        content: data.content,
-        parentId: data.reply_to || data.parentId || comment.id,
-        reply_to: data.reply_to,
-        createdAt: data.createdAt,
-        profilePicture: data.user?.avatar || data.user?.profilePicture || "",
-        post_id: data.post_id,
+        content: newReplyRaw.content,
+        parentId: newReplyRaw.reply_to || newReplyRaw.parentId || comment.id,
+        reply_to: newReplyRaw.reply_to,
+        createdAt: newReplyRaw.createdAt,
+        profilePicture: newReplyRaw.user?.avatar || newReplyRaw.user?.profilePicture || "",
+        post_id: newReplyRaw.post_id,
         replies: [],
       };
 
@@ -314,7 +314,7 @@ const CommentItem = ({
       
       const data = await fetchEndpoint(endpoint, 'PUT', token, {
         content: editContent,
-        UpdatedAt: now,
+        updatedAt: now,
       }
       );
       if (!data) throw new Error("Failed to edit comment");
@@ -329,7 +329,6 @@ const CommentItem = ({
     }
   };
 
-  // Menampilkan timestamp: pakai updatedAt jika ada, jika tidak pakai createdAt
     const renderTimestamp = () => {
       const updated = currentUpdatedAt || comment.updatedAt;
       if (updated && updated !== comment.createdAt) {
@@ -345,6 +344,7 @@ const CommentItem = ({
         </Typography>
       );
     };
+
       const getAvatarUrl = (avatarPath: string | undefined) => {
     if (!avatarPath) return undefined;
 
@@ -417,6 +417,7 @@ const CommentItem = ({
         </Menu>
 
         <Stack direction="row" spacing={2}>
+          <Link to={`/profile/${comment.user?.username}`} style={{ display: 'inline-block' }}>
           <Avatar
             src={getAvatarUrl(comment.profilePicture || comment.user?.avatar || comment.user?.profilePicture || undefined)} 
 
@@ -424,6 +425,7 @@ const CommentItem = ({
             alt={comment.user?.username || ""}
             sx={{ width: 36, height: 36, bgcolor: "#23272f", mt: 0.5 }}
           />
+          </Link>
           <Box flex={1}>
             <Stack direction="row" spacing={1} alignItems="center">
               <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#4fa3ff" }}>
