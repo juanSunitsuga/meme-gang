@@ -11,7 +11,7 @@ import { fetchEndpoint } from './FetchEndpoint';
 interface PostDetail {
   id: string;
   title: string;
-  username: string | null;
+  name: string | null;
   image_url: string | null;
   createdAt: string;
   updatedAt: string;
@@ -98,7 +98,7 @@ const PostDetailPage: React.FC = () => {
             postId={post.id}
             imageUrl={post.image_url || ''}
             title={post.title}
-            username={post.username || 'Unknown User'}
+            username={post.name || 'Unknown User'}
             timeAgo={post.updatedAt}
             upvotes={post.upvotes}
             downvotes={post.downvotes}
