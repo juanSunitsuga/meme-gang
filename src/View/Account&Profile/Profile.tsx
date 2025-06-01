@@ -182,7 +182,7 @@ const Profile: React.FC = () => {
   };
 
   return (
-    <Paper sx={{ backgroundColor: "#121212", color: "#fff", p: 4 }}>
+    <Paper sx={{ backgroundColor: "#121212", color: "#fff", p: 4 , marginTop: "5%"}}>
       {/* Header */}
       <Box display="flex" alignItems="center" mb={3}>
         <Avatar

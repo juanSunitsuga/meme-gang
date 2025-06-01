@@ -15,7 +15,7 @@ interface Post {
   id: string;
   title: string;
   image_url: string;
-  userIdOwnerPost: string;
+  user_id: string;
   name: string;
   profilePicture?: string;
   createdAt: string;
@@ -32,13 +32,13 @@ interface Post {
 interface HomeProps {
   searchResults?: Post[] | null;
   searchQuery?: string;
+  type?: 'fresh' | 'trending' | 'popular'
 }
 
-const Home: React.FC<HomeProps> = ({ searchResults, searchQuery }) => {
+const Home: React.FC<HomeProps> = ({ searchResults, searchQuery, type = 'fresh' }) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<'recent' | 'popular'>('recent');
   const [searchNotFound, setSearchNotFound] = useState(false);
   const navigate = useNavigate();
   const { isAuthenticated, token, isLoading, userData } = useAuth();
@@ -57,7 +57,7 @@ const Home: React.FC<HomeProps> = ({ searchResults, searchQuery }) => {
 
       const mappedResults = searchResults.map(post => ({
         ...post,
-        name: post.user?.name ?? 'Anonymous' ?? post.name,
+        name: post.user?.name ?? post.name,
         profilePicture: post.user?.profilePicture ?? '',
         userIdOwnerPost: post.user?.id ?? '',
         createdAt: post.createdAt,
@@ -66,7 +66,6 @@ const Home: React.FC<HomeProps> = ({ searchResults, searchQuery }) => {
         downvotes: post.downvotes ?? 0,
         tags: post.tags ?? [],
       }));
-
       setPosts(mappedResults);
       setLoading(false);
     } else {
@@ -74,12 +73,12 @@ const Home: React.FC<HomeProps> = ({ searchResults, searchQuery }) => {
       fetchPosts();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchResults, sortBy, isAuthenticated]);
+  }, [searchResults, type, isAuthenticated]);
 
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      const endpoint = `/post?type=${sortBy === 'recent' ? 'fresh' : 'popular'}`;
+      const endpoint = `/post?type=${type}`;
       const data = await fetchEndpoint(endpoint, 'GET', isAuthenticated ? token : undefined);
 
       if (isAuthenticated && token) {
@@ -98,13 +97,10 @@ const Home: React.FC<HomeProps> = ({ searchResults, searchQuery }) => {
         }
       }
 
-      console.log(data)
-
       const mappedResults = data.map((post: Post) => ({
         ...post,
         name: post.user?.name ?? post.name,
-        profilePicture: post.user?.profilePicture ?? '',
-        userIdOwnerPost: post.user?.id ?? '',
+        profilePicture: post.profilePicture ?? '',
         createdAt: post.createdAt,
         commentsCount: post.commentsCount ?? 0,
         upvotes: post.upvotes ?? 0,
@@ -159,11 +155,29 @@ const Home: React.FC<HomeProps> = ({ searchResults, searchQuery }) => {
     setPosts(prev => prev.filter(post => post.id !== postId));
   };
 
-  if (isLoading) {
+  if (isLoading || loading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading memes...</p>
+      <div className="loading-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '10%' }}>
+        <div
+          style={{
+            width: 60,
+            height: 60,
+            border: '8px solid #f3f3f3',
+            borderTop: '8px solid #1976d2',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            marginBottom: 16,
+          }}
+        />
+        <p style={{ color: '#aaa', fontSize: '1.2rem', fontFamily: 'Poppins, sans-serif' }}>Loading memes...</p>
+        <style>
+          {`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}
+        </style>
       </div>
     );
   }
@@ -180,14 +194,33 @@ const Home: React.FC<HomeProps> = ({ searchResults, searchQuery }) => {
       {error && <div className="error-message">{error}</div>}
 
       {searchNotFound && searchQuery && (
-        <div className="no-posts">
+        <div
+          className="no-posts"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '30vh',
+            textAlign: 'center',
+          }}
+        >
           <h2>No memes found for "{searchQuery}"</h2>
-          <p>Try searching with different keywords or be the first to share a meme!</p>
+          <p>Try searching with different keywords or be the first to share that meme!</p>
         </div>
       )}
 
       {!searchNotFound && (
-        <div className="posts-container">
+        <div 
+          className="posts-container"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '40vh',
+          }}
+        >
           {posts.length === 0 && !loading ? (
             <div className="no-posts">
               <h2>No memes found</h2>
@@ -210,10 +243,11 @@ const Home: React.FC<HomeProps> = ({ searchResults, searchQuery }) => {
                 isSaved={post.isSaved || false}
                 tags={post.tags}
                 is_upvoted={post.is_upvoted}
-                userIdOwnerPost={post.userIdOwnerPost}
+                userIdOwnerPost={post.user_id}
                 loggedInUserId={userData?.id}
                 onEdit={handleEditPost}
                 onDelete={handleDeletePost}
+                profileUrl={post.profilePicture}
               />
             ))
           )}

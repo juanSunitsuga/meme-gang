@@ -24,7 +24,7 @@ const storage = multer.diskStorage({
     },
 });
 
-async function buildPostsWithVotes(posts: any[], userId: string) {
+export async function buildPostWithAllData(posts: any[], userId: string) {
     const postIds = posts.map(post => post.id);
 
     const votes = await Votes.findAll({
@@ -114,6 +114,7 @@ async function buildPostsWithVotes(posts: any[], userId: string) {
         const tagNames = tagIds.map(tagId => tagIdToName[tagId]).filter(Boolean);
         const is_upvoted = userId ? (userVotesMap[post.id] ?? null) : null;
         const user = userMap[post.user_id];
+
         return {
             ...post.toJSON(),
             upvotes: votes.upvotes,
@@ -121,7 +122,6 @@ async function buildPostsWithVotes(posts: any[], userId: string) {
             commentsCount: commentCount,
             tags: tagNames,
             is_upvoted: is_upvoted,
-            userIdOwnerPost: user.id,
             name: user.username,
             profilePicture: user?.profilePicture,
         };
@@ -228,14 +228,14 @@ router.get(
     '/', 
     controllerWrapper(async (req: Request, res: Response) => {
         const token = req.headers.authorization?.split(' ')[1];
-
+        
         let userId = null;
 
         if (token) {
             const decoded = jwt.verify(token, appConfig.jwtSecret);
             userId = decoded.id;
         }
-
+        
         const type = req.query.type as string;
         let posts;
 
@@ -251,14 +251,13 @@ router.get(
             posts = await Post.findAll({ order: [['createdAt', 'DESC']] });
         }
 
-        let postsWithVotes = await buildPostsWithVotes(posts, userId)
+        let postsWithVotes = await buildPostWithAllData(posts, userId)
 
         if (type === 'trending' || type === 'popular') {
             postsWithVotes = postsWithVotes.sort((a, b) =>
                 (b.upvotes + b.downvotes) - (a.upvotes + a.downvotes)
             );
         }
-
         return postsWithVotes;
     })
 );
@@ -280,7 +279,7 @@ router.get(
         const postIds = upvotes.map(v => v.post_id);
         if (postIds.length === 0) return [];
         const posts = await Post.findAll({ where: { id: postIds } });
-        return await buildPostsWithVotes(posts, userId);
+        return await buildPostWithAllData(posts, userId);
     })
 );
 
@@ -301,7 +300,7 @@ router.get(
         const postIds = downvotes.map(v => v.post_id);
         if (postIds.length === 0) return [];
         const posts = await Post.findAll({ where: { id: postIds } });
-        return await buildPostsWithVotes(posts, userId);
+        return await buildPostWithAllData(posts, userId);
     })
 );
 
@@ -322,7 +321,7 @@ router.get(
         const postIds = saved.map(v => v.post_id);
         if (postIds.length === 0) return [];
         const posts = await Post.findAll({ where: { id: postIds } });
-        return await buildPostsWithVotes(posts, userId);
+        return await buildPostWithAllData(posts, userId);
     })
 );
 

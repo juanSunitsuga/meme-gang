@@ -18,13 +18,12 @@ import BookmarkIcon from '@mui/icons-material/Bookmark'; // For filled bookmark
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder'; // For outline bookmark
 import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import FetchComment from './FetchComments';
-import ErrorBoundary from '../ErrorBoundary';
 import { fetchEndpoint } from '../FetchEndpoint';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import { useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { Link } from "react-router-dom";
 
 interface PostCardProps {
   postId: string;
@@ -44,6 +43,7 @@ interface PostCardProps {
   loggedInUserId?: string;
   onEdit?: (updatedPost: any) => void;
   onDelete?: (postId: string) => void;
+  profileUrl?: string;
 }
 
 const PostCard: React.FC<PostCardProps> = ({
@@ -64,23 +64,23 @@ const PostCard: React.FC<PostCardProps> = ({
   loggedInUserId,
   onEdit,
   onDelete,
+  profileUrl,
 }) => {
   const [showComments, setShowComments] = useState(false);
   const [upvote, setUpvote] = useState(is_upvoted);
-  const [downvote, setDownvote] = useState(!is_upvoted ? false : undefined);
+  const [downvote, setDownvote] = useState(is_upvoted === false ? true : undefined);
   const [upvotesCount, setUpvotesCount] = useState(upvotes);
   const [downvotesCount, setDownvotesCount] = useState(downvotes);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
   const { openEditPostModal } = useModal();
-  const { token } = useAuth();
+  const { token, isAuthenticated } = useAuth();
 
-  // Ini fungsi baru untuk handle comment click
   const handleCommentClick = () => {
     if (onCommentClick) {
-      onCommentClick(); // kalau ada callback dari parent, panggil navigasi
+      onCommentClick();
     } else {
-      setShowComments((prev) => !prev); // kalau gak ada, toggle expand comment seperti biasa
+      setShowComments((prev) => !prev);
       setTimeout(() => {
         const el = document.getElementById(`comments-${postId}`);
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -181,6 +181,41 @@ const PostCard: React.FC<PostCardProps> = ({
     }
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 5) return "Baru saja";
+    if (diffMins < 60) return `${diffMins} menit yang lalu`;
+    if (diffHours < 24) return `${diffHours} jam yang lalu`;
+    if (diffDays < 7) return `${diffDays} hari yang lalu`;
+
+    return date.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const getAvatarUrl = (avatarPath: string | undefined) => {
+    if (!avatarPath) return undefined;
+    if (avatarPath.startsWith('http')) {
+      return avatarPath;
+    }
+    const filename = avatarPath.includes('/')
+      ? avatarPath.split('/').pop()
+      : avatarPath;
+    if (!filename) return undefined;
+    const cacheBuster = avatarPath.includes('?t=') ? '' : `?t=${new Date().getTime()}`;
+    return `/uploads/avatars/${filename}${cacheBuster}`;
+  };
+
   useEffect(() => {
     if (menuOpen) {
       const handleScroll = () => {
@@ -208,13 +243,26 @@ const PostCard: React.FC<PostCardProps> = ({
         {/* Header */}
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Stack direction="row" spacing={1} alignItems="center">
-            <Avatar alt={username} sx={{ width: 32, height: 32 }} />
+            <Link 
+            to={`/profile/${username}`}
+            style={{
+              color: "#4fa3ff",
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+            >
+              <Avatar 
+                alt={username}
+                src={getAvatarUrl(profileUrl)} 
+                sx={{ width: 32, height: 32 }} 
+              />
+            </Link>
             <Box>
               <Typography fontSize={14} fontWeight={500}>
                 {username}
               </Typography>
               <Typography fontSize={12} color="gray">
-                {timeAgo}
+                {formatDate(timeAgo)}
               </Typography>
             </Box>
           </Stack>
@@ -289,10 +337,11 @@ const PostCard: React.FC<PostCardProps> = ({
           <Stack direction="row" spacing={3} alignItems="center">
             <IconButton
               sx={{
-                color: upvote ? '#4caf50' : '#fff', // green if upvoted
+                color: upvote ? '#4caf50' : '#fff',
                 transition: 'color 0.2s',
               }}
-              onClick={handleVotesClick.bind(null, 'upvote')}
+              onClick={isAuthenticated ? handleVotesClick.bind(null, 'upvote') : undefined}
+              disabled={!isAuthenticated}
             >
               <Stack direction="row" spacing={0.5} alignItems="center">
                 <ArrowUpwardOutlined fontSize="small" />
@@ -305,7 +354,8 @@ const PostCard: React.FC<PostCardProps> = ({
                 color: downvote ? '#f44336' : '#fff',
                 transition: 'color 0.2s',
               }}
-              onClick={handleVotesClick.bind(null, 'downvote')}
+              onClick={isAuthenticated ? handleVotesClick.bind(null, 'downvote') : undefined}
+              disabled={!isAuthenticated}
             >
               <Stack direction="row" spacing={0.5} alignItems="center">
                 <ArrowDownwardOutlined fontSize="small" />

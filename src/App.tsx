@@ -48,12 +48,12 @@ const darkTheme = createTheme({
 // Removed unused theme variable
 
 // Home wrapper agar bisa menerima hasil pencarian dari Navbar
-function HomeWithSearch() {
+function HomeWithSearch({type}: {type: 'fresh' | 'trending' | 'popular'}) {
     const location = useLocation();
     // searchResults dan searchQuery dikirim dari Navbar via navigate('/', { state: ... })
     const searchResults = location.state?.searchResults ?? null;
     const searchQuery = location.state?.searchQuery ?? '';
-    return <Home searchResults={searchResults} searchQuery={searchQuery} />;
+    return <Home searchResults={searchResults} searchQuery={searchQuery} type={type}/>;
 }
 
 function AppContent() {
@@ -62,7 +62,10 @@ function AppContent() {
             <Navbar />
             <div className="content-container">
                 <Routes>
-                    <Route path="/" element={<HomeWithSearch />} />
+                    <Route path="/" element={<HomeWithSearch type="fresh"/>} />
+                    <Route path="/fresh" element={<HomeWithSearch type="fresh"/>} />
+                    <Route path="/trending" element={<HomeWithSearch type="trending"/>} />
+                    <Route path="/top" element={<HomeWithSearch type="popular"/>} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/post/:postId" element={<PostDetailPage />} />
                     <Route path="/profile/:username" element={<Profile />} />
