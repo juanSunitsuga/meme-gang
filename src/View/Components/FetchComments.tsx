@@ -9,17 +9,24 @@ interface CommentListProps {
 
 const FetchComment = ({ postId }: CommentListProps) => {
   const [comments, setComments] = useState<Comment[]>([]);
+  const [loggedInUserId, setLoggedInUserId] = useState<string>("");
 
   useEffect(() => {
     const fetchMainComments = async () => {
       try {
         const endpoint = `/post/${postId}/comments`;
         const data = await fetchEndpoint(endpoint, 'GET');
-        if(!data){
+
+        if (!data) {
           console.error("No comments found for this post");
           return;
         }
-        setComments(data);
+
+        console.log("✅ ID user yang login:", data.idUser); // Tambahkan log ini
+
+        setComments(data.comments);
+        setLoggedInUserId(data.idUser);
+
       } catch (err) {
         console.error("Failed to fetch main comments", err);
       }
@@ -36,32 +43,25 @@ const FetchComment = ({ postId }: CommentListProps) => {
     try {
       const token = localStorage.getItem("token");
       const now = new Date().toISOString();
-      // const res = await fetch(`http://localhost:3000/comments/${commentId}`, {
-      //   method: "PUT",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //     Authorization: `Bearer ${token}`,
-      //   },
-      //   body: JSON.stringify({ content: newContent, updatedAt: now }),
-      // });
-        const endpoint = `/comments/${commentId}`;
-        const data = await fetchEndpoint(endpoint, 'PUT', token, {
-          content: newContent,
-          updatedAt: now,
-        });
 
-        if (!data){
-          console.error("Failed to update comment");
-          return;
-        }
+      const endpoint = `/comments/${commentId}`;
+      const data = await fetchEndpoint(endpoint, 'PUT', token, {
+        content: newContent,
+        updatedAt: now,
+      });
 
-        setComments(prev =>
-          prev.map(comment =>
-            comment.id === commentId
-              ? { ...comment, content: newContent, updatedAt: now }
-              : comment
-          )
-        );
+      if (!data) {
+        console.error("Failed to update comment");
+        return;
+      }
+
+      setComments(prev =>
+        prev.map(comment =>
+          comment.id === commentId
+            ? { ...comment, content: newContent, updatedAt: now }
+            : comment
+        )
+      );
     } catch (err) {
       console.error("Failed to update comment", err);
     }
@@ -85,14 +85,19 @@ const FetchComment = ({ postId }: CommentListProps) => {
           Tidak ada komentar untuk post ini
         </Typography>
       ) : (
-        comments.map(comment => (
-          <CommentItem
-            key={comment.id}
-            comment={comment}
-            onDelete={handleDelete}
-            onEdit={handleEdit}
-          />
-        ))
+        comments.map(comment => {
+          // console.log("💬 Pemilik komentar:", comment.user?.id); // Tambahkan log ini
+          return (
+            <CommentItem
+              key={comment.id}
+              comment={comment}
+              onDelete={handleDelete}
+              onEdit={handleEdit}
+              // loggedInUserId={loggedInUserId}
+              // userIdOwnerComments={comment.user?.id}
+            />
+          );
+        })
       )}
     </div>
   );

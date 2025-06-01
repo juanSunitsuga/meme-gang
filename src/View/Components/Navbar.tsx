@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useNavigate, Link as RouterLink, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useModal } from '../contexts/ModalContext';
 import {
@@ -230,17 +230,19 @@ const MuiNavbar: React.FC = () => {
           borderBottom: '1px solid rgba(255,255,255,0.1)'
         }}>
           {userData.profilePicture ? (
-            <Avatar 
-              src={getAvatarUrl(userData.profilePicture)} 
-              alt={userData.username}
-              sx={{ 
-                width: 40, 
-                height: 40,
-                mr: 1.5,
-                border: '2px solid rgba(255,255,255,0.2)'
-              }} 
-            />
-          ) : (
+            <Link to={`/profile/${userData.username}`} style={{ display: 'inline-block' }}>
+              <Avatar
+                src={getAvatarUrl(userData.profilePicture)}
+                alt={userData.username}
+                sx={{
+                  width: 40,
+                  height: 40,
+                  mr: 1.5,
+                  border: '2px solid rgba(255,255,255,0.2)',
+                }}
+              />
+            </Link>
+          ) : ( 
             <Avatar sx={{ 
               width: 40, 
               height: 40,
