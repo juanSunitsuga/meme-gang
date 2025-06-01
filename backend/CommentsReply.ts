@@ -11,7 +11,6 @@ router.get(
   '/',
   controllerWrapper(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const user_id = req.user!.id;
 
     const mainComment = await Comment.findByPk(id, {
       include: [
@@ -34,7 +33,7 @@ router.get(
         include: [
           {
             model: User,
-            attributes: ['user_id', 'username', 'profilePicture'],
+            attributes: ['username', 'profilePicture'],
           },
         ],
         order: [['createdAt', 'ASC']],
@@ -52,11 +51,6 @@ router.get(
 
       return repliesWithChildren;
     };
-
-    if (mainComment.user_id !== user_id) {
-      res.locals.errorCode = 403;
-      throw new Error('Not authorized to edit this reply');
-    }
 
     const allReplies = await getReplies(id);
 
@@ -86,11 +80,7 @@ router.post(
       user_id,
     });
 
-    const user = await User.findOne({
-      where : { id : user_id}
-    })
-
-    return { message: 'Reply created', reply, user };
+    return { message: 'Reply created', reply };
   })
 );
 
