@@ -19,6 +19,22 @@ import { fetchEndpoint } from './FetchEndpoint';
 import FAIcon from './Components/FAIcon';
 import { useModal } from './contexts/ModalContext';
 
+// Helper function to mimic MUI's alpha utility
+function alpha(color: string, opacity: number) {
+  // Only handles hex colors like #RRGGBB
+  if (color.startsWith('#')) {
+    const hex = color.replace('#', '');
+    if (hex.length === 6) {
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    }
+  }
+  // fallback
+  return color;
+}
+
 const MAX_TAG_LENGTH = 20;
 
 // Styled components to match other modals
@@ -147,54 +163,54 @@ const EditPostModal: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!title) {
-    setAlertMessage('Please provide a title for your post.');
-    setAlertSeverity('error');
-    return;
-  }
+    if (!title) {
+      setAlertMessage('Please provide a title for your post.');
+      setAlertSeverity('error');
+      return;
+    }
 
-  // Only require an image if there is no existing image
-  if (!image && !imagePreview) {
-    setAlertMessage('Please select an image to upload.');
-    setAlertSeverity('error');
-    return;
-  }
+    // Only require an image if there is no existing image
+    if (!image && !imagePreview) {
+      setAlertMessage('Please select an image to upload.');
+      setAlertSeverity('error');
+      return;
+    }
 
-  setLoading(true);
-  setAlertMessage(null);
+    setLoading(true);
+    setAlertMessage(null);
 
-  const formData = new FormData();
+    const formData = new FormData();
     formData.append('title', title);
     // Only append image if user selected a new one
     if (image) {
-        formData.append('image', image);
+      formData.append('image', image);
     }
     tags.forEach((tag) => formData.append('tag', tag));
 
     try {
-        const token = localStorage.getItem('token');
-        if (!token) {
+      const token = localStorage.getItem('token');
+      if (!token) {
         throw new Error('You must be logged in to edit a post');
-        }
-        
-        const result = await fetchEndpoint(`/post/${editPostData?.postId}`, 'PUT', token, formData);
+      }
+      
+      await fetchEndpoint(`/post/${editPostData?.postId}`, 'PUT', token, formData);
 
-        setAlertMessage('Post edited successfully!');
-        setAlertSeverity('success');
-        
-        setTimeout(() => {
+      setAlertMessage('Post edited successfully!');
+      setAlertSeverity('success');
+      
+      setTimeout(() => {
         handleCancel();
         closeEditPostModal();
-        }, 2000);
-        
+      }, 2000);
+      
     } catch (error: any) {
-        console.error('Upload error:', error);
-        setAlertMessage(error.message || 'Failed to edit post. Please try again.');
-        setAlertSeverity('error');
+      console.error('Upload error:', error);
+      setAlertMessage(error.message || 'Failed to edit post. Please try again.');
+      setAlertSeverity('error');
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -313,7 +329,6 @@ const EditPostModal: React.FC = () => {
                   key={tag}
                   label={tag}
                   onDelete={() => handleTagDelete(tag)}
-                  deleteIcon={<FAIcon icon="fas fa-times" />}
                   sx={{ 
                     backgroundColor: 'rgba(25, 118, 210, 0.1)',
                     color: '#1976d2',
@@ -406,7 +421,3 @@ const EditPostModal: React.FC = () => {
 };
 
 export default EditPostModal;
-
-function alpha(main: string, arg1: number): import("csstype").Property.BackgroundColor | readonly string[] | readonly import("csstype").Property.BackgroundColor[] | undefined {
-  throw new Error('Function not implemented.');
-}
