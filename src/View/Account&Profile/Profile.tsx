@@ -16,6 +16,9 @@ import PostCard from "../Components/PostCard";
 import { Link, useParams } from "react-router-dom";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { fetchEndpoint } from "../FetchEndpoint";
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useModal } from '../contexts/ModalContext';
 
 interface User {
   id: string;
@@ -24,14 +27,28 @@ interface User {
   profilePicture: string;
 }
 
+interface UserData {
+  id: string;
+  name: string;
+  profilePicture?: string;
+}
+
 interface Post {
   id: string;
   title: string;
+  image_url: string;
+  user_id: string;
+  name: string;
+  profilePicture?: string;
   createdAt: string;
-  image_url?: string;
-  upvotes?: number;
-  downvotes?: number;
-  commentsCount?: number;
+  commentsCount: number;
+  upvotes: number;
+  downvotes: number;
+  tags: string[];
+  is_upvoted?: boolean;
+  isSaved?: boolean;
+  loggedInUserId?: string;
+  user?: UserData;
 }
 
 interface Comment {
@@ -92,6 +109,9 @@ const Profile: React.FC = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const { isAuthenticated, token, userData } = useAuth();
+  const { openLoginModal } = useModal();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Ambil username user yang sedang login
@@ -181,6 +201,43 @@ const Profile: React.FC = () => {
     return `/uploads/avatars/${filename}${cacheBuster}`;
   };
 
+  const handleEditPost = (updatedPost: Post) => {
+    setPosts(prev =>
+      prev.map(post => (post.id === updatedPost.id ? { ...post, ...updatedPost } : post))
+    );
+  };
+
+  const handleDeletePost = (postId: string) => {
+    setPosts(prev => prev.filter(post => post.id !== postId));
+  };
+
+  const handleSavePost = async (postId: string) => {
+      if (!isAuthenticated) {
+        openLoginModal();
+        return;
+      }
+  
+      try {
+        const postIndex = posts.findIndex(post => post.id === postId);
+        if (postIndex === -1) return;
+  
+        const currentSaveStatus = posts[postIndex].isSaved || false;
+        const endpoint = `/save/save-post/${postId}`;
+        const method = currentSaveStatus ? 'DELETE' : 'POST';
+  
+        await fetchEndpoint(endpoint, method, token);
+  
+        const updatedPosts = [...posts];
+        updatedPosts[postIndex] = {
+          ...updatedPosts[postIndex],
+          isSaved: !currentSaveStatus,
+        };
+        setPosts(updatedPosts);
+      } catch (err) {
+        console.error('Error saving post:', err);
+      }
+    };
+
   return (
     <Paper sx={{ backgroundColor: "#121212", color: "#fff", p: 4 , marginTop: "5%"}}>
       {/* Header */}
@@ -237,15 +294,23 @@ const Profile: React.FC = () => {
                 <PostCard
                   key={post.id}
                   postId={post.id}
-                  imageUrl={post.image_url || ""}
+                  imageUrl={post.image_url}
                   title={post.title}
-                  username={user.username || "Unknown"}
-                  timeAgo={new Date(post.createdAt).toLocaleString()}
-                  upvotes={post.upvotes || 0}
-                  downvotes={post.downvotes || 0}
-                  comments={post.commentsCount || 0}
-                  isSaved={false}
-                  tags={[]}
+                  username={post.name}
+                  timeAgo={post.createdAt}
+                  upvotes={post.upvotes}
+                  downvotes={post.downvotes}
+                  comments={post.commentsCount}
+                  onCommentClick={() => navigate(`/post/${post.id}`)}
+                  onSaveClick={() => handleSavePost(post.id)}
+                  isSaved={post.isSaved || false}
+                  tags={post.tags}
+                  is_upvoted={post.is_upvoted}
+                  userIdOwnerPost={post.user_id}
+                  loggedInUserId={userData?.id}
+                  onEdit={handleEditPost}
+                  onDelete={handleDeletePost}
+                  profileUrl={post.profilePicture}
                 />
               ))}
             </Box>

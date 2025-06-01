@@ -9,7 +9,9 @@ import authMiddleware from '../middleware/Auth';
 import { controllerWrapper } from '../utils/controllerWrapper';
 import { Post } from '../models/Post';
 import { Comment } from '../models/Comment';
-
+import { appConfig } from '../config/app';
+import jwt from 'jsonwebtoken';
+import { buildPostWithAllData} from './FetchPostData';
 
 declare global {
     namespace Express {
@@ -189,6 +191,16 @@ router.post('/change-password', authMiddleware, controllerWrapper(async (req: Re
 
 router.get('/:username/post', controllerWrapper(async (req, res) => {
     const { username } = req.params;
+
+    const token = req.headers.authorization?.split(' ')[1];
+
+    let userId = null;
+    
+    if (token) {
+        const decoded = jwt.verify(token, appConfig.jwtSecret);
+        userId = decoded.id;
+    }
+
     const user = await User.findOne({ where: { username } });
     if (!user) {
         res.status(404).json({ error: 'User not found' });
@@ -198,7 +210,8 @@ router.get('/:username/post', controllerWrapper(async (req, res) => {
         where: { user_id: user.id },
         order: [['createdAt', 'DESC']],
     });
-    return posts;
+
+    return await buildPostWithAllData(posts, userId);
 }));
 
 router.get('/:username/comment', controllerWrapper(async (req, res) => {
