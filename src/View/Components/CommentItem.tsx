@@ -247,18 +247,18 @@ const CommentItem = ({
       if (!data) throw new Error("Failed to send reply");
       const newReplyRaw = data;
       const newReply: Comment = {
-        id: data.id,
+        id: newReplyRaw.id,
         user: {
           username: newReplyRaw.user?.username || "",
           avatar: newReplyRaw.user?.profilePicture || "",
           profilePicture: newReplyRaw.user?.profilePicture || "",
         },
-        content: data.content,
-        parentId: data.reply_to || data.parentId || comment.id,
-        reply_to: data.reply_to,
-        createdAt: data.createdAt,
-        profilePicture: data.user?.avatar || data.user?.profilePicture || "",
-        post_id: data.post_id,
+        content: newReplyRaw.content,
+        parentId: newReplyRaw.reply_to || newReplyRaw.parentId || comment.id,
+        reply_to: newReplyRaw.reply_to,
+        createdAt: newReplyRaw.createdAt,
+        profilePicture: newReplyRaw.user?.avatar || newReplyRaw.user?.profilePicture || "",
+        post_id: newReplyRaw.post_id,
         replies: [],
       };
 
