@@ -62,4 +62,11 @@ export class Comment extends Model {
     defaultValue: DataType.NOW,
   })
   declare createdAt?: Date;
+  
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: DataType.NOW,
+  })
+  declare updatedAt?: Date;
 }

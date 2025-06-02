@@ -19,20 +19,17 @@ router.get(
     const token = req.headers.authorization?.split(' ')[1];
     let idUser = null;
 
-    // 💡 Cek dan verifikasi token
     if (token) {
       try {
         const decoded = jwt.verify(token, appConfig.jwtSecret) as { id: string };
         idUser = decoded.id;
-        console.log("✅ Logged in user ID:", idUser);
       } catch (err) {
-        console.error("❌ Token verification failed:", err);
+        console.error("Token verification failed:", err);
       }
     } else {
-      console.log("ℹ️ No token found in Authorization header");
+      console.log("No token found in Authorization header");
     }
 
-    // 🧲 Ambil semua komentar utama
     const comments = await Comment.findAll({
       where: {
         post_id,
@@ -71,14 +68,14 @@ router.post(
       user_id,
       content,
       post_id,
+      updatedAt: null,
     });
 
-    return { message: 'Comment created', comment };
+    return res.status(201).json({ message: 'Comment created', comment });
   })
 );
 
 
-// // ✅ Edit komentar
 router.put(
   '/:commentId',
   authMiddleware,

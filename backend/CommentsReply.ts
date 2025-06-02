@@ -78,6 +78,7 @@ router.post(
       post_id: parentComment.post_id,
       reply_to,
       user_id,
+      updatedAt: null,
     });
 
     return { message: 'Reply created', reply };
@@ -140,7 +141,7 @@ router.delete(
   '/',
   authMiddleware,
   controllerWrapper(async (req: Request, res: Response) => {
-    const { id } = req.params; // pastikan ID dikirim via body (bukan params)
+    const { id } = req.params; 
 
     console.log('Deleting comment with ID:', id);
 
@@ -162,7 +163,6 @@ router.delete(
       throw new Error('Not authorized to delete this comment');
     }
 
-    // 🔁 Rekursif: kumpulkan semua ID balasan nested
     const collectAllReplyIds = async (parentId: string): Promise<string[]> => {
       const replies = await Comment.findAll({ where: { reply_to: parentId } });
 
@@ -177,7 +177,6 @@ router.delete(
 
     const allReplyIds = await collectAllReplyIds(comment.id);
 
-    // 🧹 Hapus semua balasan terlebih dahulu
     if (allReplyIds.length > 0) {
       await Comment.destroy({ where: { id: allReplyIds } });
     }

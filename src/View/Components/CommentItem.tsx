@@ -73,7 +73,6 @@ const formatDate = (dateString: string) => {
   });
 };
 
-// Helper untuk mewarnai mention dan link ke profile
 function renderContentWithMention(content: string) {
   const parts = content.split(/(@\w+)/g); // Misah berdasarkan mention
 
@@ -102,13 +101,11 @@ function renderContentWithMention(content: string) {
   });
 }
 
-// Render semua reply rata kiri (tanpa indent)
 function renderRepliesFlat(
   replyNodes: Comment[],
   onDelete: (id: string) => void,
   onDeleted: (id: string) => void
 ) {
-  // Sort replies by createdAt in descending order (newest first)
   const sortedReplies = [...replyNodes].sort((a, b) => 
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
@@ -145,7 +142,6 @@ const CommentItem = ({
   const [savingEdit, setSavingEdit] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false); // New state to track deletion
 
-  // State untuk konten dan updatedAt
   const [currentContent, setCurrentContent] = useState(comment.content);
   const [currentUpdatedAt, setCurrentUpdatedAt] = useState<string | undefined>(
     comment.updatedAt
@@ -175,7 +171,6 @@ const CommentItem = ({
     setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
 
-  // Parse nested replies dari backend
   function parseReplies(data: any[]): Comment[] {
     return data.map((reply) => ({
       id: reply.id,
@@ -210,7 +205,6 @@ const CommentItem = ({
         repliesArray = parseReplies(data.replies);
       }
       
-      // Sort replies by createdAt in descending order (newest first)
       repliesArray.sort((a, b) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
@@ -263,9 +257,7 @@ const CommentItem = ({
       };
 
       console.log("New reply added:", newReply);
-      
-      // Add new reply at the beginning of the array (top position)
-      setReplies((prev) => [...prev, newReply]);
+            setReplies((prev) => [...prev, newReply]);
       setReplyContent("");
       setShowReplyInput(false);
     } catch (err) {
@@ -286,10 +278,8 @@ const CommentItem = ({
       const data = await fetchEndpoint(endpoint, 'DELETE', token);
       if (!data) throw new Error("Failed to delete comment");
       
-      // Trigger deletion animation
       setIsDeleted(true);
       
-      // Wait for animation to complete before calling onDeleted
       setTimeout(() => {
         if (onDelete) onDelete(comment.id);
         if (onDeleted) onDeleted(comment.id);
@@ -363,7 +353,7 @@ const CommentItem = ({
   };
 
   if (isDeleted) {
-    return null; // Or you can return a fade-out animation
+    return null; 
     
   }
 
@@ -378,7 +368,7 @@ const CommentItem = ({
           borderRadius: 3,
           p: 2,
           mb: comment.parentId || comment.reply_to ? 1 : 2,
-          ml: 0, // Tidak menjorok ke dalam
+          ml: 0, 
           boxShadow: comment.parentId || comment.reply_to ? "none" : "0 2px 8px rgba(0,0,0,0.18)",
           position: "relative",
           transition: "opacity 0.3s ease, transform 0.3s ease",

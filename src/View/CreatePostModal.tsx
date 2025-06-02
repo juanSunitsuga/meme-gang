@@ -302,7 +302,6 @@ const CreatePostModal: React.FC = () => {
                   key={tag}
                   label={tag}
                   onDelete={() => handleTagDelete(tag)}
-                  deleteIcon={<FAIcon icon="fas fa-times" />}
                   sx={{ 
                     backgroundColor: 'rgba(25, 118, 210, 0.1)',
                     color: '#1976d2',
