@@ -82,18 +82,18 @@ const PostDetailPage: React.FC = () => {
   if (!post) return <div>Post not found</div>;
 
   return (
-    <Box sx={{ maxWidth: 640, mx: 'auto', p: 2 }}>
+    <Box sx={{ maxWidth: 640, mx: 'auto', p: 2, marginTop: "5%"  }}>
       <Paper 
         sx={{ 
           bgcolor: "#1a1a1a", 
           color: "#fff", 
           borderRadius: 4, 
           overflow: "hidden",
-          border: "1px solid #333"
+          border: "1px solid #333",
         }}
       >
         {/* PostCard Section */}
-        <Box sx={{ p: 2, pb: 0 }}>
+        <Box sx={{ p: 1, pb: 0}}>
           <PostCard
             postId={post.id}
             imageUrl={post.image_url || ''}

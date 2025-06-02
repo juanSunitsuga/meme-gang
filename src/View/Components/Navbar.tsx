@@ -243,6 +243,7 @@ const MuiNavbar: React.FC = () => {
               />
             </Link>
           ) : ( 
+            <Link to={`/profile/${userData.username}`} style={{ display: 'inline-block' }}>
             <Avatar sx={{ 
               width: 40, 
               height: 40,
@@ -251,6 +252,7 @@ const MuiNavbar: React.FC = () => {
             }}>
               {userData.username[0].toUpperCase()}
             </Avatar>
+            </Link>
           )}
           <Box>
             <Typography sx={{ 

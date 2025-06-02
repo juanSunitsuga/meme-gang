@@ -72,6 +72,7 @@ const PostCard: React.FC<PostCardProps> = ({
   const [upvotesCount, setUpvotesCount] = useState(upvotes);
   const [downvotesCount, setDownvotesCount] = useState(downvotes);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [saved, setSaved] = useState(isSaved);
   const menuOpen = Boolean(anchorEl);
   const { openEditPostModal } = useModal();
   const { token, isAuthenticated } = useAuth();
@@ -89,26 +90,33 @@ const PostCard: React.FC<PostCardProps> = ({
   };
 
   const handleSaveClick = async () => {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('token');
     
     try {
+      // Optimistically update the UI
+      const newSavedState = !saved;
+      setSaved(newSavedState);
+      
       // Send postId as part of the URL path, not as the body
-      const method = isSaved ? 'DELETE' : 'POST';
+      const method = newSavedState ? 'POST' : 'DELETE';
       const endpoint = `/save/save-post/${postId}`;
       
       const response = await fetchEndpoint(endpoint, method, token);
       
-      if (response) {
-        console.log(`Post ${isSaved ? 'unsaved' : 'saved'} successfully`);
-        onSaveClick && onSaveClick();
+      if (!response) {
+        // If the request fails, revert the UI change
+        setSaved(!newSavedState);
+        console.error(`Failed to ${newSavedState ? 'save' : 'unsave'} post`);
       } else {
-        console.error(`Failed to ${isSaved ? 'unsave' : 'save'} post`);
+        console.log(`Post ${newSavedState ? 'saved' : 'unsaved'} successfully`);
+        onSaveClick && onSaveClick();
       }
     } catch (error) {
+      // Revert the UI change if there's an error
+      setSaved(!saved);
       console.error('Error saving post:', error);
     }
-
-  }
+  };
 
   const handleVotesClick = async (type: 'upvote' | 'downvote') => {
     const token = localStorage.getItem('token');
@@ -152,10 +160,10 @@ const PostCard: React.FC<PostCardProps> = ({
       console.error('Error handling vote:', error);
       // Handle error appropriately, e.g., show a notification
     }
-  }
+  };
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-  setAnchorEl(event.currentTarget);
+    setAnchorEl(event.currentTarget);
   };
 
   const handleMenuClose = () => {
@@ -244,12 +252,12 @@ const PostCard: React.FC<PostCardProps> = ({
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Stack direction="row" spacing={1} alignItems="center">
             <Link 
-            to={`/profile/${username}`}
-            style={{
-              color: "#4fa3ff",
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
+              to={`/profile/${username}`}
+              style={{
+                color: "#4fa3ff",
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
             >
               <Avatar 
                 alt={username}
@@ -367,7 +375,7 @@ const PostCard: React.FC<PostCardProps> = ({
             <Chip
               icon={<ChatBubbleOutlineIcon />}
               label={`${comments} Comments`}
-              onClick={handleCommentClick} // Ganti sini, pake fungsi baru
+              onClick={handleCommentClick}
               sx={{
                 backgroundColor: '#2c2c2c',
                 color: '#fff',
@@ -381,11 +389,11 @@ const PostCard: React.FC<PostCardProps> = ({
           <Stack direction="row" spacing={2}>
             <IconButton
               sx={{
-                color: isSaved ? '#1976d2' : '#aaa' // Change color when saved
+                color: saved ? '#1976d2' : '#aaa' // Change color when saved
               }}
               onClick={handleSaveClick}
             >
-              {isSaved ? <BookmarkIcon /> : <BookmarkBorderIcon />}
+              {saved ? <BookmarkIcon /> : <BookmarkBorderIcon />}
             </IconButton>
             <IconButton sx={{ color: '#aaa' }}>
               <ShareOutlinedIcon />
