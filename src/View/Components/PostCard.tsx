@@ -389,9 +389,10 @@ const PostCard: React.FC<PostCardProps> = ({
           <Stack direction="row" spacing={2}>
             <IconButton
               sx={{
-                color: saved ? '#1976d2' : '#aaa' // Change color when saved
+                color: saved ? '#1976d2' : '#aaa'
               }}
-              onClick={handleSaveClick}
+              onClick={isAuthenticated ? handleSaveClick : undefined}
+              disabled={!isAuthenticated}
             >
               {saved ? <BookmarkIcon /> : <BookmarkBorderIcon />}
             </IconButton>
